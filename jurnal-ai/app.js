@@ -2174,13 +2174,9 @@ async function getDailyInsight() {
     const habits = getHabits();
     const transactions = getTransactions();
 
-    const prompt = `Berikan insight singkat dalam 2-3 kalimat motivasi berdasarkan data berikut:
-- ${journals.length} jurnal ditulis
-- ${tasks.filter(t => t.completed).length}/${tasks.length} task selesai
-- ${habits.length} habits dilacak
-- Saldo: ${transactions.reduce((s, t) => s + (t.type === 'income' ? t.amount : -t.amount), 0)}
+    const prompt = `Berdasarkan data pengguna: ${journals.length} jurnal, ${tasks.filter(t => t.completed).length}/${tasks.length} task selesai, ${habits.length} habits.
 
-Berikan dalam format singkat, motivatif, bahasa Indonesia. Jangan gunakan format list.`;
+Tulis TEPAT 2 kalimat motivasi singkat dalam bahasa Indonesia. Maksimal 50 kata total. Langsung tulis kalimatnya tanpa pembuka.`;
 
     try {
         const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -2188,7 +2184,7 @@ Berikan dalam format singkat, motivatif, bahasa Indonesia. Jangan gunakan format
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.8, maxOutputTokens: 256 }
+                generationConfig: { temperature: 0.8, maxOutputTokens: 2048 }
             })
         });
 
