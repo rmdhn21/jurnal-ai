@@ -44,10 +44,15 @@ function disableCloudSync() {
 async function syncToCloud() {
     if (!supabaseClient || !isCloudSyncEnabled()) return;
 
-    const session = await supabaseClient.auth.getSession();
-    if (!session.data.session) return;
+    // Check session first
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !session) {
+        console.warn('Sync aborted: No active session');
+        return;
+    }
 
-    const userId = session.data.session.user.id;
+    const userId = session.user.id;
+    console.log('Syncing starting for user:', userId);
 
     const data = {
         journals: getJournals(),
@@ -64,20 +69,29 @@ async function syncToCloud() {
             .from('user_data')
             .upsert({ user_id: userId, data: data }, { onConflict: 'user_id' });
 
-        if (error) console.error('Sync error:', error);
-        else console.log('Synced to cloud');
+        if (error) {
+            console.error('Sync ERROR:', error);
+            // Show toast/alert if needed, but better to keep it silent normally unless critical
+            if (error.code === '42501') {
+                alert('Sync Gagal: Permission Denied. Pastikan Anda sudah setup RLS Policies di Supabase!');
+            }
+        } else {
+            console.log('✅ Synced to cloud successfully');
+            updateSyncStatus('Synced');
+        }
     } catch (err) {
-        console.error('Sync failed:', err);
+        console.error('Sync FAILED (Exception):', err);
     }
 }
 
 async function syncFromCloud() {
     if (!supabaseClient || !isCloudSyncEnabled()) return false;
 
-    const session = await supabaseClient.auth.getSession();
-    if (!session.data.session) return false;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return false;
 
-    const userId = session.data.session.user.id;
+    const userId = session.user.id;
+    console.log('Downloading data for user:', userId);
 
     try {
         const { data, error } = await supabaseClient
@@ -86,9 +100,18 @@ async function syncFromCloud() {
             .eq('user_id', userId)
             .single();
 
-        if (error || !data) return false;
+        if (error) {
+            console.error('Download ERROR:', error);
+            return false;
+        }
+
+        if (!data) {
+            console.log('No data found in cloud');
+            return false;
+        }
 
         const cloudData = data.data;
+        console.log('Cloud data received:', cloudData);
 
         // Merge cloud data to local
         if (cloudData.journals) localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(cloudData.journals));
@@ -98,12 +121,26 @@ async function syncFromCloud() {
         if (cloudData.habits) localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(cloudData.habits));
         if (cloudData.reminderSettings) localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
 
-        console.log('Synced from cloud');
+        console.log('✅ Synced from cloud successfully');
+
+        // Reload UI to show new data
+        // We need to re-init UI modules to reflect changes
+        initJournalUI();
+        initPlannerUI();
+        initFinanceUI();
+        initHabitsUI();
+        initDashboard();
+
         return true;
     } catch (err) {
         console.error('Sync from cloud failed:', err);
         return false;
     }
+}
+
+function updateSyncStatus(status) {
+    // Optional: Add visual indicator if we want later
+    console.log('Sync Status:', status);
 }
 
 // Auto-sync when data changes
@@ -132,12 +169,14 @@ function saveJournal(journal) {
     }
 
     localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(journals));
+    triggerCloudSync();
     return journal;
 }
 
 function deleteJournal(id) {
     const journals = getJournals().filter(j => j.id !== id);
     localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(journals));
+    triggerCloudSync();
 }
 
 // Task Operations
@@ -157,12 +196,14 @@ function saveTask(task) {
     }
 
     localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+    triggerCloudSync();
     return task;
 }
 
 function deleteTask(id) {
     const tasks = getTasks().filter(t => t.id !== id);
     localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+    triggerCloudSync();
 }
 
 function toggleTask(id) {
@@ -171,6 +212,7 @@ function toggleTask(id) {
     if (task) {
         task.done = !task.done;
         localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+        triggerCloudSync();
     }
     return task;
 }
@@ -192,13 +234,16 @@ function saveSchedule(schedule) {
     }
 
     schedules.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+    schedules.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
     localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(schedules));
+    triggerCloudSync();
     return schedule;
 }
 
 function deleteSchedule(id) {
     const schedules = getSchedules().filter(s => s.id !== id);
     localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(schedules));
+    triggerCloudSync();
 }
 
 // Transaction Operations
@@ -211,12 +256,14 @@ function saveTransaction(transaction) {
     const transactions = getTransactions();
     transactions.unshift(transaction);
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+    triggerCloudSync();
     return transaction;
 }
 
 function deleteTransaction(id) {
     const transactions = getTransactions().filter(t => t.id !== id);
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+    triggerCloudSync();
 }
 
 // Habit Operations
@@ -236,12 +283,14 @@ function saveHabit(habit) {
     }
 
     localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+    triggerCloudSync();
     return habit;
 }
 
 function deleteHabit(id) {
     const habits = getHabits().filter(h => h.id !== id);
     localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+    triggerCloudSync();
 }
 
 function toggleHabitCompletion(habitId, date) {
@@ -250,7 +299,10 @@ function toggleHabitCompletion(habitId, date) {
     if (habit) {
         if (!habit.completions) habit.completions = {};
         habit.completions[date] = !habit.completions[date];
+        // Update streak
+        habit.streak = calculateStreak(habit.completedDates);
         localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+        triggerCloudSync();
     }
     return habit;
 }
@@ -1612,62 +1664,57 @@ async function hashPassword(password) {
 }
 
 function initLoginUI() {
-    const loginBtn = document.getElementById('login-btn');
-    const registerBtn = document.getElementById('register-btn');
-    const showRegisterBtn = document.getElementById('show-register-btn');
-    const showLoginBtn = document.getElementById('show-login-btn');
-    const logoutBtn = document.getElementById('logout-btn');
+    // Safe event listener helper
+    const addListener = (id, event, handler) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener(event, handler);
+            console.log(`Listener added for ${id}`);
+        } else {
+            console.warn(`Element ${id} not found in initLoginUI`);
+        }
+    };
 
     // Toggle forms
-    showRegisterBtn.addEventListener('click', () => {
+    addListener('show-register-btn', 'click', () => {
         document.getElementById('login-form').classList.add('hidden');
         document.getElementById('register-form').classList.remove('hidden');
     });
 
-    showLoginBtn.addEventListener('click', () => {
+    addListener('show-login-btn', 'click', () => {
         document.getElementById('register-form').classList.add('hidden');
         document.getElementById('login-form').classList.remove('hidden');
     });
 
     // Login
-    loginBtn.addEventListener('click', handleLogin);
-    document.getElementById('login-password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLogin();
-    });
+    addListener('login-btn', 'click', handleLogin);
+
+    const loginPass = document.getElementById('login-password');
+    if (loginPass) {
+        loginPass.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+    }
 
     // Register
-    registerBtn.addEventListener('click', handleRegister);
+    addListener('register-btn', 'click', handleRegister);
 
     // Logout
-    logoutBtn.addEventListener('click', handleLogout);
+    addListener('logout-btn', 'click', handleLogout);
 
-    // Cloud Login - with null checks
-    const cloudLoginBtn = document.getElementById('cloud-login-btn');
-    const backToLocalBtn = document.getElementById('back-to-local-btn');
-    const cloudSigninBtn = document.getElementById('cloud-signin-btn');
-    const cloudSignupBtn = document.getElementById('cloud-signup-btn');
+    // Cloud Login
+    addListener('cloud-login-btn', 'click', () => {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('cloud-login-form').classList.remove('hidden');
+    });
 
-    if (cloudLoginBtn) {
-        cloudLoginBtn.addEventListener('click', () => {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('cloud-login-form').classList.remove('hidden');
-        });
-    }
+    addListener('back-to-local-btn', 'click', () => {
+        document.getElementById('cloud-login-form').classList.add('hidden');
+        document.getElementById('login-form').classList.remove('hidden');
+    });
 
-    if (backToLocalBtn) {
-        backToLocalBtn.addEventListener('click', () => {
-            document.getElementById('cloud-login-form').classList.add('hidden');
-            document.getElementById('login-form').classList.remove('hidden');
-        });
-    }
-
-    if (cloudSigninBtn) {
-        cloudSigninBtn.addEventListener('click', handleCloudSignIn);
-    }
-
-    if (cloudSignupBtn) {
-        cloudSignupBtn.addEventListener('click', handleCloudSignUp);
-    }
+    addListener('cloud-signin-btn', 'click', handleCloudSignIn);
+    addListener('cloud-signup-btn', 'click', handleCloudSignUp);
 }
 
 async function handleLogin() {
@@ -2168,6 +2215,7 @@ function getReminderSettings() {
 
 function saveReminderSettings(settings) {
     localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(settings));
+    triggerCloudSync();
 }
 
 function initReminder() {
@@ -2267,3 +2315,41 @@ function showNotification(title, body) {
         });
     }
 }
+
+
+// ===== APP INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Initialize Auth UI
+    if (typeof initLoginUI === 'function') initLoginUI();
+
+    // 2. Initialize Supabase Client
+    if (typeof initSupabase === 'function') initSupabase();
+
+    // 3. Check Local Session
+    if (typeof getSession === 'function') {
+        const session = getSession();
+
+        if (session) {
+            // User is logged in
+            if (typeof showMainApp === 'function') showMainApp();
+
+            // 4. Trigger Background Cloud Sync
+            if (typeof isCloudSyncEnabled === 'function' && isCloudSyncEnabled()) {
+                console.log('🔄 Auto-syncing from cloud on startup...');
+                // Non-blocking sync
+                if (typeof syncFromCloud === 'function') {
+                    syncFromCloud().then(success => {
+                        if (success) {
+                            console.log('✅ Startup sync complete');
+                            // Refresh Dashboard to reflect new data
+                            if (typeof initDashboard === 'function') initDashboard();
+                        }
+                    });
+                }
+            }
+        } else {
+            // User is guest
+            if (typeof showLoginScreen === 'function') showLoginScreen();
+        }
+    }
+});
