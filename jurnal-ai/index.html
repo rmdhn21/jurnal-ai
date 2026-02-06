@@ -84,9 +84,10 @@
             </div>
         </header>
 
-        <!-- Navigation (4 Tabs) -->
+        <!-- Navigation (5 Tabs) -->
         <nav class="nav">
-            <button class="nav-btn active" data-screen="journal">📝 Jurnal</button>
+            <button class="nav-btn active" data-screen="dashboard">📊 Dashboard</button>
+            <button class="nav-btn" data-screen="journal">📝 Jurnal</button>
             <button class="nav-btn" data-screen="planner">📋 Planner</button>
             <button class="nav-btn" data-screen="finance">💰 Keuangan</button>
             <button class="nav-btn" data-screen="habits">✅ Habits</button>
@@ -94,8 +95,60 @@
 
         <!-- Main Content -->
         <main class="main">
+            <!-- Screen 0: Dashboard -->
+            <section id="dashboard-screen" class="screen active">
+                <!-- Overview Cards -->
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">📝</div>
+                        <div class="dashboard-stat" id="stat-journals">0</div>
+                        <div class="dashboard-label">Total Jurnal</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">✅</div>
+                        <div class="dashboard-stat" id="stat-tasks">0/0</div>
+                        <div class="dashboard-label">Task Selesai</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">💰</div>
+                        <div class="dashboard-stat" id="stat-balance">Rp 0</div>
+                        <div class="dashboard-label">Saldo</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">🔥</div>
+                        <div class="dashboard-stat" id="stat-streak">0</div>
+                        <div class="dashboard-label">Best Streak</div>
+                    </div>
+                </div>
+
+                <!-- Today's Reminder -->
+                <div class="card">
+                    <h3>🔔 Reminder Hari Ini</h3>
+                    <div id="today-reminders" class="reminder-list">
+                        <p class="text-muted">Tidak ada reminder hari ini</p>
+                    </div>
+                </div>
+
+                <!-- Upcoming Schedule -->
+                <div class="card">
+                    <h3>📅 Jadwal Mendatang</h3>
+                    <div id="upcoming-schedules" class="reminder-list">
+                        <p class="text-muted">Tidak ada jadwal</p>
+                    </div>
+                </div>
+
+                <!-- Quick AI Insight -->
+                <div class="card">
+                    <h3>🧠 Quick AI Insight</h3>
+                    <div id="quick-insight" class="insight-box">
+                        <p class="text-muted">Klik tombol di bawah untuk insight harian</p>
+                    </div>
+                    <button id="get-daily-insight-btn" class="btn btn-ai btn-full">✨ Dapatkan Insight Harian</button>
+                </div>
+            </section>
+
             <!-- Screen 1: Journal Write -->
-            <section id="journal-screen" class="screen active">
+            <section id="journal-screen" class="screen">
                 <div class="card journal-card">
                     <h2>Apa yang ada di pikiranmu?</h2>
                     <textarea id="journal-input" class="journal-textarea"
@@ -340,6 +393,30 @@
                         <button id="import-data-btn" class="btn btn-secondary" style="flex:1;">📥 Import Data</button>
                     </div>
                     <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                </div>
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 1.5rem 0;">
+
+                <!-- Reminder Settings -->
+                <div class="form-group">
+                    <label>🔔 Pengaturan Reminder</label>
+                    <small style="display: block; margin-bottom: 0.5rem;">Aktifkan notifikasi untuk habits dan
+                        jadwal.</small>
+                    <div class="reminder-settings">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="reminder-habits-toggle">
+                            <span>Reminder Habits Harian</span>
+                        </label>
+                        <div id="habits-time-setting" class="sub-setting hidden">
+                            <label>Jam reminder:</label>
+                            <input type="time" id="habits-reminder-time" class="input" value="08:00">
+                        </div>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="reminder-schedule-toggle">
+                            <span>Reminder Jadwal (15 menit sebelum)</span>
+                        </label>
+                    </div>
+                    <button id="save-reminder-btn" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;">💾
+                        Simpan Reminder Settings</button>
                 </div>
 
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 1.5rem 0;">

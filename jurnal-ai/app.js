@@ -7,7 +7,8 @@ const STORAGE_KEYS = {
     HABITS: 'jurnal_ai_habits',
     API_KEY: 'jurnal_ai_gemini_key',
     USERS: 'jurnal_ai_users',
-    SESSION: 'jurnal_ai_session'
+    SESSION: 'jurnal_ai_session',
+    REMINDER_SETTINGS: 'jurnal_ai_reminder_settings'
 };
 
 // Journal Operations
@@ -1624,11 +1625,13 @@ function showMainApp() {
     // Initialize all modules
     initNavigation();
     initSettings();
+    initDashboard();
     initJournalUI();
     initPlannerUI();
     initFinanceUI();
     initHabitsUI();
     initAIAnalysis();
+    initReminder();
 
     // Check if API key is set
     if (!getApiKey()) {
@@ -1794,3 +1797,250 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoginScreen();
     }
 });
+
+// ===== DASHBOARD MODULE =====
+function initDashboard() {
+    updateDashboardStats();
+    updateUpcomingSchedules();
+    updateTodayReminders();
+
+    document.getElementById('get-daily-insight-btn').addEventListener('click', getDailyInsight);
+}
+
+function updateDashboardStats() {
+    // Journals count
+    const journals = getJournals();
+    document.getElementById('stat-journals').textContent = journals.length;
+
+    // Tasks completed
+    const tasks = getTasks();
+    const completedTasks = tasks.filter(t => t.completed).length;
+    document.getElementById('stat-tasks').textContent = `${completedTasks}/${tasks.length}`;
+
+    // Balance
+    const transactions = getTransactions();
+    const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    document.getElementById('stat-balance').textContent = formatCurrency(income - expense);
+
+    // Best streak
+    const habits = getHabits();
+    const bestStreak = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
+    document.getElementById('stat-streak').textContent = bestStreak;
+}
+
+function updateUpcomingSchedules() {
+    const schedules = getSchedules();
+    const now = new Date();
+    const upcoming = schedules
+        .filter(s => new Date(s.datetime) > now)
+        .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))
+        .slice(0, 5);
+
+    const container = document.getElementById('upcoming-schedules');
+
+    if (upcoming.length === 0) {
+        container.innerHTML = '<p class="text-muted">Tidak ada jadwal mendatang</p>';
+        return;
+    }
+
+    container.innerHTML = upcoming.map(s => {
+        const date = new Date(s.datetime);
+        const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        return `
+            <div class="reminder-item schedule">
+                <span class="reminder-time">${timeStr}</span>
+                <span class="reminder-text">${s.title} - ${dateStr}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateTodayReminders() {
+    const habits = getHabits();
+    const today = getTodayString();
+    const settings = getReminderSettings();
+
+    const container = document.getElementById('today-reminders');
+
+    if (!settings.habitsEnabled || habits.length === 0) {
+        container.innerHTML = '<p class="text-muted">Tidak ada reminder hari ini</p>';
+        return;
+    }
+
+    // Show undone habits for today
+    const undoneHabits = habits.filter(h => {
+        const doneToday = h.completedDates && h.completedDates.includes(today);
+        return !doneToday;
+    });
+
+    if (undoneHabits.length === 0) {
+        container.innerHTML = '<p class="text-muted">✅ Semua habits sudah selesai hari ini!</p>';
+        return;
+    }
+
+    container.innerHTML = undoneHabits.map(h => `
+        <div class="reminder-item">
+            <span class="reminder-time">⏰</span>
+            <span class="reminder-text">${h.name}</span>
+        </div>
+    `).join('');
+}
+
+async function getDailyInsight() {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        alert('Atur API key dulu di Settings!');
+        showSettings();
+        return;
+    }
+
+    const insightBox = document.getElementById('quick-insight');
+    insightBox.innerHTML = '<p class="text-muted">Menganalisis data Anda...</p>';
+
+    const journals = getJournals();
+    const tasks = getTasks();
+    const habits = getHabits();
+    const transactions = getTransactions();
+
+    const prompt = `Berikan insight singkat dalam 2-3 kalimat motivasi berdasarkan data berikut:
+- ${journals.length} jurnal ditulis
+- ${tasks.filter(t => t.completed).length}/${tasks.length} task selesai
+- ${habits.length} habits dilacak
+- Saldo: ${transactions.reduce((s, t) => s + (t.type === 'income' ? t.amount : -t.amount), 0)}
+
+Berikan dalam format singkat, motivatif, bahasa Indonesia. Jangan gunakan format list.`;
+
+    try {
+        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.8, maxOutputTokens: 256 }
+            })
+        });
+
+        if (!response.ok) throw new Error('Gagal mendapatkan insight');
+
+        const result = await response.json();
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Tidak ada insight';
+
+        insightBox.innerHTML = `<p>${text}</p>`;
+    } catch (error) {
+        insightBox.innerHTML = '<p class="text-muted">Gagal mengambil insight. Coba lagi nanti.</p>';
+    }
+}
+
+// ===== REMINDER MODULE =====
+function getReminderSettings() {
+    const data = localStorage.getItem(STORAGE_KEYS.REMINDER_SETTINGS);
+    return data ? JSON.parse(data) : {
+        habitsEnabled: false,
+        habitsTime: '08:00',
+        scheduleEnabled: false
+    };
+}
+
+function saveReminderSettings(settings) {
+    localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(settings));
+}
+
+function initReminder() {
+    const settings = getReminderSettings();
+
+    // Load saved settings
+    document.getElementById('reminder-habits-toggle').checked = settings.habitsEnabled;
+    document.getElementById('reminder-schedule-toggle').checked = settings.scheduleEnabled;
+    document.getElementById('habits-reminder-time').value = settings.habitsTime || '08:00';
+
+    // Toggle time setting visibility
+    if (settings.habitsEnabled) {
+        document.getElementById('habits-time-setting').classList.remove('hidden');
+    }
+
+    // Event listeners
+    document.getElementById('reminder-habits-toggle').addEventListener('change', (e) => {
+        const timeSetting = document.getElementById('habits-time-setting');
+        if (e.target.checked) {
+            timeSetting.classList.remove('hidden');
+        } else {
+            timeSetting.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('save-reminder-btn').addEventListener('click', saveReminderSettingsHandler);
+
+    // Request notification permission and check reminders
+    if (settings.habitsEnabled || settings.scheduleEnabled) {
+        requestNotificationPermission();
+        checkAndTriggerReminders();
+    }
+}
+
+async function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+    }
+}
+
+function saveReminderSettingsHandler() {
+    const settings = {
+        habitsEnabled: document.getElementById('reminder-habits-toggle').checked,
+        habitsTime: document.getElementById('habits-reminder-time').value,
+        scheduleEnabled: document.getElementById('reminder-schedule-toggle').checked
+    };
+
+    saveReminderSettings(settings);
+
+    if (settings.habitsEnabled || settings.scheduleEnabled) {
+        requestNotificationPermission();
+    }
+
+    alert('✅ Pengaturan reminder tersimpan!');
+}
+
+function checkAndTriggerReminders() {
+    const settings = getReminderSettings();
+
+    // Check every minute
+    setInterval(() => {
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5);
+
+        // Check habits reminder
+        if (settings.habitsEnabled && currentTime === settings.habitsTime) {
+            const habits = getHabits();
+            const today = getTodayString();
+            const undone = habits.filter(h => !h.completedDates?.includes(today));
+
+            if (undone.length > 0) {
+                showNotification('🔔 Reminder Habits', `Kamu punya ${undone.length} habits yang belum selesai hari ini!`);
+            }
+        }
+
+        // Check schedule reminders (15 min before)
+        if (settings.scheduleEnabled) {
+            const schedules = getSchedules();
+            const in15Min = new Date(now.getTime() + 15 * 60000);
+
+            schedules.forEach(s => {
+                const scheduleTime = new Date(s.datetime);
+                if (Math.abs(scheduleTime - in15Min) < 60000) { // Within 1 minute window
+                    showNotification('📅 Jadwal Mendatang', `${s.title} dalam 15 menit!`);
+                }
+            });
+        }
+    }, 60000); // Check every minute
+}
+
+function showNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, {
+            body: body,
+            icon: 'icons/icon-512.png',
+            badge: 'icons/icon-512.png'
+        });
+    }
+}

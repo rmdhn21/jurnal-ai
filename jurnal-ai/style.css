@@ -1026,3 +1026,130 @@ body::before {
     font-size: var(--font-size-sm);
     color: var(--accent-primary);
 }
+
+/* ===== Dashboard ===== */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.dashboard-card {
+    background: var(--gradient-card);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    text-align: center;
+    transition: all var(--transition-normal);
+}
+
+.dashboard-card:hover {
+    border-color: rgba(245, 158, 11, 0.3);
+    transform: translateY(-2px);
+}
+
+.dashboard-icon {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.dashboard-stat {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.dashboard-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+/* ===== Reminder List ===== */
+.reminder-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.reminder-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent-primary);
+}
+
+.reminder-item.schedule {
+    border-left-color: var(--info);
+}
+
+.reminder-time {
+    font-weight: 600;
+    color: var(--accent-secondary);
+    min-width: 50px;
+}
+
+.reminder-text {
+    flex: 1;
+    color: var(--text-primary);
+}
+
+/* ===== Insight Box ===== */
+.insight-box {
+    padding: var(--spacing-md);
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    margin-bottom: var(--spacing-md);
+    min-height: 80px;
+}
+
+.insight-box p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* ===== Reminder Settings ===== */
+.reminder-settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-primary);
+}
+
+.sub-setting {
+    padding-left: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.sub-setting label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.sub-setting .input {
+    width: auto;
+}
+
+/* ===== Text Utilities ===== */
+.text-muted {
+    color: var(--text-muted);
+}
