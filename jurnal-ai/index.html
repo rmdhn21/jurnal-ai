@@ -17,7 +17,8 @@
     <link rel="manifest" href="manifest.json">
 
     <!-- Icons for iOS -->
-    <link rel="apple-touch-icon" href="icons/icon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 
     <!-- Fonts -->
@@ -49,11 +50,38 @@
 </head>
 
 <body>
-    <div class="app">
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-container">
+            <div class="login-logo">✨</div>
+            <h1>Jurnal AI</h1>
+            <p class="login-subtitle">Life Organizer</p>
+
+            <div id="login-form" class="login-form">
+                <input type="text" id="login-username" class="input" placeholder="Username">
+                <input type="password" id="login-password" class="input" placeholder="Password">
+                <button id="login-btn" class="btn btn-primary btn-full">🔐 Login</button>
+                <button id="show-register-btn" class="btn btn-secondary btn-full">📝 Buat Akun Baru</button>
+            </div>
+
+            <div id="register-form" class="login-form hidden">
+                <input type="text" id="register-username" class="input" placeholder="Username baru">
+                <input type="password" id="register-password" class="input" placeholder="Password">
+                <input type="password" id="register-password-confirm" class="input" placeholder="Konfirmasi Password">
+                <button id="register-btn" class="btn btn-primary btn-full">✅ Daftar</button>
+                <button id="show-login-btn" class="btn btn-secondary btn-full">← Kembali ke Login</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app hidden" id="main-app">
         <!-- Header -->
         <header class="header">
             <h1 class="logo">✨ Jurnal AI</h1>
-            <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+            <div class="header-actions">
+                <button id="logout-btn" class="icon-btn" title="Logout">🚪</button>
+                <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+            </div>
         </header>
 
         <!-- Navigation (4 Tabs) -->
@@ -155,6 +183,9 @@
                     </div>
                     <div id="schedule-list" class="schedule-list"></div>
                 </div>
+
+                <!-- AI Analysis Button -->
+                <button id="analyze-planner-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Produktivitas</button>
             </section>
 
             <!-- Screen 3: Finance -->
@@ -209,6 +240,9 @@
                     <h3>📜 Riwayat Transaksi</h3>
                     <div id="transaction-list" class="transaction-list"></div>
                 </div>
+
+                <!-- AI Analysis Button -->
+                <button id="analyze-finance-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Keuangan</button>
             </section>
 
             <!-- Screen 4: Habits -->
@@ -241,8 +275,26 @@
                     <h3>🎯 Semua Habit</h3>
                     <div id="habits-list" class="habits-list"></div>
                 </div>
+
+                <!-- AI Analysis Button -->
+                <button id="analyze-habits-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Kebiasaan</button>
             </section>
         </main>
+
+        <!-- AI Analysis Modal -->
+        <div id="analysis-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3 id="analysis-title">🧠 Analisis AI</h3>
+                    <button id="close-analysis" class="icon-btn">✕</button>
+                </div>
+                <div id="analysis-loading" class="loading-section hidden">
+                    <div class="loading-spinner"></div>
+                    <p>AI sedang menganalisis...</p>
+                </div>
+                <div id="analysis-content" class="analysis-content"></div>
+            </div>
+        </div>
 
         <!-- Settings Modal -->
         <div id="settings-modal" class="modal hidden">

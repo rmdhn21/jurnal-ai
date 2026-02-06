@@ -5,7 +5,9 @@ const STORAGE_KEYS = {
     SCHEDULES: 'jurnal_ai_schedules',
     TRANSACTIONS: 'jurnal_ai_transactions',
     HABITS: 'jurnal_ai_habits',
-    API_KEY: 'jurnal_ai_gemini_key'
+    API_KEY: 'jurnal_ai_gemini_key',
+    USERS: 'jurnal_ai_users',
+    SESSION: 'jurnal_ai_session'
 };
 
 // Journal Operations
@@ -1470,29 +1472,325 @@ function clearAllData() {
     location.reload();
 }
 
-// ===== MAIN INIT =====
-document.addEventListener('DOMContentLoaded', () => {
-    // Check if data is encrypted
-    const isEncrypted = localStorage.getItem(ENCRYPTION_KEY_STORAGE) !== null;
+// ===== LOGIN MODULE =====
+function getUsers() {
+    const data = localStorage.getItem(STORAGE_KEYS.USERS);
+    return data ? JSON.parse(data) : {};
+}
 
-    if (isEncrypted) {
-        // Show settings to enter password
-        initNavigation();
-        initSettings();
-        showSettings();
-        alert('🔒 Data terenkripsi. Masukkan password di Pengaturan untuk membuka.');
+function saveUser(username, passwordHash) {
+    const users = getUsers();
+    users[username] = { passwordHash, createdAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+}
+
+function getSession() {
+    const session = localStorage.getItem(STORAGE_KEYS.SESSION);
+    return session ? JSON.parse(session) : null;
+}
+
+function saveSession(username) {
+    const session = { username, loginAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(session));
+}
+
+function clearSession() {
+    localStorage.removeItem(STORAGE_KEYS.SESSION);
+}
+
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password + 'jurnal_ai_salt');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function initLoginUI() {
+    const loginBtn = document.getElementById('login-btn');
+    const registerBtn = document.getElementById('register-btn');
+    const showRegisterBtn = document.getElementById('show-register-btn');
+    const showLoginBtn = document.getElementById('show-login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    // Toggle forms
+    showRegisterBtn.addEventListener('click', () => {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('register-form').classList.remove('hidden');
+    });
+
+    showLoginBtn.addEventListener('click', () => {
+        document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('login-form').classList.remove('hidden');
+    });
+
+    // Login
+    loginBtn.addEventListener('click', handleLogin);
+    document.getElementById('login-password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+
+    // Register
+    registerBtn.addEventListener('click', handleRegister);
+
+    // Logout
+    logoutBtn.addEventListener('click', handleLogout);
+}
+
+async function handleLogin() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!username || !password) {
+        alert('Masukkan username dan password!');
         return;
     }
 
+    const users = getUsers();
+    const user = users[username];
+
+    if (!user) {
+        alert('Username tidak ditemukan. Silakan daftar dulu.');
+        return;
+    }
+
+    const passwordHash = await hashPassword(password);
+    if (user.passwordHash !== passwordHash) {
+        alert('Password salah!');
+        return;
+    }
+
+    // Success - save session and show app
+    saveSession(username);
+    showMainApp();
+}
+
+async function handleRegister() {
+    const username = document.getElementById('register-username').value.trim();
+    const password = document.getElementById('register-password').value;
+    const confirmPassword = document.getElementById('register-password-confirm').value;
+
+    if (!username || !password) {
+        alert('Masukkan username dan password!');
+        return;
+    }
+
+    if (username.length < 3) {
+        alert('Username minimal 3 karakter!');
+        return;
+    }
+
+    if (password.length < 4) {
+        alert('Password minimal 4 karakter!');
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        alert('Password tidak cocok!');
+        return;
+    }
+
+    const users = getUsers();
+    if (users[username]) {
+        alert('Username sudah dipakai!');
+        return;
+    }
+
+    // Hash and save
+    const passwordHash = await hashPassword(password);
+    saveUser(username, passwordHash);
+    saveSession(username);
+
+    alert('✅ Akun berhasil dibuat!');
+    showMainApp();
+}
+
+function handleLogout() {
+    if (confirm('Yakin mau logout?')) {
+        clearSession();
+        location.reload();
+    }
+}
+
+function showLoginScreen() {
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('main-app').classList.add('hidden');
+}
+
+function showMainApp() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
+
+    // Initialize all modules
     initNavigation();
     initSettings();
     initJournalUI();
     initPlannerUI();
     initFinanceUI();
     initHabitsUI();
+    initAIAnalysis();
 
     // Check if API key is set
     if (!getApiKey()) {
         showSettings();
+    }
+}
+
+// ===== AI ANALYSIS MODULE =====
+function initAIAnalysis() {
+    document.getElementById('analyze-planner-btn').addEventListener('click', () => analyzeWithAI('planner'));
+    document.getElementById('analyze-finance-btn').addEventListener('click', () => analyzeWithAI('finance'));
+    document.getElementById('analyze-habits-btn').addEventListener('click', () => analyzeWithAI('habits'));
+    document.getElementById('close-analysis').addEventListener('click', hideAnalysisModal);
+
+    const modal = document.getElementById('analysis-modal');
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) hideAnalysisModal();
+    });
+}
+
+function showAnalysisModal(title) {
+    document.getElementById('analysis-title').textContent = title;
+    document.getElementById('analysis-loading').classList.remove('hidden');
+    document.getElementById('analysis-content').innerHTML = '';
+    document.getElementById('analysis-modal').classList.remove('hidden');
+}
+
+function hideAnalysisModal() {
+    document.getElementById('analysis-modal').classList.add('hidden');
+}
+
+async function analyzeWithAI(type) {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        alert('Atur API key dulu di Settings!');
+        showSettings();
+        return;
+    }
+
+    let data, prompt, title;
+
+    switch (type) {
+        case 'planner':
+            title = '🧠 Analisis Produktivitas';
+            data = { tasks: getTasks(), schedules: getSchedules() };
+            prompt = `Analisis data produktivitas berikut dan berikan insight:
+            
+Tasks: ${JSON.stringify(data.tasks)}
+Schedules: ${JSON.stringify(data.schedules)}
+
+Berikan analisis dalam format HTML dengan struktur:
+<h4>📊 Ringkasan</h4>
+<p>ringkasan singkat</p>
+<h4>✅ Yang Sudah Baik</h4>
+<ul><li>poin positif</li></ul>
+<h4>⚠️ Yang Perlu Perhatian</h4>
+<ul><li>area improvement</li></ul>
+<h4>💡 Saran</h4>
+<ul><li>saran actionable</li></ul>
+
+Gunakan bahasa Indonesia yang hangat dan memotivasi.`;
+            break;
+
+        case 'finance':
+            title = '🧠 Analisis Keuangan';
+            data = getTransactions();
+            const income = data.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            const expense = data.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
+            prompt = `Analisis data keuangan berikut:
+
+Transactions: ${JSON.stringify(data)}
+Total Income: ${income}
+Total Expense: ${expense}
+Balance: ${income - expense}
+
+Berikan analisis dalam format HTML dengan struktur:
+<h4>📊 Ringkasan Keuangan</h4>
+<p>overview singkat</p>
+<h4>📈 Pola Pengeluaran</h4>
+<ul><li>kategori terbesar</li></ul>
+<h4>💰 Tips Penghematan</h4>
+<ul><li>tips praktis</li></ul>
+<h4>🎯 Target Bulan Depan</h4>
+<p>rekomendasi target</p>
+
+Gunakan bahasa Indonesia dan format currency IDR.`;
+            break;
+
+        case 'habits':
+            title = '🧠 Analisis Kebiasaan';
+            data = getHabits();
+
+            prompt = `Analisis data kebiasaan/habits berikut:
+
+Habits: ${JSON.stringify(data)}
+
+Berikan analisis dalam format HTML dengan struktur:
+<h4>📊 Overview Habits</h4>
+<p>ringkasan performa</p>
+<h4>🔥 Streak Terbaik</h4>
+<ul><li>habits dengan streak tinggi</li></ul>
+<h4>⚠️ Perlu Perhatian</h4>
+<ul><li>habits yang jarang dilakukan</li></ul>
+<h4>💪 Tips Konsistensi</h4>
+<ul><li>tips membangun kebiasaan</li></ul>
+
+Gunakan bahasa Indonesia yang memotivasi.`;
+            break;
+    }
+
+    showAnalysisModal(title);
+
+    try {
+        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 1024
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Gagal mendapatkan analisis');
+        }
+
+        const result = await response.json();
+        let text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Tidak ada hasil';
+
+        // Clean up response
+        text = text.replace(/```html/gi, '').replace(/```/g, '');
+
+        document.getElementById('analysis-loading').classList.add('hidden');
+        document.getElementById('analysis-content').innerHTML = text;
+
+    } catch (error) {
+        console.error('Analysis error:', error);
+        document.getElementById('analysis-loading').classList.add('hidden');
+        document.getElementById('analysis-content').innerHTML = `
+            <p style="color: var(--error);">❌ Gagal menganalisis: ${error.message}</p>
+            <p>Coba lagi dalam beberapa saat.</p>
+        `;
+    }
+}
+
+// ===== MAIN INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize login UI first
+    initLoginUI();
+
+    // Check for existing session
+    const session = getSession();
+
+    if (session) {
+        // User is logged in - show main app
+        showMainApp();
+    } else {
+        // No session - show login screen
+        showLoginScreen();
     }
 });
