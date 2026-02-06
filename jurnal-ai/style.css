@@ -597,6 +597,8 @@ body::before {
 .modal-content {
     width: 100%;
     max-width: 400px;
+    max-height: 85vh;
+    overflow-y: auto;
     animation: modalIn 0.3s ease;
 }
 
@@ -1025,6 +1027,55 @@ body::before {
     border-radius: var(--radius-sm);
     font-size: var(--font-size-sm);
     color: var(--accent-primary);
+}
+
+/* ===== Cloud Button ===== */
+.btn-cloud {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    color: white;
+}
+
+.btn-cloud:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    transform: translateY(-1px);
+}
+
+/* ===== Divider ===== */
+.divider {
+    display: flex;
+    align-items: center;
+    margin: var(--spacing-md) 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.divider span {
+    padding: 0 var(--spacing-md);
+}
+
+/* ===== Sync Status ===== */
+.sync-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.sync-status.synced {
+    color: var(--success);
+}
+
+.sync-status.syncing {
+    color: var(--info);
 }
 
 /* ===== Dashboard ===== */

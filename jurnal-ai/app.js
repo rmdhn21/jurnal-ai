@@ -8,8 +8,112 @@ const STORAGE_KEYS = {
     API_KEY: 'jurnal_ai_gemini_key',
     USERS: 'jurnal_ai_users',
     SESSION: 'jurnal_ai_session',
-    REMINDER_SETTINGS: 'jurnal_ai_reminder_settings'
+    REMINDER_SETTINGS: 'jurnal_ai_reminder_settings',
+    CLOUD_SYNC: 'jurnal_ai_cloud_sync'
 };
+
+// ===== SUPABASE CONFIG =====
+const SUPABASE_URL = 'https://oybywsjhgkilpceisxzn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95Ynl3c2poZ2tpbHBjZWlzeHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQ0MDIsImV4cCI6MjA4NTk3MDQwMn0.sSNrv1LPn-WRrnrnwus0aJDEmulR6qoWMHc4KeQL_4w';
+
+let supabaseClient = null;
+
+function initSupabase() {
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log('Supabase initialized');
+        return true;
+    }
+    console.warn('Supabase SDK not loaded');
+    return false;
+}
+
+// ===== CLOUD SYNC MODULE =====
+function isCloudSyncEnabled() {
+    return localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC) === 'true';
+}
+
+function enableCloudSync() {
+    localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC, 'true');
+}
+
+function disableCloudSync() {
+    localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC, 'false');
+}
+
+async function syncToCloud() {
+    if (!supabaseClient || !isCloudSyncEnabled()) return;
+
+    const session = await supabaseClient.auth.getSession();
+    if (!session.data.session) return;
+
+    const userId = session.data.session.user.id;
+
+    const data = {
+        journals: getJournals(),
+        tasks: getTasks(),
+        schedules: getSchedules(),
+        transactions: getTransactions(),
+        habits: getHabits(),
+        reminderSettings: getReminderSettings(),
+        updatedAt: new Date().toISOString()
+    };
+
+    try {
+        const { error } = await supabaseClient
+            .from('user_data')
+            .upsert({ user_id: userId, data: data }, { onConflict: 'user_id' });
+
+        if (error) console.error('Sync error:', error);
+        else console.log('Synced to cloud');
+    } catch (err) {
+        console.error('Sync failed:', err);
+    }
+}
+
+async function syncFromCloud() {
+    if (!supabaseClient || !isCloudSyncEnabled()) return false;
+
+    const session = await supabaseClient.auth.getSession();
+    if (!session.data.session) return false;
+
+    const userId = session.data.session.user.id;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_data')
+            .select('data')
+            .eq('user_id', userId)
+            .single();
+
+        if (error || !data) return false;
+
+        const cloudData = data.data;
+
+        // Merge cloud data to local
+        if (cloudData.journals) localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(cloudData.journals));
+        if (cloudData.tasks) localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(cloudData.tasks));
+        if (cloudData.schedules) localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(cloudData.schedules));
+        if (cloudData.transactions) localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cloudData.transactions));
+        if (cloudData.habits) localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(cloudData.habits));
+        if (cloudData.reminderSettings) localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
+
+        console.log('Synced from cloud');
+        return true;
+    } catch (err) {
+        console.error('Sync from cloud failed:', err);
+        return false;
+    }
+}
+
+// Auto-sync when data changes
+function triggerCloudSync() {
+    if (isCloudSyncEnabled()) {
+        // Debounce sync
+        clearTimeout(window.syncTimeout);
+        window.syncTimeout = setTimeout(syncToCloud, 2000);
+    }
+}
 
 // Journal Operations
 function getJournals() {
@@ -1536,6 +1640,34 @@ function initLoginUI() {
 
     // Logout
     logoutBtn.addEventListener('click', handleLogout);
+
+    // Cloud Login - with null checks
+    const cloudLoginBtn = document.getElementById('cloud-login-btn');
+    const backToLocalBtn = document.getElementById('back-to-local-btn');
+    const cloudSigninBtn = document.getElementById('cloud-signin-btn');
+    const cloudSignupBtn = document.getElementById('cloud-signup-btn');
+
+    if (cloudLoginBtn) {
+        cloudLoginBtn.addEventListener('click', () => {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('cloud-login-form').classList.remove('hidden');
+        });
+    }
+
+    if (backToLocalBtn) {
+        backToLocalBtn.addEventListener('click', () => {
+            document.getElementById('cloud-login-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+        });
+    }
+
+    if (cloudSigninBtn) {
+        cloudSigninBtn.addEventListener('click', handleCloudSignIn);
+    }
+
+    if (cloudSignupBtn) {
+        cloudSignupBtn.addEventListener('click', handleCloudSignUp);
+    }
 }
 
 async function handleLogin() {
@@ -1609,7 +1741,98 @@ async function handleRegister() {
 function handleLogout() {
     if (confirm('Yakin mau logout?')) {
         clearSession();
+        disableCloudSync();
+
+        // Also sign out from Supabase if logged in
+        if (supabaseClient) {
+            supabaseClient.auth.signOut();
+        }
+
         location.reload();
+    }
+}
+
+// ===== CLOUD AUTH HANDLERS =====
+async function handleCloudSignIn() {
+    if (!initSupabase()) {
+        alert('Cloud service tidak tersedia. Coba lagi nanti.');
+        return;
+    }
+
+    const email = document.getElementById('cloud-email').value.trim();
+    const password = document.getElementById('cloud-password').value;
+
+    if (!email || !password) {
+        alert('Masukkan email dan password!');
+        return;
+    }
+
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            alert('Login gagal: ' + error.message);
+            return;
+        }
+
+        // Enable cloud sync and sync data
+        enableCloudSync();
+        await syncFromCloud();
+
+        // Create local session with email
+        saveSession(email);
+
+        alert('✅ Cloud login berhasil!');
+        showMainApp();
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function handleCloudSignUp() {
+    if (!initSupabase()) {
+        alert('Cloud service tidak tersedia. Coba lagi nanti.');
+        return;
+    }
+
+    const email = document.getElementById('cloud-email').value.trim();
+    const password = document.getElementById('cloud-password').value;
+
+    if (!email || !password) {
+        alert('Masukkan email dan password!');
+        return;
+    }
+
+    if (password.length < 6) {
+        alert('Password minimal 6 karakter!');
+        return;
+    }
+
+    try {
+        const { data, error } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            alert('Sign up gagal: ' + error.message);
+            return;
+        }
+
+        // Enable cloud sync
+        enableCloudSync();
+
+        // Sync local data to cloud
+        saveSession(email);
+        await syncToCloud();
+
+        alert('✅ Akun cloud berhasil dibuat! Cek email untuk verifikasi (opsional).');
+        showMainApp();
+    } catch (err) {
+        alert('Error: ' + err.message);
     }
 }
 

@@ -27,6 +27,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -60,8 +63,14 @@
             <div id="login-form" class="login-form">
                 <input type="text" id="login-username" class="input" placeholder="Username">
                 <input type="password" id="login-password" class="input" placeholder="Password">
-                <button id="login-btn" class="btn btn-primary btn-full">🔐 Login</button>
+                <button id="login-btn" class="btn btn-primary btn-full">🔐 Login Lokal</button>
                 <button id="show-register-btn" class="btn btn-secondary btn-full">📝 Buat Akun Baru</button>
+
+                <div class="divider">
+                    <span>atau</span>
+                </div>
+
+                <button id="cloud-login-btn" class="btn btn-cloud btn-full">☁️ Login Cloud (Sync)</button>
             </div>
 
             <div id="register-form" class="login-form hidden">
@@ -70,6 +79,18 @@
                 <input type="password" id="register-password-confirm" class="input" placeholder="Konfirmasi Password">
                 <button id="register-btn" class="btn btn-primary btn-full">✅ Daftar</button>
                 <button id="show-login-btn" class="btn btn-secondary btn-full">← Kembali ke Login</button>
+            </div>
+
+            <!-- Cloud Login Form -->
+            <div id="cloud-login-form" class="login-form hidden">
+                <p style="text-align: center; margin-bottom: 1rem; color: var(--text-secondary);">
+                    Login dengan email untuk sync data antar device
+                </p>
+                <input type="email" id="cloud-email" class="input" placeholder="Email">
+                <input type="password" id="cloud-password" class="input" placeholder="Password">
+                <button id="cloud-signin-btn" class="btn btn-cloud btn-full">☁️ Sign In</button>
+                <button id="cloud-signup-btn" class="btn btn-secondary btn-full">📝 Sign Up</button>
+                <button id="back-to-local-btn" class="btn btn-secondary btn-full">← Login Lokal</button>
             </div>
         </div>
     </div>
