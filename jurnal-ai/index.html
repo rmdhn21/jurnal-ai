@@ -99,17 +99,26 @@
         <!-- Header -->
         <header class="header">
             <h1 class="logo">✨ Jurnal AI</h1>
+
+            <!-- Global Search -->
+            <div class="global-search">
+                <input type="text" id="global-search-input" placeholder="🔍 Cari jurnal, task, goals..."
+                    class="search-input">
+                <div id="search-results" class="search-results hidden"></div>
+            </div>
+
             <div class="header-actions">
                 <button id="logout-btn" class="icon-btn" title="Logout">🚪</button>
                 <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
             </div>
         </header>
 
-        <!-- Navigation (5 Tabs) -->
+        <!-- Navigation (6 Tabs) -->
         <nav class="nav">
             <button class="nav-btn active" data-screen="dashboard">📊 Dashboard</button>
             <button class="nav-btn" data-screen="journal">📝 Jurnal</button>
             <button class="nav-btn" data-screen="planner">📋 Planner</button>
+            <button class="nav-btn" data-screen="goals">🎯 Goals</button>
             <button class="nav-btn" data-screen="finance">💰 Keuangan</button>
             <button class="nav-btn" data-screen="habits">✅ Habits</button>
         </nav>
@@ -158,6 +167,14 @@
                     </div>
                 </div>
 
+                <!-- Mood History Chart -->
+                <div class="card">
+                    <h3>🎭 Mood Minggu Ini</h3>
+                    <div class="mood-chart-container">
+                        <canvas id="mood-chart" height="150"></canvas>
+                    </div>
+                </div>
+
                 <!-- Quick AI Insight -->
                 <div class="card">
                     <h3>🧠 Quick AI Insight</h3>
@@ -172,6 +189,25 @@
             <section id="journal-screen" class="screen">
                 <div class="card journal-card">
                     <h2>Apa yang ada di pikiranmu?</h2>
+
+                    <!-- Mood Selector -->
+                    <div class="mood-selector">
+                        <label class="mood-label">Bagaimana perasaanmu hari ini?</label>
+                        <div class="mood-options" id="mood-options">
+                            <button type="button" class="mood-btn" data-mood="great" title="Sangat Baik">😄</button>
+                            <button type="button" class="mood-btn" data-mood="good" title="Baik">🙂</button>
+                            <button type="button" class="mood-btn" data-mood="neutral" title="Biasa">😐</button>
+                            <button type="button" class="mood-btn" data-mood="bad" title="Kurang Baik">😔</button>
+                            <button type="button" class="mood-btn" data-mood="terrible" title="Buruk">😢</button>
+                        </div>
+                    </div>
+
+                    <!-- Tag Input -->
+                    <div class="tag-input-container">
+                        <div id="journal-tags" class="tag-list"></div>
+                        <input type="text" id="tag-input" class="tag-input" placeholder="+ Tag (Tekan Enter)">
+                    </div>
+
                     <textarea id="journal-input" class="journal-textarea"
                         placeholder="Tulis apa saja yang kamu pikirkan atau rasakan hari ini..."></textarea>
                     <div class="journal-actions">
@@ -233,12 +269,51 @@
                 <!-- Journal History -->
                 <div class="card history-card">
                     <h3>📚 Jurnal Terbaru</h3>
+                    <div class="journal-filter-bar">
+                        <div class="filter-label">Filter:</div>
+                        <div id="active-filters" class="active-filters"></div>
+                        <select id="mood-filter" class="filter-select">
+                            <option value="all">Semua Mood</option>
+                            <option value="great">😄 Sangat Baik</option>
+                            <option value="good">🙂 Baik</option>
+                            <option value="neutral">😐 Biasa</option>
+                            <option value="bad">😔 Kurang Baik</option>
+                            <option value="terrible">😢 Buruk</option>
+                        </select>
+                        <select id="tag-filter" class="filter-select">
+                            <option value="all">Semua Tags</option>
+                        </select>
+                    </div>
                     <div id="journal-history"></div>
                 </div>
             </section>
 
             <!-- Screen 2: Planner -->
             <section id="planner-screen" class="screen">
+                <!-- Pomodoro Timer -->
+                <div class="card pomodoro-card">
+                    <div class="pomodoro-header">
+                        <h2>⏱️ Pomodoro Timer</h2>
+                        <span id="pomodoro-session" class="session-badge">Session 1</span>
+                    </div>
+                    <div class="pomodoro-display">
+                        <div class="timer-circle">
+                            <span id="timer-minutes">25</span>
+                            <span class="timer-separator">:</span>
+                            <span id="timer-seconds">00</span>
+                        </div>
+                        <div id="timer-label" class="timer-label">Fokus</div>
+                    </div>
+                    <div class="pomodoro-controls">
+                        <button id="timer-start" class="btn btn-primary">▶️ Mulai</button>
+                        <button id="timer-pause" class="btn btn-secondary" disabled>⏸️ Pause</button>
+                        <button id="timer-reset" class="btn btn-secondary">🔄 Reset</button>
+                    </div>
+                    <div class="pomodoro-stats">
+                        <span>🍅 <span id="pomodoro-count">0</span> pomodoro hari ini</span>
+                    </div>
+                </div>
+
                 <div class="card">
                     <h2>📋 To-Do</h2>
                     <div class="add-form">
@@ -262,7 +337,58 @@
                 <button id="analyze-planner-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Produktivitas</button>
             </section>
 
-            <!-- Screen 3: Finance -->
+            <!-- Screen 3.5: Goals -->
+            <section id="goals-screen" class="screen">
+                <!-- Goal Stats -->
+                <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">🎯</div>
+                        <div class="dashboard-stat" id="stat-goals-active">0</div>
+                        <div class="dashboard-label">Goals Aktif</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">✅</div>
+                        <div class="dashboard-stat" id="stat-goals-completed">0</div>
+                        <div class="dashboard-label">Tercapai</div>
+                    </div>
+                </div>
+
+                <!-- Add New Goal -->
+                <div class="card">
+                    <h2>🎯 Tambah Goal Baru</h2>
+                    <div class="goal-form">
+                        <input type="text" id="goal-title" placeholder="Judul goal (misal: Lari 5km)" class="input">
+                        <div class="form-row">
+                            <select id="goal-type" class="input">
+                                <option value="habit">🔄 Berbasis Habit</option>
+                                <option value="count">🔢 Target Angka</option>
+                                <option value="deadline">📅 Target Deadline</option>
+                            </select>
+                        </div>
+                        <div class="form-row" id="goal-target-row">
+                            <input type="number" id="goal-target" placeholder="Target (misal: 30)" class="input">
+                            <input type="text" id="goal-unit" placeholder="Satuan (misal: hari, km)" class="input">
+                        </div>
+                        <input type="date" id="goal-deadline" class="input">
+                        <textarea id="goal-notes" class="input" placeholder="Catatan (opsional)" rows="2"></textarea>
+                        <button id="add-goal-btn" class="btn btn-primary">+ Tambah Goal</button>
+                    </div>
+                </div>
+
+                <!-- Active Goals -->
+                <div class="card">
+                    <h3>🚀 Goals Aktif</h3>
+                    <div id="active-goals-list" class="goals-list"></div>
+                </div>
+
+                <!-- Completed Goals -->
+                <div class="card">
+                    <h3>🏆 Goals Tercapai</h3>
+                    <div id="completed-goals-list" class="goals-list"></div>
+                </div>
+            </section>
+
+            <!-- Screen 4: Finance -->
             <section id="finance-screen" class="screen">
                 <!-- Summary Cards -->
                 <div class="summary-row">
@@ -377,6 +503,20 @@
                     <h3>⚙️ Pengaturan</h3>
                     <button id="close-settings" class="icon-btn">✕</button>
                 </div>
+
+                <!-- Cloud Sync Config -->
+                <div class="form-group">
+                    <label>☁️ Cloud Sync (Supabase)</label>
+                    <small style="display: block; margin-bottom: 0.5rem;">Hubungkan database pribadi untuk sync antar
+                        device.</small>
+                    <input type="text" id="supabase-url" class="input" placeholder="Supabase URL (https://...)"
+                        style="margin-bottom: 0.5rem;">
+                    <input type="password" id="supabase-key" class="input" placeholder="Supabase Anon Key">
+                </div>
+                <button id="save-cloud-config-btn" class="btn btn-secondary"
+                    style="width: 100%; margin-bottom: 1.5rem;">💾 Simpan Cloud Config</button>
+
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 1.5rem 0;">
 
                 <!-- API Key Section -->
                 <div class="form-group">

@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
     SCHEDULES: 'jurnal_ai_schedules',
     TRANSACTIONS: 'jurnal_ai_transactions',
     HABITS: 'jurnal_ai_habits',
+    GOALS: 'jurnal_ai_goals',
     API_KEY: 'jurnal_ai_gemini_key',
     USERS: 'jurnal_ai_users',
     SESSION: 'jurnal_ai_session',
@@ -13,19 +14,52 @@ const STORAGE_KEYS = {
 };
 
 // ===== SUPABASE CONFIG =====
-const SUPABASE_URL = 'https://oybywsjhgkilpceisxzn.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95Ynl3c2poZ2tpbHBjZWlzeHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQ0MDIsImV4cCI6MjA4NTk3MDQwMn0.sSNrv1LPn-WRrnrnwus0aJDEmulR6qoWMHc4KeQL_4w';
+const SUPABASE_URL_DEFAULT = 'https://oybywsjhgkilpceisxzn.supabase.co';
+const SUPABASE_KEY_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95Ynl3c2poZ2tpbHBjZWlzeHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQ0MDIsImV4cCI6MjA4NTk3MDQwMn0.sSNrv1LPn-WRrnrnwus0aJDEmulR6qoWMHc4KeQL_4w';
 
 let supabaseClient = null;
 
 function initSupabase() {
+    const customUrl = localStorage.getItem('supabase_url');
+    const customKey = localStorage.getItem('supabase_key');
+
+    // Use custom creds if available, otherwise try default (if user didn't overwrite)
+    const url = customUrl || SUPABASE_URL_DEFAULT;
+    const key = customKey || SUPABASE_KEY_DEFAULT;
+
+    if (!url || !key) return false;
+
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('Supabase initialized');
-        return true;
+        try {
+            supabaseClient = window.supabase.createClient(url, key);
+            console.log('Supabase initialized with:', customUrl ? 'Custom Config' : 'Default Config');
+            return true;
+        } catch (e) {
+            console.error('Supabase init failed:', e);
+            return false;
+        }
     }
     console.warn('Supabase SDK not loaded');
     return false;
+}
+
+function saveCloudConfig() {
+    const url = document.getElementById('supabase-url').value.trim();
+    const key = document.getElementById('supabase-key').value.trim();
+
+    if (url && key) {
+        localStorage.setItem('supabase_url', url);
+        localStorage.setItem('supabase_key', key);
+
+        if (initSupabase()) {
+            alert('✅ Cloud Config tersimpan & Supabase terhubung!');
+            // Update auth state UI if needed
+        } else {
+            alert('❌ Config tersimpan tapi gagal connect. Cek URL/Key Anda.');
+        }
+    } else {
+        alert('Masukkan URL dan Key yang valid.');
+    }
 }
 
 // ===== CLOUD SYNC MODULE =====
@@ -380,6 +414,64 @@ function toggleHabitCompletion(habitId, date) {
     return habit;
 }
 
+// Goals Operations
+function getGoals() {
+    const data = localStorage.getItem(STORAGE_KEYS.GOALS);
+    return data ? JSON.parse(data) : [];
+}
+
+function saveGoal(goal) {
+    const goals = getGoals();
+    const existing = goals.findIndex(g => g.id === goal.id);
+
+    if (existing >= 0) {
+        goals[existing] = goal;
+    } else {
+        goals.push(goal);
+    }
+
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    triggerCloudSync();
+    return goal;
+}
+
+function deleteGoal(id) {
+    const goals = getGoals().filter(g => g.id !== id);
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    triggerCloudSync();
+}
+
+function updateGoalProgress(goalId, progress) {
+    const goals = getGoals();
+    const goal = goals.find(g => g.id === goalId);
+    if (goal) {
+        goal.currentProgress = progress;
+        goal.updatedAt = new Date().toISOString();
+
+        // Check if goal is completed
+        if (goal.target && progress >= goal.target) {
+            goal.completed = true;
+            goal.completedAt = new Date().toISOString();
+        }
+
+        localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+        triggerCloudSync();
+    }
+    return goal;
+}
+
+function completeGoal(goalId) {
+    const goals = getGoals();
+    const goal = goals.find(g => g.id === goalId);
+    if (goal) {
+        goal.completed = true;
+        goal.completedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+        triggerCloudSync();
+    }
+    return goal;
+}
+
 // API Key Operations
 function getApiKey() {
     return localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
@@ -588,6 +680,113 @@ function validateAndFixResponse(response) {
 // ===== CHARTS MODULE =====
 let financeChart = null;
 let habitsChart = null;
+let moodChart = null;
+
+// Mood value mapping
+const MOOD_VALUES = {
+    'great': 5,
+    'good': 4,
+    'neutral': 3,
+    'bad': 2,
+    'terrible': 1
+};
+
+const MOOD_EMOJIS = {
+    'great': '😄',
+    'good': '🙂',
+    'neutral': '😐',
+    'bad': '😔',
+    'terrible': '😢'
+};
+
+function initMoodChart() {
+    const ctx = document.getElementById('mood-chart');
+    if (!ctx) return;
+
+    const journals = getJournals();
+    const weeklyData = getWeeklyMoodData(journals);
+
+    if (moodChart) {
+        moodChart.destroy();
+    }
+
+    moodChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: weeklyData.labels,
+            datasets: [{
+                label: 'Mood',
+                data: weeklyData.values,
+                borderColor: 'rgb(245, 158, 11)',
+                backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const moodNames = ['', 'Buruk', 'Kurang Baik', 'Biasa', 'Baik', 'Sangat Baik'];
+                            return moodNames[context.raw] || 'Tidak ada data';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: 0,
+                    max: 5,
+                    ticks: {
+                        stepSize: 1,
+                        color: '#a0a0b0',
+                        callback: function (value) {
+                            const emojis = ['', '😢', '😔', '😐', '🙂', '😄'];
+                            return emojis[value] || '';
+                        }
+                    },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                x: {
+                    ticks: { color: '#a0a0b0' },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                }
+            }
+        }
+    });
+}
+
+function getWeeklyMoodData(journals) {
+    const labels = [];
+    const values = [];
+
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        labels.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
+
+        // Find journal for this day
+        const dayJournal = journals.find(j => {
+            const journalDate = new Date(j.createdAt).toISOString().split('T')[0];
+            return journalDate === dateStr;
+        });
+
+        if (dayJournal && dayJournal.mood) {
+            values.push(MOOD_VALUES[dayJournal.mood] || 3);
+        } else {
+            values.push(null); // No data
+        }
+    }
+
+    return { labels, values };
+}
 
 function initFinanceChart() {
     const ctx = document.getElementById('finance-chart');
@@ -756,6 +955,7 @@ function getWeeklyHabitData(habits) {
 // ===== JOURNAL UI =====
 let currentJournal = null;
 let currentAIResponse = null;
+let currentMood = null;  // Track selected mood
 
 function initJournalUI() {
     const journalInput = document.getElementById('journal-input');
@@ -769,6 +969,21 @@ function initJournalUI() {
         charCount.textContent = `${journalInput.value.length} karakter`;
     });
 
+    // Mood selector
+    const moodOptions = document.getElementById('mood-options');
+    if (moodOptions) {
+        moodOptions.querySelectorAll('.mood-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove selected from all
+                moodOptions.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+                // Add selected to clicked
+                btn.classList.add('selected');
+                currentMood = btn.dataset.mood;
+                console.log('Mood selected:', currentMood);
+            });
+        });
+    }
+
     // Ask AI button
     askAIBtn.addEventListener('click', handleAskAI);
 
@@ -781,6 +996,7 @@ function initJournalUI() {
     saveJournalBtn.addEventListener('click', handleSaveJournal);
 
     // Load history
+    initTagInput();
     renderJournalHistory();
 }
 
@@ -804,11 +1020,13 @@ async function handleAskAI() {
         const aiResponse = await getAIResponse(text);
         currentAIResponse = aiResponse;
 
-        // Create journal entry
+        // Create journal entry with mood
         currentJournal = {
             id: generateId(),
             text: text,
+            mood: currentMood || 'neutral',  // Default to neutral if not selected
             createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             aiResponse: aiResponse
         };
 
@@ -885,6 +1103,9 @@ function handleSaveJournal() {
         return;
     }
 
+    // Add tags
+    currentJournal.tags = [...currentTags];
+
     saveJournal(currentJournal);
 
     // Clear input
@@ -892,9 +1113,21 @@ function handleSaveJournal() {
     document.getElementById('char-count').textContent = '0 karakter';
     document.getElementById('ai-response-section').classList.add('hidden');
 
+    // Reset mood selector
+    currentMood = null;
+    const moodOptions = document.getElementById('mood-options');
+    if (moodOptions) {
+        moodOptions.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    }
+
     // Reset current journal
     currentJournal = null;
     currentAIResponse = null;
+
+    // Reset tags
+    currentTags = [];
+    renderTags();
+    updateTagFilterOptions();
 
     // Refresh history
     renderJournalHistory();
@@ -904,7 +1137,17 @@ function handleSaveJournal() {
 
 function renderJournalHistory() {
     const historyEl = document.getElementById('journal-history');
-    const journals = getJournals();
+    let journals = getJournals();
+
+    // Filter by mood
+    if (activeMoodFilter !== 'all') {
+        journals = journals.filter(j => j.mood === activeMoodFilter);
+    }
+
+    // Filter by tag
+    if (activeTagFilter !== 'all') {
+        journals = journals.filter(j => j.tags && j.tags.includes(activeTagFilter));
+    }
 
     if (journals.length === 0) {
         historyEl.innerHTML = `
@@ -915,13 +1158,23 @@ function renderJournalHistory() {
         return;
     }
 
-    historyEl.innerHTML = journals.slice(0, 5).map(journal => `
+    historyEl.innerHTML = journals.slice(0, 50).map(journal => {
+        const moodEmoji = MOOD_EMOJIS[journal.mood] || '';
+        const tagsHtml = journal.tags && journal.tags.length > 0
+            ? `<div class="journal-tags-display">${journal.tags.map(t => `<span class="journal-tag">#${t}</span>`).join('')}</div>`
+            : '';
+
+        return `
         <div class="history-item" data-id="${journal.id}">
-            <div class="history-date">${formatShortDate(journal.createdAt)}</div>
+            <div class="history-date">
+                ${moodEmoji ? `<span class="mood-indicator">${moodEmoji}</span>` : ''}
+                ${formatShortDate(journal.createdAt)}
+            </div>
             <div class="history-preview">${journal.text.substring(0, 100)}${journal.text.length > 100 ? '...' : ''}</div>
+            ${tagsHtml}
             <button class="delete-btn" data-id="${journal.id}" title="Hapus">🗑️</button>
         </div>
-    `).join('');
+    `}).join('');
 
     // Add click handlers to view journal
     historyEl.querySelectorAll('.history-item').forEach(item => {
@@ -1051,6 +1304,150 @@ function addScheduleFromSuggestion(text) {
 
     saveSchedule(schedule);
     renderScheduleList();
+}
+
+// ===== POMODORO TIMER =====
+const POMODORO_CONFIG = {
+    focusTime: 25 * 60,  // 25 minutes in seconds
+    shortBreak: 5 * 60,  // 5 minutes
+    longBreak: 15 * 60,  // 15 minutes
+    sessionsBeforeLongBreak: 4
+};
+
+let pomodoroState = {
+    isRunning: false,
+    isPaused: false,
+    timeRemaining: POMODORO_CONFIG.focusTime,
+    currentSession: 1,
+    isBreak: false,
+    todayCount: 0,
+    intervalId: null
+};
+
+function initPomodoroTimer() {
+    // Load today's count from localStorage
+    const savedCount = localStorage.getItem('pomodoro_today_count');
+    const savedDate = localStorage.getItem('pomodoro_today_date');
+    const today = getTodayString();
+
+    if (savedDate === today && savedCount) {
+        pomodoroState.todayCount = parseInt(savedCount) || 0;
+    } else {
+        localStorage.setItem('pomodoro_today_date', today);
+        localStorage.setItem('pomodoro_today_count', '0');
+    }
+
+    updatePomodoroDisplay();
+
+    // Event listeners
+    document.getElementById('timer-start')?.addEventListener('click', startTimer);
+    document.getElementById('timer-pause')?.addEventListener('click', pauseTimer);
+    document.getElementById('timer-reset')?.addEventListener('click', resetTimer);
+}
+
+function startTimer() {
+    if (pomodoroState.isRunning) return;
+
+    pomodoroState.isRunning = true;
+    pomodoroState.isPaused = false;
+
+    document.getElementById('timer-start').disabled = true;
+    document.getElementById('timer-pause').disabled = false;
+
+    pomodoroState.intervalId = setInterval(() => {
+        if (pomodoroState.timeRemaining > 0) {
+            pomodoroState.timeRemaining--;
+            updatePomodoroDisplay();
+        } else {
+            // Timer finished
+            timerComplete();
+        }
+    }, 1000);
+}
+
+function pauseTimer() {
+    if (!pomodoroState.isRunning) return;
+
+    pomodoroState.isRunning = false;
+    pomodoroState.isPaused = true;
+
+    clearInterval(pomodoroState.intervalId);
+
+    document.getElementById('timer-start').disabled = false;
+    document.getElementById('timer-pause').disabled = true;
+}
+
+function resetTimer() {
+    clearInterval(pomodoroState.intervalId);
+
+    pomodoroState.isRunning = false;
+    pomodoroState.isPaused = false;
+    pomodoroState.timeRemaining = pomodoroState.isBreak ?
+        (pomodoroState.currentSession % POMODORO_CONFIG.sessionsBeforeLongBreak === 0 ?
+            POMODORO_CONFIG.longBreak : POMODORO_CONFIG.shortBreak) :
+        POMODORO_CONFIG.focusTime;
+
+    document.getElementById('timer-start').disabled = false;
+    document.getElementById('timer-pause').disabled = true;
+
+    updatePomodoroDisplay();
+}
+
+function timerComplete() {
+    clearInterval(pomodoroState.intervalId);
+    pomodoroState.isRunning = false;
+
+    // Play notification sound (using browser notification)
+    if (Notification.permission === 'granted') {
+        const title = pomodoroState.isBreak ? '⏰ Istirahat Selesai!' : '🍅 Pomodoro Selesai!';
+        const body = pomodoroState.isBreak ? 'Kembali fokus!' : 'Waktunya istirahat!';
+        new Notification(title, { body, icon: '🍅' });
+    }
+
+    // If focus session completed, increment count
+    if (!pomodoroState.isBreak) {
+        pomodoroState.todayCount++;
+        pomodoroState.currentSession++;
+        localStorage.setItem('pomodoro_today_count', pomodoroState.todayCount.toString());
+    }
+
+    // Toggle between focus and break
+    pomodoroState.isBreak = !pomodoroState.isBreak;
+
+    // Set new time based on mode
+    if (pomodoroState.isBreak) {
+        // Check if it's time for a long break
+        pomodoroState.timeRemaining =
+            (pomodoroState.currentSession - 1) % POMODORO_CONFIG.sessionsBeforeLongBreak === 0 ?
+                POMODORO_CONFIG.longBreak : POMODORO_CONFIG.shortBreak;
+    } else {
+        pomodoroState.timeRemaining = POMODORO_CONFIG.focusTime;
+    }
+
+    document.getElementById('timer-start').disabled = false;
+    document.getElementById('timer-pause').disabled = true;
+
+    updatePomodoroDisplay();
+}
+
+function updatePomodoroDisplay() {
+    const minutes = Math.floor(pomodoroState.timeRemaining / 60);
+    const seconds = pomodoroState.timeRemaining % 60;
+
+    const minutesEl = document.getElementById('timer-minutes');
+    const secondsEl = document.getElementById('timer-seconds');
+    const labelEl = document.getElementById('timer-label');
+    const sessionEl = document.getElementById('pomodoro-session');
+    const countEl = document.getElementById('pomodoro-count');
+
+    if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
+    if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
+    if (labelEl) {
+        labelEl.textContent = pomodoroState.isBreak ? 'Istirahat' : 'Fokus';
+        labelEl.className = `timer-label ${pomodoroState.isBreak ? 'break' : 'focus'}`;
+    }
+    if (sessionEl) sessionEl.textContent = `Session ${pomodoroState.currentSession}`;
+    if (countEl) countEl.textContent = pomodoroState.todayCount;
 }
 
 function renderTodoList() {
@@ -1351,6 +1748,343 @@ function calculateStreak(habit) {
     return streak;
 }
 
+// ===== GOALS UI =====
+function initGoalsUI() {
+    const addBtn = document.getElementById('add-goal-btn');
+    if (addBtn) {
+        addBtn.addEventListener('click', handleAddGoal);
+    }
+
+    // Set up event delegation on the active goals list (once)
+    const activeListEl = document.getElementById('active-goals-list');
+    const completedListEl = document.getElementById('completed-goals-list');
+
+    if (activeListEl) {
+        attachGoalEventListeners(activeListEl);
+    }
+    if (completedListEl) {
+        attachGoalEventListeners(completedListEl);
+    }
+
+    renderGoalsList();
+    updateGoalsStats();
+}
+
+function handleAddGoal() {
+    const title = document.getElementById('goal-title').value.trim();
+    const type = document.getElementById('goal-type').value;
+    const target = parseInt(document.getElementById('goal-target').value) || 0;
+    const unit = document.getElementById('goal-unit').value.trim();
+    const deadline = document.getElementById('goal-deadline').value;
+    const notes = document.getElementById('goal-notes').value.trim();
+
+    if (!title) {
+        alert('Masukkan judul goal!');
+        return;
+    }
+
+    const goal = {
+        id: generateId(),
+        title: title,
+        type: type,
+        target: target,
+        unit: unit || 'item',
+        deadline: deadline,
+        notes: notes,
+        currentProgress: 0,
+        completed: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+
+    saveGoal(goal);
+
+    // Clear form
+    document.getElementById('goal-title').value = '';
+    document.getElementById('goal-target').value = '';
+    document.getElementById('goal-unit').value = '';
+    document.getElementById('goal-deadline').value = '';
+    document.getElementById('goal-notes').value = '';
+
+    renderGoalsList();
+    updateGoalsStats();
+}
+
+function renderGoalsList() {
+    const activeListEl = document.getElementById('active-goals-list');
+    const completedListEl = document.getElementById('completed-goals-list');
+
+    if (!activeListEl || !completedListEl) return;
+
+    const goals = getGoals();
+    const activeGoals = goals.filter(g => !g.completed);
+    const completedGoals = goals.filter(g => g.completed);
+
+    // Render active goals
+    if (activeGoals.length === 0) {
+        activeListEl.innerHTML = '<div class="empty-state"><p>Belum ada goals aktif</p></div>';
+    } else {
+        activeListEl.innerHTML = activeGoals.map(createGoalItem).join('');
+        // Event listeners are already attached via delegation in initGoalsUI
+    }
+
+    // Render completed goals
+    if (completedGoals.length === 0) {
+        completedListEl.innerHTML = '<div class="empty-state"><p>Belum ada goals tercapai</p></div>';
+    } else {
+        completedListEl.innerHTML = completedGoals.slice(0, 5).map(g => createGoalItem(g, true)).join('');
+    }
+}
+
+function createGoalItem(goal, isCompleted = false) {
+    const progress = goal.target > 0 ? Math.min(100, (goal.currentProgress / goal.target) * 100) : 0;
+    const typeLabels = {
+        'habit': '🔄 Habit',
+        'count': '🔢 Target',
+        'deadline': '📅 Deadline'
+    };
+
+    return `
+        <div class="goal-item ${isCompleted ? 'completed' : ''}" data-id="${goal.id}">
+            <div class="goal-header">
+                <span class="goal-title">${goal.title}</span>
+                <span class="goal-type">${typeLabels[goal.type] || goal.type}</span>
+            </div>
+            ${goal.target > 0 ? `
+                <div class="goal-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span>${goal.currentProgress} / ${goal.target} ${goal.unit}</span>
+                        <span>${Math.round(progress)}%</span>
+                    </div>
+                </div>
+            ` : ''}
+            <div class="goal-footer">
+                <span class="goal-deadline">${goal.deadline ? `⏰ ${formatShortDate(goal.deadline)}` : ''}</span>
+                <div class="goal-actions">
+                    ${!isCompleted ? `
+                    <input type="number" class="progress-input" value="1" min="1" title="Jumlah progress">
+                    <button class="increment-btn" title="Tambah Progress">➕</button>
+                    <button class="complete-btn" title="Selesai">✅</button>
+                    ` : ''}
+                    <button class="delete-goal-btn" title="Hapus">🗑️</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function attachGoalEventListeners(container) {
+    // Use event delegation - single listener on container
+    container.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+
+        const goalItem = btn.closest('.goal-item');
+        if (!goalItem) return;
+
+        const goalId = goalItem.dataset.id;
+        e.stopPropagation();
+
+        // Increment progress
+        if (btn.classList.contains('increment-btn')) {
+            const goals = getGoals();
+            const goal = goals.find(g => g.id === goalId);
+            if (goal) {
+                // Read the amount from the input field
+                const progressInput = goalItem.querySelector('.progress-input');
+                const amount = progressInput ? parseInt(progressInput.value) || 1 : 1;
+                const newProgress = Math.min(goal.target, (goal.currentProgress || 0) + amount);
+                updateGoalProgress(goalId, newProgress);
+                renderGoalsList();
+                updateGoalsStats();
+            }
+        }
+
+        // Complete goal
+        if (btn.classList.contains('complete-btn')) {
+            completeGoal(goalId);
+            renderGoalsList();
+            updateGoalsStats();
+        }
+
+        // Delete goal
+        if (btn.classList.contains('delete-goal-btn')) {
+            if (confirm('Hapus goal ini?')) {
+                deleteGoal(goalId);
+                renderGoalsList();
+                updateGoalsStats();
+            }
+        }
+    });
+}
+
+function updateGoalsStats() {
+    const goals = getGoals();
+    const activeGoals = goals.filter(g => !g.completed);
+    const completedGoals = goals.filter(g => g.completed);
+
+    const activeEl = document.getElementById('stat-goals-active');
+    const completedEl = document.getElementById('stat-goals-completed');
+
+    if (activeEl) activeEl.textContent = activeGoals.length;
+    if (completedEl) completedEl.textContent = completedGoals.length;
+}
+
+// ===== GLOBAL SEARCH =====
+function initGlobalSearch() {
+    const searchInput = document.getElementById('global-search-input');
+    const searchResults = document.getElementById('search-results');
+
+    if (!searchInput || !searchResults) return;
+
+    // Debounce search
+    let searchTimeout;
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const query = e.target.value.trim();
+
+        if (query.length < 2) {
+            searchResults.classList.add('hidden');
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            performSearch(query);
+        }, 300);
+    });
+
+    // Hide results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.global-search')) {
+            searchResults.classList.add('hidden');
+        }
+    });
+
+    // Show results on focus if there's a query
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.value.trim().length >= 2) {
+            performSearch(searchInput.value.trim());
+        }
+    });
+}
+
+function performSearch(query) {
+    const searchResults = document.getElementById('search-results');
+    const queryLower = query.toLowerCase();
+    let results = [];
+
+    // Search journals
+    const journals = getJournals();
+    journals.forEach(journal => {
+        if (journal.text.toLowerCase().includes(queryLower)) {
+            results.push({
+                type: 'Jurnal',
+                icon: '📝',
+                title: formatShortDate(journal.createdAt),
+                preview: journal.text.substring(0, 80),
+                screen: 'journal',
+                id: journal.id
+            });
+        }
+    });
+
+    // Search goals
+    const goals = getGoals();
+    goals.forEach(goal => {
+        if (goal.title.toLowerCase().includes(queryLower) ||
+            (goal.notes && goal.notes.toLowerCase().includes(queryLower))) {
+            results.push({
+                type: 'Goal',
+                icon: '🎯',
+                title: goal.title,
+                preview: goal.completed ? 'Tercapai' : `Progress: ${goal.currentProgress || 0}/${goal.target} ${goal.unit}`,
+                screen: 'goals',
+                id: goal.id
+            });
+        }
+    });
+
+    // Search tasks
+    const tasks = getTasks();
+    tasks.forEach(task => {
+        if (task.title.toLowerCase().includes(queryLower)) {
+            results.push({
+                type: 'Task',
+                icon: '📋',
+                title: task.title,
+                preview: task.done ? '✅ Selesai' : '⏳ Belum selesai',
+                screen: 'planner',
+                id: task.id
+            });
+        }
+    });
+
+    // Search schedules
+    const schedules = getSchedules();
+    schedules.forEach(schedule => {
+        if (schedule.title.toLowerCase().includes(queryLower)) {
+            results.push({
+                type: 'Jadwal',
+                icon: '📅',
+                title: schedule.title,
+                preview: formatShortDate(schedule.datetime),
+                screen: 'planner',
+                id: schedule.id
+            });
+        }
+    });
+
+    // Search habits
+    const habits = getHabits();
+    habits.forEach(habit => {
+        if (habit.name.toLowerCase().includes(queryLower)) {
+            results.push({
+                type: 'Habit',
+                icon: '✅',
+                title: habit.name,
+                preview: `🔥 ${habit.streak || 0} hari streak`,
+                screen: 'habits',
+                id: habit.id
+            });
+        }
+    });
+
+    // Render results
+    if (results.length === 0) {
+        searchResults.innerHTML = '<div class="search-no-results">Tidak ada hasil untuk "' + query + '"</div>';
+    } else {
+        searchResults.innerHTML = results.slice(0, 10).map(result => `
+            <div class="search-result-item" data-screen="${result.screen}" data-id="${result.id}">
+                <div class="search-result-type">${result.icon} ${result.type}</div>
+                <div class="search-result-title">${result.title}</div>
+                <div class="search-result-preview">${result.preview}</div>
+            </div>
+        `).join('');
+
+        // Add click handlers
+        searchResults.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const screen = item.dataset.screen;
+                navigateToScreen(screen);
+                searchResults.classList.add('hidden');
+                document.getElementById('global-search-input').value = '';
+            });
+        });
+    }
+
+    searchResults.classList.remove('hidden');
+}
+
+function navigateToScreen(screenName) {
+    const navBtn = document.querySelector(`.nav-btn[data-screen="${screenName}"]`);
+    if (navBtn) {
+        navBtn.click();
+    }
+}
+
 // ===== NAVIGATION =====
 function initNavigation() {
     const navButtons = document.querySelectorAll('.nav-btn');
@@ -1377,6 +2111,7 @@ function initNavigation() {
                 updateDashboardStats();
                 updateUpcomingSchedules();
                 updateTodayReminders();
+                initMoodChart();
             } else if (targetScreen === 'planner') {
                 renderTodoList();
                 renderScheduleList();
@@ -1390,6 +2125,9 @@ function initNavigation() {
                 renderHabitsTodayList();
                 renderAllHabitsList();
                 initHabitsChart();
+            } else if (targetScreen === 'goals') {
+                renderGoalsList();
+                updateGoalsStats();
             }
         });
     });
@@ -1423,6 +2161,12 @@ function initSettings() {
         }
     });
 
+    // Save Cloud Config
+    const saveCloudBtn = document.getElementById('save-cloud-config-btn');
+    if (saveCloudBtn) {
+        saveCloudBtn.addEventListener('click', saveCloudConfig);
+    }
+
     // Load existing API key
     apiKeyInput.value = getApiKey();
 
@@ -1452,6 +2196,11 @@ function initSettings() {
 function showSettings() {
     document.getElementById('settings-modal').classList.remove('hidden');
     document.getElementById('api-key-input').value = getApiKey();
+
+    // Load Cloud Config
+    document.getElementById('supabase-url').value = localStorage.getItem('supabase_url') || '';
+    document.getElementById('supabase-key').value = localStorage.getItem('supabase_key') || '';
+
     updateEncryptionStatus();
 }
 
@@ -1975,8 +2724,11 @@ function showMainApp() {
     initDashboard();
     initJournalUI();
     initPlannerUI();
+    initPomodoroTimer();
+    initGoalsUI();
     initFinanceUI();
     initHabitsUI();
+    initGlobalSearch();
     initAIAnalysis();
     initReminder();
 
@@ -2150,6 +2902,7 @@ function initDashboard() {
     updateDashboardStats();
     updateUpcomingSchedules();
     updateTodayReminders();
+    initMoodChart();  // Mood chart visualization
 
     document.getElementById('get-daily-insight-btn').addEventListener('click', getDailyInsight);
 }
@@ -2207,19 +2960,22 @@ function updateUpcomingSchedules() {
 function updateTodayReminders() {
     const habits = getHabits();
     const today = getTodayString();
-    const settings = getReminderSettings();
 
     const container = document.getElementById('today-reminders');
+    if (!container) return;
 
-    if (!settings.habitsEnabled || habits.length === 0) {
-        container.innerHTML = '<p class="text-muted">Tidak ada reminder hari ini</p>';
+    if (habits.length === 0) {
+        container.innerHTML = '<p class="text-muted">Tidak ada habits ditambahkan</p>';
         return;
     }
 
-    // Show undone habits for today
+    // Show undone habits for today (check both completions and completedDates for compatibility)
     const undoneHabits = habits.filter(h => {
-        const doneToday = h.completedDates && h.completedDates.includes(today);
-        return !doneToday;
+        // Check completions object (new format)
+        if (h.completions && h.completions[today]) return false;
+        // Check completedDates array (old format)
+        if (h.completedDates && h.completedDates.includes(today)) return false;
+        return true;
     });
 
     if (undoneHabits.length === 0) {
@@ -2426,3 +3182,233 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+// ===== TAGGING SYSTEM =====
+let currentTags = [];
+let activeTagFilter = 'all';
+let activeMoodFilter = 'all';
+
+function initTagInput() {
+    const tagInput = document.getElementById('tag-input');
+    const tagList = document.getElementById('journal-tags');
+
+    if (!tagInput || !tagList) return;
+
+    // Handle input
+    tagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const tag = tagInput.value.trim().replace(/,/g, '');
+            if (tag && !currentTags.includes(tag)) {
+                currentTags.push(tag);
+                renderTags();
+                tagInput.value = '';
+            }
+        }
+    });
+
+    // Handle tag deletion
+    tagList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tag-delete')) {
+            const tag = e.target.dataset.tag;
+            currentTags = currentTags.filter(t => t !== tag);
+            renderTags();
+        }
+    });
+
+    // Initialize filters
+    const tagFilter = document.getElementById('tag-filter');
+    const moodFilter = document.getElementById('mood-filter');
+
+    if (tagFilter) {
+        tagFilter.addEventListener('change', (e) => {
+            activeTagFilter = e.target.value;
+            renderActiveFilters();
+            renderJournalHistory(); // Re-render with filter
+        });
+    }
+
+    if (moodFilter) {
+        moodFilter.addEventListener('change', (e) => {
+            activeMoodFilter = e.target.value;
+            renderActiveFilters();
+            renderJournalHistory(); // Re-render with filter
+        });
+    }
+
+    updateTagFilterOptions();
+}
+
+function renderTags() {
+    const tagList = document.getElementById('journal-tags');
+    if (!tagList) return;
+
+    tagList.innerHTML = currentTags.map(tag => `
+        <span class="tag-pill">
+            #${tag}
+            <span class="tag-delete" data-tag="${tag}">×</span>
+        </span>
+    `).join('');
+}
+
+function updateTagFilterOptions() {
+    const tagFilter = document.getElementById('tag-filter');
+    if (!tagFilter) return;
+
+    // Get all unique tags from journals
+    const journals = getJournals();
+    const allTags = new Set();
+    journals.forEach(j => {
+        if (j.tags && Array.isArray(j.tags)) {
+            j.tags.forEach(t => allTags.add(t));
+        }
+    });
+
+    // Preserve current selection if exists
+    const currentSelection = tagFilter.value;
+
+    // Rebuild options
+    tagFilter.innerHTML = '<option value="all">Semua Tags</option>' +
+        Array.from(allTags).sort().map(tag =>
+            `<option value="${tag}">${tag}</option>`
+        ).join('');
+
+    tagFilter.value = currentSelection;
+}
+
+function renderActiveFilters() {
+    const container = document.getElementById('active-filters');
+    if (!container) return;
+
+    let html = '';
+
+    if (activeMoodFilter !== 'all') {
+        const moodLabels = {
+            'great': '😄 Sangat Baik',
+            'good': '🙂 Baik',
+            'neutral': '😐 Biasa',
+            'bad': '😔 Kurang Baik',
+            'terrible': '😢 Buruk'
+        };
+        html += `
+            <span class="filter-badge">
+                ${moodLabels[activeMoodFilter] || activeMoodFilter}
+                <span class="filter-badge-remove" onclick="clearFilter('mood')">×</span>
+            </span>
+        `;
+    }
+
+    if (activeTagFilter !== 'all') {
+        html += `
+            <span class="filter-badge">
+                #${activeTagFilter}
+                <span class="filter-badge-remove" onclick="clearFilter('tag')">×</span>
+            </span>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+function clearFilter(type) {
+    if (type === 'mood') {
+        activeMoodFilter = 'all';
+        document.getElementById('mood-filter').value = 'all';
+    } else if (type === 'tag') {
+        activeTagFilter = 'all';
+        document.getElementById('tag-filter').value = 'all';
+    }
+    renderActiveFilters();
+    renderJournalHistory();
+}
+
+// Auto-init backup feature
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit to ensure DOM elements are ready if constructed by JS
+    setTimeout(() => {
+        if (typeof initBackupRestore === 'function') {
+            initBackupRestore();
+        }
+    }, 1000);
+});
+
+// ===== BACKUP & RESTORE =====
+function initBackupRestore() {
+    const exportBtn = document.getElementById('export-data-btn');
+    const importBtn = document.getElementById('import-data-btn');
+    const fileInput = document.getElementById('import-file-input');
+
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportData);
+    }
+
+    if (importBtn) {
+        importBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                importData(e.target.files[0]);
+            }
+        });
+    }
+}
+
+function exportData() {
+    const data = {
+        journals: getJournals(),
+        goals: getGoals(),
+        tasks: getTasks(),
+        schedules: getSchedules(),
+        habits: getHabits(),
+        transactions: getTransactions(),
+        settings: getSettings(),
+        exportedAt: new Date().toISOString(),
+        version: '1.0'
+    };
+
+    const dataStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jurnal-ai-backup-${formatShortDate(new Date()).replace(/ /g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importData(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+
+            // Validate basic structure
+            if (!data.exportedAt) {
+                throw new Error('Format file backup tidak valid');
+            }
+
+            if (confirm(`Restore data dari backup tanggal ${formatShortDate(data.exportedAt)}? Data saat ini akan ditimpa.`)) {
+                // Restore logic
+                if (data.journals) localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(data.journals));
+                if (data.goals) localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(data.goals));
+                if (data.tasks) localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(data.tasks));
+                if (data.schedules) localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(data.schedules));
+                if (data.habits) localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(data.habits));
+                if (data.transactions) localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data.transactions));
+                if (data.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));
+
+                alert('Data berhasil direstore! Halaman akan direfresh.');
+                window.location.reload();
+            }
+        } catch (error) {
+            alert('Gagal membaca file backup: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+}
