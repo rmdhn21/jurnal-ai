@@ -245,6 +245,84 @@ async function syncFromCloud() {
     }
 }
 
+// Cloud-Only Sync: REPLACE local data with cloud data (no merge)
+// Use this for cloud login to ensure consistency across devices
+async function syncFromCloudReplace() {
+    if (!supabaseClient || !isCloudSyncEnabled()) return false;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return false;
+
+    const userId = session.user.id;
+    console.log('📥 Cloud-Only Sync: Downloading and replacing local data for user:', userId);
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_data')
+            .select('data')
+            .eq('user_id', userId)
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                // No data in cloud yet - this is first login, keep local data and sync to cloud
+                console.log('📤 No cloud data found. Uploading local data to cloud...');
+                await syncToCloud();
+                return true;
+            }
+            console.error('Cloud-Only Sync ERROR:', error);
+            return false;
+        }
+
+        if (!data || !data.data) {
+            console.log('📤 Empty cloud data. Uploading local data to cloud...');
+            await syncToCloud();
+            return true;
+        }
+
+        const cloudData = data.data;
+        console.log('☁️ Cloud data received, replacing local data...');
+
+        // REPLACE local data completely with cloud data
+        if (cloudData.journals) {
+            localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(cloudData.journals));
+        }
+        if (cloudData.tasks) {
+            localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(cloudData.tasks));
+        }
+        if (cloudData.schedules) {
+            localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(cloudData.schedules));
+        }
+        if (cloudData.transactions) {
+            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cloudData.transactions));
+        }
+        if (cloudData.habits) {
+            localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(cloudData.habits));
+        }
+        if (cloudData.goals) {
+            localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(cloudData.goals));
+        }
+        if (cloudData.reminderSettings) {
+            localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
+        }
+
+        console.log('✅ Cloud-Only Sync completed - local data replaced with cloud data');
+
+        // Reload UI to show cloud data
+        if (typeof initJournalUI === 'function') initJournalUI();
+        if (typeof initPlannerUI === 'function') initPlannerUI();
+        if (typeof initFinanceUI === 'function') initFinanceUI();
+        if (typeof initHabitsUI === 'function') initHabitsUI();
+        if (typeof initGoalsUI === 'function') initGoalsUI();
+        if (typeof initDashboard === 'function') initDashboard();
+
+        return true;
+    } catch (err) {
+        console.error('Cloud-Only Sync failed:', err);
+        return false;
+    }
+}
+
 function updateSyncStatus(status) {
     // Optional: Add visual indicator if we want later
     console.log('Sync Status:', status);
@@ -2660,14 +2738,15 @@ async function handleCloudSignIn() {
             return;
         }
 
-        // Enable cloud sync and sync data
+        // Enable cloud sync and REPLACE local data with cloud data
+        // This ensures consistency across devices
         enableCloudSync();
-        await syncFromCloud();
+        await syncFromCloudReplace();
 
         // Create local session with email
         saveSession(email);
 
-        alert('✅ Cloud login berhasil!');
+        alert('✅ Cloud login berhasil! Data telah disinkronkan dari cloud.');
         showMainApp();
     } catch (err) {
         alert('Error: ' + err.message);
@@ -2890,7 +2969,7 @@ Gunakan bahasa Indonesia yang memotivasi.`;
 }
 
 // ===== MAIN INIT =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Initialize login UI first
     initLoginUI();
 
@@ -2900,6 +2979,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (session) {
         // User is logged in - show main app
         showMainApp();
+
+        // Auto-restore Supabase session and sync from cloud
+        // This ensures data consistency across devices on page reload
+        if (isCloudSyncEnabled()) {
+            try {
+                const supabase = initSupabase();
+                if (supabase) {
+                    const { data: { session: cloudSession } } = await supabaseClient.auth.getSession();
+                    if (cloudSession) {
+                        console.log('☁️ Cloud session restored, syncing data...');
+                        await syncFromCloudReplace();
+                        console.log('✅ Auto-sync from cloud completed');
+                    }
+                }
+            } catch (err) {
+                console.error('Auto-sync on load failed:', err);
+            }
+        }
     } else {
         // No session - show login screen
         showLoginScreen();
