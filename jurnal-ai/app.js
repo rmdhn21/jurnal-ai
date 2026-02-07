@@ -1752,6 +1752,7 @@ function calculateStreak(habit) {
 let goalsListenersAttached = false;
 
 function initGoalsUI() {
+    console.log('[DEBUG initGoalsUI] Called, goalsListenersAttached =', goalsListenersAttached);
     const addBtn = document.getElementById('add-goal-btn');
     if (addBtn) {
         addBtn.addEventListener('click', handleAddGoal);
@@ -1760,9 +1761,11 @@ function initGoalsUI() {
     // Set up event delegation on the active goals list (once)
     const activeListEl = document.getElementById('active-goals-list');
     const completedListEl = document.getElementById('completed-goals-list');
+    console.log('[DEBUG initGoalsUI] activeListEl:', activeListEl, 'completedListEl:', completedListEl);
 
     // Only attach listeners once to prevent stacking
     if (!goalsListenersAttached) {
+        console.log('[DEBUG initGoalsUI] Attaching listeners...');
         if (activeListEl) {
             attachGoalEventListeners(activeListEl);
         }
@@ -1770,6 +1773,9 @@ function initGoalsUI() {
             attachGoalEventListeners(completedListEl);
         }
         goalsListenersAttached = true;
+        console.log('[DEBUG initGoalsUI] Listeners attached!');
+    } else {
+        console.log('[DEBUG initGoalsUI] Skipped attaching - already attached');
     }
 
     renderGoalsList();
@@ -1826,12 +1832,18 @@ function renderGoalsList() {
     const activeGoals = goals.filter(g => !g.completed);
     const completedGoals = goals.filter(g => g.completed);
 
+    console.log('[DEBUG renderGoalsList] Active goals:', activeGoals.length, activeGoals.map(g => ({ id: g.id, title: g.title, target: g.target })));
+
     // Render active goals
     if (activeGoals.length === 0) {
         activeListEl.innerHTML = '<div class="empty-state"><p>Belum ada goals aktif</p></div>';
     } else {
-        activeListEl.innerHTML = activeGoals.map(createGoalItem).join('');
-        // Event listeners are already attached via delegation in initGoalsUI
+        const htmlParts = activeGoals.map((g, index) => {
+            const html = createGoalItem(g);
+            console.log(`[DEBUG renderGoalsList] Goal ${index} (${g.title}) HTML buttons:`, html.includes('increment-btn'));
+            return html;
+        });
+        activeListEl.innerHTML = htmlParts.join('');
     }
 
     // Render completed goals
@@ -1883,10 +1895,16 @@ function createGoalItem(goal, isCompleted = false) {
 }
 
 function attachGoalEventListeners(container) {
+    console.log('[DEBUG attachGoalEventListeners] Attaching to container:', container);
     // Use event delegation - single listener on container
     container.addEventListener('click', (e) => {
+        console.log('[DEBUG click] Click detected on:', e.target);
         const btn = e.target.closest('button');
-        if (!btn) return;
+        if (!btn) {
+            console.log('[DEBUG click] Not a button click, ignoring');
+            return;
+        }
+        console.log('[DEBUG click] Button clicked:', btn.className);
 
         const goalItem = btn.closest('.goal-item');
         if (!goalItem) return;
