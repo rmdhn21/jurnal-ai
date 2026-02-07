@@ -1,0 +1,24 @@
+{
+    "name": "Jurnal AI - Life Organizer",
+    "short_name": "Jurnal AI",
+    "description": "Aplikasi journaling dengan AI yang membantu Anda berpikir lebih jernih",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#0a0a0f",
+    "theme_color": "#f59e0b",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "icons/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
