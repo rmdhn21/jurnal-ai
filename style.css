@@ -123,6 +123,56 @@ body::before {
     background-clip: text;
 }
 
+/* ===== Sync Status Indicator ===== */
+.sync-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    cursor: default;
+    transition: all 0.3s ease;
+}
+
+.sync-indicator.synced {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.sync-indicator.syncing {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.sync-indicator.syncing #sync-icon {
+    animation: pulse 1s infinite;
+}
+
+.sync-indicator.offline {
+    background: rgba(156, 163, 175, 0.15);
+    color: #9ca3af;
+}
+
+.sync-indicator.error {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
 /* ===== Navigation ===== */
 .nav {
     display: flex;
@@ -568,6 +618,7 @@ body::before {
     font-size: var(--font-size-sm);
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }

@@ -63,11 +63,13 @@ async function syncToCloud() {
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError || !session) {
         console.warn('Sync aborted: No active session');
+        updateSyncStatus('Offline');
         return;
     }
 
     const userId = session.user.id;
     console.log('Syncing starting for user:', userId);
+    updateSyncStatus('Syncing');
 
     const data = {
         journals: getJournals(),
@@ -75,6 +77,7 @@ async function syncToCloud() {
         schedules: getSchedules(),
         transactions: getTransactions(),
         habits: getHabits(),
+        goals: getGoals(),
         reminderSettings: getReminderSettings(),
         updatedAt: new Date().toISOString()
     };
@@ -86,6 +89,7 @@ async function syncToCloud() {
 
         if (error) {
             console.error('Sync ERROR:', error);
+            updateSyncStatus('Error');
             // Show toast/alert if needed, but better to keep it silent normally unless critical
             if (error.code === '42501') {
                 alert('Sync Gagal: Permission Denied. Pastikan Anda sudah setup RLS Policies di Supabase!');
@@ -96,6 +100,7 @@ async function syncToCloud() {
         }
     } catch (err) {
         console.error('Sync FAILED (Exception):', err);
+        updateSyncStatus('Error');
     }
 }
 
@@ -305,8 +310,47 @@ async function syncFromCloudReplace() {
 }
 
 function updateSyncStatus(status) {
-    // Optional: Add visual indicator if we want later
     console.log('Sync Status:', status);
+
+    const indicator = document.getElementById('sync-status-indicator');
+    const icon = document.getElementById('sync-icon');
+    const text = document.getElementById('sync-text');
+
+    if (!indicator || !icon || !text) return;
+
+    // Remove all status classes
+    indicator.classList.remove('synced', 'syncing', 'offline', 'error');
+
+    switch (status) {
+        case 'Synced':
+        case 'synced':
+            indicator.classList.add('synced');
+            icon.textContent = '🟢';
+            text.textContent = 'Synced';
+            break;
+        case 'Syncing':
+        case 'syncing':
+            indicator.classList.add('syncing');
+            icon.textContent = '🔵';
+            text.textContent = 'Syncing...';
+            break;
+        case 'Offline':
+        case 'offline':
+            indicator.classList.add('offline');
+            icon.textContent = '⚫';
+            text.textContent = 'Offline';
+            break;
+        case 'Error':
+        case 'error':
+            indicator.classList.add('error');
+            icon.textContent = '🔴';
+            text.textContent = 'Error';
+            break;
+        default:
+            indicator.classList.add('offline');
+            icon.textContent = '⚫';
+            text.textContent = 'Offline';
+    }
 }
 
 // Auto-sync when data changes
@@ -3041,6 +3085,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Auto-restore Supabase session and sync from cloud
         // This ensures data consistency across devices on page reload
         if (isCloudSyncEnabled()) {
+            updateSyncStatus('Syncing');
             try {
                 const supabase = initSupabase();
                 if (supabase) {
@@ -3049,11 +3094,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                         console.log('☁️ Cloud session restored, syncing data...');
                         await syncFromCloudReplace();
                         console.log('✅ Auto-sync from cloud completed');
+                        updateSyncStatus('Synced');
+                    } else {
+                        updateSyncStatus('Offline');
                     }
+                } else {
+                    updateSyncStatus('Offline');
                 }
             } catch (err) {
                 console.error('Auto-sync on load failed:', err);
+                updateSyncStatus('Error');
             }
+        } else {
+            updateSyncStatus('Offline');
         }
     } else {
         // No session - show login screen
