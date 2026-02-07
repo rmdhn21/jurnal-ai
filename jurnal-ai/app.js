@@ -1749,6 +1749,8 @@ function calculateStreak(habit) {
 }
 
 // ===== GOALS UI =====
+let goalsListenersAttached = false;
+
 function initGoalsUI() {
     const addBtn = document.getElementById('add-goal-btn');
     if (addBtn) {
@@ -1759,11 +1761,15 @@ function initGoalsUI() {
     const activeListEl = document.getElementById('active-goals-list');
     const completedListEl = document.getElementById('completed-goals-list');
 
-    if (activeListEl) {
-        attachGoalEventListeners(activeListEl);
-    }
-    if (completedListEl) {
-        attachGoalEventListeners(completedListEl);
+    // Only attach listeners once to prevent stacking
+    if (!goalsListenersAttached) {
+        if (activeListEl) {
+            attachGoalEventListeners(activeListEl);
+        }
+        if (completedListEl) {
+            attachGoalEventListeners(completedListEl);
+        }
+        goalsListenersAttached = true;
     }
 
     renderGoalsList();
@@ -2198,8 +2204,11 @@ function showSettings() {
     document.getElementById('api-key-input').value = getApiKey();
 
     // Load Cloud Config
-    document.getElementById('supabase-url').value = localStorage.getItem('supabase_url') || '';
-    document.getElementById('supabase-key').value = localStorage.getItem('supabase_key') || '';
+    const customUrl = localStorage.getItem('supabase_url');
+    const customKey = localStorage.getItem('supabase_key');
+
+    document.getElementById('supabase-url').value = customUrl || SUPABASE_URL_DEFAULT;
+    document.getElementById('supabase-key').value = customKey || SUPABASE_KEY_DEFAULT;
 
     updateEncryptionStatus();
 }
@@ -3153,6 +3162,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Initialize Supabase Client
     if (typeof initSupabase === 'function') initSupabase();
+
+    // 2.5. Auto-restore Supabase session if cloud sync is enabled
+    if (supabaseClient && typeof isCloudSyncEnabled === 'function' && isCloudSyncEnabled()) {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                console.log('✅ Cloud session restored automatically');
+            }
+        } catch (e) {
+            console.warn('Could not restore cloud session:', e);
+        }
+    }
 
     // 3. Check Local Session
     if (typeof getSession === 'function') {
