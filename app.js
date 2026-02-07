@@ -2528,17 +2528,42 @@ function importAllData(e) {
     e.target.value = '';
 }
 
-function clearAllData() {
+async function clearAllData() {
     if (!confirm('⚠️ PERINGATAN: Semua data akan dihapus permanen!\n\nAnda yakin?')) return;
     if (!confirm('Ini adalah konfirmasi terakhir. Lanjutkan hapus semua data?')) return;
 
-    // Clear all storage
+    // Clear all local storage
     Object.values(STORAGE_KEYS).forEach(key => {
         localStorage.removeItem(key);
     });
     localStorage.removeItem(ENCRYPTION_KEY_STORAGE);
 
-    alert('Semua data telah dihapus.');
+    // Also clear data from cloud if cloud sync is enabled
+    if (isCloudSyncEnabled() && supabaseClient) {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                const userId = session.user.id;
+                console.log('🗑️ Clearing cloud data for user:', userId);
+
+                // Delete user data from Supabase
+                const { error } = await supabaseClient
+                    .from('user_data')
+                    .delete()
+                    .eq('user_id', userId);
+
+                if (error) {
+                    console.error('Failed to clear cloud data:', error);
+                } else {
+                    console.log('✅ Cloud data cleared successfully');
+                }
+            }
+        } catch (err) {
+            console.error('Error clearing cloud data:', err);
+        }
+    }
+
+    alert('Semua data telah dihapus (lokal dan cloud).');
     location.reload();
 }
 
