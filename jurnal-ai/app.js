@@ -1752,7 +1752,6 @@ function calculateStreak(habit) {
 let goalsListenersAttached = false;
 
 function initGoalsUI() {
-    console.log('[DEBUG initGoalsUI] Called, goalsListenersAttached =', goalsListenersAttached);
     const addBtn = document.getElementById('add-goal-btn');
     if (addBtn) {
         addBtn.addEventListener('click', handleAddGoal);
@@ -1761,11 +1760,9 @@ function initGoalsUI() {
     // Set up event delegation on the active goals list (once)
     const activeListEl = document.getElementById('active-goals-list');
     const completedListEl = document.getElementById('completed-goals-list');
-    console.log('[DEBUG initGoalsUI] activeListEl:', activeListEl, 'completedListEl:', completedListEl);
 
     // Only attach listeners once to prevent stacking
     if (!goalsListenersAttached) {
-        console.log('[DEBUG initGoalsUI] Attaching listeners...');
         if (activeListEl) {
             attachGoalEventListeners(activeListEl);
         }
@@ -1773,9 +1770,6 @@ function initGoalsUI() {
             attachGoalEventListeners(completedListEl);
         }
         goalsListenersAttached = true;
-        console.log('[DEBUG initGoalsUI] Listeners attached!');
-    } else {
-        console.log('[DEBUG initGoalsUI] Skipped attaching - already attached');
     }
 
     renderGoalsList();
@@ -1832,18 +1826,12 @@ function renderGoalsList() {
     const activeGoals = goals.filter(g => !g.completed);
     const completedGoals = goals.filter(g => g.completed);
 
-    console.log('[DEBUG renderGoalsList] Active goals:', activeGoals.length, activeGoals.map(g => ({ id: g.id, title: g.title, target: g.target })));
-
     // Render active goals
+    // IMPORTANT: Use arrow function to prevent .map() from passing index as isCompleted
     if (activeGoals.length === 0) {
         activeListEl.innerHTML = '<div class="empty-state"><p>Belum ada goals aktif</p></div>';
     } else {
-        const htmlParts = activeGoals.map((g, index) => {
-            const html = createGoalItem(g);
-            console.log(`[DEBUG renderGoalsList] Goal ${index} (${g.title}) HTML buttons:`, html.includes('increment-btn'));
-            return html;
-        });
-        activeListEl.innerHTML = htmlParts.join('');
+        activeListEl.innerHTML = activeGoals.map(g => createGoalItem(g, false)).join('');
     }
 
     // Render completed goals
@@ -1895,16 +1883,10 @@ function createGoalItem(goal, isCompleted = false) {
 }
 
 function attachGoalEventListeners(container) {
-    console.log('[DEBUG attachGoalEventListeners] Attaching to container:', container);
     // Use event delegation - single listener on container
     container.addEventListener('click', (e) => {
-        console.log('[DEBUG click] Click detected on:', e.target);
         const btn = e.target.closest('button');
-        if (!btn) {
-            console.log('[DEBUG click] Not a button click, ignoring');
-            return;
-        }
-        console.log('[DEBUG click] Button clicked:', btn.className);
+        if (!btn) return;
 
         const goalItem = btn.closest('.goal-item');
         if (!goalItem) return;
@@ -1914,18 +1896,13 @@ function attachGoalEventListeners(container) {
 
         // Increment progress
         if (btn.classList.contains('increment-btn')) {
-            console.log('[DEBUG] Increment clicked for goalId:', goalId);
             const goals = getGoals();
-            console.log('[DEBUG] All goals:', goals.map(g => ({ id: g.id, title: g.title, progress: g.currentProgress })));
             const goal = goals.find(g => g.id === goalId);
-            console.log('[DEBUG] Found goal:', goal);
             if (goal) {
                 // Read the amount from the input field
                 const progressInput = goalItem.querySelector('.progress-input');
                 const amount = progressInput ? parseInt(progressInput.value) || 1 : 1;
-                console.log('[DEBUG] Amount from input:', amount);
                 const newProgress = Math.min(goal.target, (goal.currentProgress || 0) + amount);
-                console.log('[DEBUG] New progress:', newProgress);
                 updateGoalProgress(goalId, newProgress);
                 renderGoalsList();
                 updateGoalsStats();
