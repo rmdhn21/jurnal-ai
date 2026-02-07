@@ -1300,7 +1300,11 @@ function initNavigation() {
             });
 
             // Refresh data when switching screens
-            if (targetScreen === 'planner') {
+            if (targetScreen === 'dashboard') {
+                updateDashboardStats();
+                updateUpcomingSchedules();
+                updateTodayReminders();
+            } else if (targetScreen === 'planner') {
                 renderTodoList();
                 renderScheduleList();
             } else if (targetScreen === 'journal') {
