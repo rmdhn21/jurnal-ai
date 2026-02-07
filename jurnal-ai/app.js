@@ -113,18 +113,91 @@ async function syncFromCloud() {
         const cloudData = data.data;
         console.log('Cloud data received:', cloudData);
 
-        // Merge cloud data to local
-        if (cloudData.journals) localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(cloudData.journals));
-        if (cloudData.tasks) localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(cloudData.tasks));
-        if (cloudData.schedules) localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(cloudData.schedules));
-        if (cloudData.transactions) localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cloudData.transactions));
-        if (cloudData.habits) localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(cloudData.habits));
-        if (cloudData.reminderSettings) localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
+        // Smart merge: combine local and cloud data, preferring newer items
+        function mergeArrays(localArr, cloudArr) {
+            const merged = new Map();
 
-        console.log('✅ Synced from cloud successfully');
+            // Add all local items first
+            localArr.forEach(item => {
+                merged.set(item.id, item);
+            });
 
-        // Reload UI to show new data
-        // We need to re-init UI modules to reflect changes
+            // Merge cloud items - only overwrite if cloud is newer or local doesn't exist
+            cloudArr.forEach(cloudItem => {
+                const localItem = merged.get(cloudItem.id);
+                if (!localItem) {
+                    // New item from cloud
+                    merged.set(cloudItem.id, cloudItem);
+                } else {
+                    // Compare timestamps - use newer version
+                    const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+                    const cloudTime = new Date(cloudItem.updatedAt || cloudItem.createdAt || 0).getTime();
+
+                    if (cloudTime > localTime) {
+                        merged.set(cloudItem.id, cloudItem);
+                    }
+                    // If local is newer or same, keep local (already in map)
+                }
+            });
+
+            return Array.from(merged.values());
+        }
+
+        // Special merge for habits - also merge completions
+        function mergeHabits(localHabits, cloudHabits) {
+            const merged = new Map();
+
+            localHabits.forEach(h => merged.set(h.id, { ...h }));
+
+            cloudHabits.forEach(cloudHabit => {
+                const localHabit = merged.get(cloudHabit.id);
+                if (!localHabit) {
+                    merged.set(cloudHabit.id, cloudHabit);
+                } else {
+                    // Merge completions - combine both
+                    const mergedCompletions = {
+                        ...cloudHabit.completions,
+                        ...localHabit.completions  // Local wins for same dates
+                    };
+                    merged.set(cloudHabit.id, {
+                        ...cloudHabit,
+                        ...localHabit,
+                        completions: mergedCompletions
+                    });
+                }
+            });
+
+            return Array.from(merged.values());
+        }
+
+        // Apply smart merge
+        if (cloudData.journals) {
+            const merged = mergeArrays(getJournals(), cloudData.journals);
+            localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(merged));
+        }
+        if (cloudData.tasks) {
+            const merged = mergeArrays(getTasks(), cloudData.tasks);
+            localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(merged));
+        }
+        if (cloudData.schedules) {
+            const merged = mergeArrays(getSchedules(), cloudData.schedules);
+            localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(merged));
+        }
+        if (cloudData.transactions) {
+            const merged = mergeArrays(getTransactions(), cloudData.transactions);
+            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(merged));
+        }
+        if (cloudData.habits) {
+            const merged = mergeHabits(getHabits(), cloudData.habits);
+            localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(merged));
+        }
+        if (cloudData.reminderSettings) {
+            localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
+        }
+
+        console.log('✅ Smart sync from cloud completed');
+
+        // Reload UI to show merged data
         initJournalUI();
         initPlannerUI();
         initFinanceUI();
@@ -300,7 +373,7 @@ function toggleHabitCompletion(habitId, date) {
         if (!habit.completions) habit.completions = {};
         habit.completions[date] = !habit.completions[date];
         // Update streak
-        habit.streak = calculateStreak(habit.completedDates);
+        habit.streak = calculateStreak(habit);
         localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
         triggerCloudSync();
     }
@@ -2088,7 +2161,7 @@ function updateDashboardStats() {
 
     // Tasks completed
     const tasks = getTasks();
-    const completedTasks = tasks.filter(t => t.completed).length;
+    const completedTasks = tasks.filter(t => t.done).length;
     document.getElementById('stat-tasks').textContent = `${completedTasks}/${tasks.length}`;
 
     // Balance
