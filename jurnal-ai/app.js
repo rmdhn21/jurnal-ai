@@ -1896,13 +1896,18 @@ function attachGoalEventListeners(container) {
 
         // Increment progress
         if (btn.classList.contains('increment-btn')) {
+            console.log('[DEBUG] Increment clicked for goalId:', goalId);
             const goals = getGoals();
+            console.log('[DEBUG] All goals:', goals.map(g => ({ id: g.id, title: g.title, progress: g.currentProgress })));
             const goal = goals.find(g => g.id === goalId);
+            console.log('[DEBUG] Found goal:', goal);
             if (goal) {
                 // Read the amount from the input field
                 const progressInput = goalItem.querySelector('.progress-input');
                 const amount = progressInput ? parseInt(progressInput.value) || 1 : 1;
+                console.log('[DEBUG] Amount from input:', amount);
                 const newProgress = Math.min(goal.target, (goal.currentProgress || 0) + amount);
+                console.log('[DEBUG] New progress:', newProgress);
                 updateGoalProgress(goalId, newProgress);
                 renderGoalsList();
                 updateGoalsStats();
