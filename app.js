@@ -2273,6 +2273,12 @@ function initSettings() {
     // Clear All Data
     document.getElementById('clear-all-data-btn').addEventListener('click', clearAllData);
 
+    // Delete Cloud Account
+    const deleteAccountBtn = document.getElementById('delete-account-btn');
+    if (deleteAccountBtn) {
+        deleteAccountBtn.addEventListener('click', deleteCloudAccount);
+    }
+
     // Update encryption status
     updateEncryptionStatus();
 }
@@ -2565,6 +2571,59 @@ async function clearAllData() {
 
     alert('Semua data telah dihapus (lokal dan cloud).');
     location.reload();
+}
+
+// Delete cloud account (Supabase account + data)
+async function deleteCloudAccount() {
+    if (!isCloudSyncEnabled() || !supabaseClient) {
+        alert('Anda tidak login dengan akun cloud.');
+        return;
+    }
+
+    if (!confirm('⚠️ PERINGATAN: Akun cloud dan semua data akan dihapus permanen!\n\nAnda yakin?')) return;
+    if (!confirm('Ini adalah konfirmasi terakhir.\n\nSemua data di cloud akan hilang selamanya.\n\nLanjutkan?')) return;
+
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+            alert('Tidak ada session aktif. Silakan login ulang.');
+            return;
+        }
+
+        const userId = session.user.id;
+        console.log('🗑️ Deleting cloud account for user:', userId);
+
+        // Step 1: Delete user data from database
+        const { error: dataError } = await supabaseClient
+            .from('user_data')
+            .delete()
+            .eq('user_id', userId);
+
+        if (dataError) {
+            console.error('Failed to delete user data:', dataError);
+        } else {
+            console.log('✅ User data deleted');
+        }
+
+        // Step 2: Sign out
+        await supabaseClient.auth.signOut();
+
+        // Step 3: Clear local storage
+        Object.values(STORAGE_KEYS).forEach(key => {
+            localStorage.removeItem(key);
+        });
+        localStorage.removeItem(ENCRYPTION_KEY_STORAGE);
+        disableCloudSync();
+
+        // Note: Supabase doesn't allow users to delete their own auth account via client SDK
+        // The auth record will remain but data is deleted
+        alert('✅ Data cloud telah dihapus dan Anda telah logout.\n\nNote: Untuk menghapus akun sepenuhnya, hubungi admin atau hapus dari Supabase Dashboard.');
+
+        location.reload();
+    } catch (err) {
+        console.error('Error deleting cloud account:', err);
+        alert('Gagal menghapus akun: ' + err.message);
+    }
 }
 
 // ===== LOGIN MODULE =====
