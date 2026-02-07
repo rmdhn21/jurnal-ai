@@ -43,25 +43,6 @@ function initSupabase() {
     return false;
 }
 
-function saveCloudConfig() {
-    const url = document.getElementById('supabase-url').value.trim();
-    const key = document.getElementById('supabase-key').value.trim();
-
-    if (url && key) {
-        localStorage.setItem('supabase_url', url);
-        localStorage.setItem('supabase_key', key);
-
-        if (initSupabase()) {
-            alert('✅ Cloud Config tersimpan & Supabase terhubung!');
-            // Update auth state UI if needed
-        } else {
-            alert('❌ Config tersimpan tapi gagal connect. Cek URL/Key Anda.');
-        }
-    } else {
-        alert('Masukkan URL dan Key yang valid.');
-    }
-}
-
 // ===== CLOUD SYNC MODULE =====
 function isCloudSyncEnabled() {
     return localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC) === 'true';
@@ -2286,13 +2267,6 @@ function initSettings() {
 function showSettings() {
     document.getElementById('settings-modal').classList.remove('hidden');
     document.getElementById('api-key-input').value = getApiKey();
-
-    // Load Cloud Config
-    const customUrl = localStorage.getItem('supabase_url');
-    const customKey = localStorage.getItem('supabase_key');
-
-    document.getElementById('supabase-url').value = customUrl || SUPABASE_URL_DEFAULT;
-    document.getElementById('supabase-key').value = customKey || SUPABASE_KEY_DEFAULT;
 
     updateEncryptionStatus();
 }
