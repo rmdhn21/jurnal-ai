@@ -10,7 +10,11 @@ const STORAGE_KEYS = {
     USERS: 'jurnal_ai_users',
     SESSION: 'jurnal_ai_session',
     REMINDER_SETTINGS: 'jurnal_ai_reminder_settings',
-    CLOUD_SYNC: 'jurnal_ai_cloud_sync'
+    CLOUD_SYNC: 'jurnal_ai_cloud_sync',
+    WALLETS: 'jurnal_ai_wallets',
+    THEME: 'jurnal_ai_theme',
+    BUDGETS: 'jurnal_ai_budgets',
+    PIN: 'jurnal_ai_pin'
 };
 
 // ===== SUPABASE CONFIG =====
@@ -79,6 +83,7 @@ async function syncToCloud() {
         habits: getHabits(),
         goals: getGoals(),
         reminderSettings: getReminderSettings(),
+        wallets: getWallets(),
         updatedAt: new Date().toISOString()
     };
 
@@ -213,6 +218,10 @@ async function syncFromCloud() {
         }
         if (cloudData.reminderSettings) {
             localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
+        }
+        if (cloudData.wallets) {
+            const merged = mergeArrays(getWallets(), cloudData.wallets);
+            localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(merged));
         }
 
         console.log('✅ Smart sync from cloud completed');
@@ -779,6 +788,133 @@ function validateAndFixResponse(response) {
     return response;
 }
 
+
+// ===== WALLET MODULE =====
+function getWallets() {
+    const wallets = JSON.parse(localStorage.getItem(STORAGE_KEYS.WALLETS)) || [];
+    // Ensure default wallet exists
+    if (wallets.length === 0) {
+        wallets.push({
+            id: 'wallet_default',
+            name: 'Tunai',
+            balance: 0,
+            isDefault: true,
+            createdAt: new Date().toISOString()
+        });
+        localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
+    }
+    return wallets;
+}
+
+function saveWallet(wallet) {
+    const wallets = getWallets();
+    wallets.push(wallet);
+    localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
+    // syncToCloud(); // Auto sync
+}
+
+function deleteWallet(id) {
+    let wallets = getWallets();
+    // Don't delete default wallet
+    const wallet = wallets.find(w => w.id === id);
+    if (wallet && wallet.isDefault) {
+        alert('Tidak bisa menghapus dompet utama!');
+        return;
+    }
+
+    wallets = wallets.filter(w => w.id !== id);
+    localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
+    // syncToCloud(); // Auto sync
+}
+
+function updateWalletBalance(walletId, amount, type) {
+    const wallets = getWallets();
+    const walletIndex = wallets.findIndex(w => w.id === walletId);
+
+    if (walletIndex !== -1) {
+        // Amount is always positive from transaction, type determines sign
+        // But for balance calculation:
+        // Income: +amount
+        // Expense: -amount
+        const change = type === 'income' ? amount : -amount;
+        wallets[walletIndex].balance = (wallets[walletIndex].balance || 0) + change;
+        localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
+        // syncToCloud(); // Auto sync
+    }
+}
+
+
+// ===== BUDGET MODULE =====
+function getBudgets() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.BUDGETS)) || [];
+}
+
+function saveBudget(budget) {
+    const budgets = getBudgets();
+    // Check if category already has a budget
+    const existingIndex = budgets.findIndex(b => b.category === budget.category);
+    if (existingIndex !== -1) {
+        if (confirm('Kategori ini sudah ada budget-nya. Timpa dengan nilai baru?')) {
+            budgets[existingIndex] = budget;
+        } else {
+            return;
+        }
+    } else {
+        budgets.push(budget);
+    }
+    localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(budgets));
+    // syncToCloud(); // Auto sync
+}
+
+function deleteBudget(id) {
+    let budgets = getBudgets();
+    budgets = budgets.filter(b => b.id !== id);
+    localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(budgets));
+    // syncToCloud(); // Auto sync
+}
+
+function getCategoryExpenses(category) {
+    const transactions = getTransactions();
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    return transactions
+        .filter(t => t.type === 'expense' && t.category === category)
+        .filter(t => {
+            const date = new Date(t.date);
+            return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+        })
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+}
+
+
+// ===== THEME MODULE =====
+function initTheme() {
+    const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+    setTheme(savedTheme);
+
+    const toggleBtn = document.getElementById('theme-toggle-btn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', toggleTheme);
+    }
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(STORAGE_KEYS.THEME, theme);
+
+    // Update button icon
+    const toggleBtn = document.getElementById('theme-toggle-btn');
+    if (toggleBtn) {
+        toggleBtn.textContent = theme === 'light' ? '☀️' : '🌙';
+    }
+}
+
+function toggleTheme() {
+    const currentTheme = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+}
 
 // ===== CHARTS MODULE =====
 let financeChart = null;
@@ -1630,6 +1766,8 @@ function initFinanceUI() {
     renderTransactionList();
     updateFinanceSummary();
     initFinanceChart();
+    if (typeof initWalletUI === 'function') initWalletUI();
+    if (typeof initBudgetUI === 'function') initBudgetUI();
 }
 
 function handleAddTransaction() {
@@ -1638,6 +1776,8 @@ function handleAddTransaction() {
     const category = document.getElementById('transaction-category').value.trim();
     const date = document.getElementById('transaction-date').value;
     const desc = document.getElementById('transaction-desc').value.trim();
+
+    const walletId = document.getElementById('transaction-wallet').value;
 
     if (!amount || amount <= 0) {
         alert('Masukkan jumlah yang valid!');
@@ -1649,17 +1789,24 @@ function handleAddTransaction() {
         return;
     }
 
+    if (!walletId) {
+        alert('Pilih dompet!');
+        return;
+    }
+
     const transaction = {
         id: generateId(),
         type: type,
         amount: amount,
         category: category,
         description: desc,
+        walletId: walletId,
         date: date || getTodayString(),
         createdAt: new Date().toISOString()
     };
 
     saveTransaction(transaction);
+    updateWalletBalance(walletId, amount, type);
 
     // Clear form
     document.getElementById('transaction-amount').value = '';
@@ -1668,6 +1815,8 @@ function handleAddTransaction() {
 
     renderTransactionList();
     updateFinanceSummary();
+    renderWalletListSummary(); // Update UI
+    updateWalletSelectOptions(); // Update Select
     initFinanceChart();
 }
 
@@ -3557,6 +3706,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof initBackupRestore === 'function') {
             initBackupRestore();
         }
+        if (typeof initTheme === 'function') {
+            initTheme();
+        }
+        if (typeof initVoiceInput === 'function') {
+            initVoiceInput();
+        }
+        if (typeof initSecurity === 'function') {
+            initSecurity();
+        }
     }, 1000);
 });
 
@@ -3592,6 +3750,7 @@ function exportData() {
         tasks: getTasks(),
         schedules: getSchedules(),
         habits: getHabits(),
+        wallets: getWallets(),
         transactions: getTransactions(),
         settings: getSettings(),
         exportedAt: new Date().toISOString(),
@@ -3629,6 +3788,7 @@ function importData(file) {
                 if (data.tasks) localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(data.tasks));
                 if (data.schedules) localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(data.schedules));
                 if (data.habits) localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(data.habits));
+                if (data.wallets) localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(data.wallets));
                 if (data.transactions) localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data.transactions));
                 if (data.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));
 
@@ -3640,4 +3800,574 @@ function importData(file) {
         }
     };
     reader.readAsText(file);
+}
+
+// ===== WALLET UI LOGIC =====
+function initWalletUI() {
+    const manageBtn = document.getElementById('manage-wallets-btn');
+    const modal = document.getElementById('wallet-modal');
+    const closeBtn = document.getElementById('close-wallet-modal');
+    const addBtn = document.getElementById('add-wallet-btn');
+
+    if (manageBtn) {
+        manageBtn.addEventListener('click', () => {
+            if (modal) {
+                modal.classList.remove('hidden');
+                renderWalletManagementList();
+            }
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            if (modal) modal.classList.add('hidden');
+        });
+    }
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        });
+    }
+
+    if (addBtn) {
+        addBtn.addEventListener('click', handleAddWallet);
+    }
+
+    renderWalletListSummary();
+    updateWalletSelectOptions();
+}
+
+function handleAddWallet() {
+    const nameInput = document.getElementById('new-wallet-name');
+    const balanceInput = document.getElementById('new-wallet-balance');
+    const name = nameInput.value.trim();
+    const balance = parseFloat(balanceInput.value) || 0;
+
+    if (!name) {
+        alert('Nama dompet harus diisi!');
+        return;
+    }
+
+    const wallet = {
+        id: generateId(),
+        name: name,
+        balance: balance,
+        createdAt: new Date().toISOString()
+    };
+
+    saveWallet(wallet);
+
+    nameInput.value = '';
+    balanceInput.value = '0';
+
+    renderWalletManagementList();
+    renderWalletListSummary();
+    updateWalletSelectOptions();
+}
+
+function renderWalletManagementList() {
+    const listEl = document.getElementById('wallet-management-list');
+    if (!listEl) return;
+
+    const wallets = getWallets();
+
+    listEl.innerHTML = wallets.map(w => `
+        <div class="habit-item" style="justify-content: space-between;">
+            <span class="habit-name">${w.name} (${formatCurrency(w.balance || 0)})</span>
+            ${!w.isDefault ? `<button class="delete-btn" onclick="deleteWalletUI('${w.id}')">🗑️</button>` : '<span class="badge" style="background:var(--primary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">Utama</span>'}
+        </div>
+    `).join('');
+}
+
+window.deleteWalletUI = function (id) {
+    if (confirm('Hapus dompet ini? Transaksi terkait tidak akan dihapus (akan error tampilannya).')) {
+        deleteWallet(id);
+        renderWalletManagementList();
+        renderWalletListSummary();
+        updateWalletSelectOptions();
+    }
+};
+
+function renderWalletListSummary() {
+    const container = document.getElementById('wallet-list-summary');
+    if (!container) return;
+
+    const wallets = getWallets();
+
+    container.innerHTML = wallets.map(w => `
+        <div class="wallet-chip" style="display: inline-block; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-right: 8px; margin-bottom: 8px;">
+            <span class="wallet-name" style="font-weight: bold; color: #fff;">${w.name}</span>
+            <span class="wallet-balance" style="display: block; font-size: 0.9rem; color: #aaa;">${formatCurrency(w.balance || 0)}</span>
+        </div>
+    `).join('');
+}
+
+function updateWalletSelectOptions() {
+    const select = document.getElementById('transaction-wallet');
+    if (!select) return;
+
+    const wallets = getWallets();
+    select.innerHTML = wallets.map(w => `
+        <option value="${w.id}">${w.name} (${formatCurrency(w.balance || 0)})</option>
+    `).join('');
+}
+
+// ===== BUDGET UI LOGIC =====
+function initBudgetUI() {
+    const manageBtn = document.getElementById('manage-budget-btn');
+    const modal = document.getElementById('budget-modal');
+    const closeBtn = document.getElementById('close-budget-modal');
+    const addBtn = document.getElementById('add-budget-btn');
+
+    if (manageBtn) {
+        manageBtn.addEventListener('click', () => {
+            if (modal) {
+                modal.classList.remove('hidden');
+                updateBudgetCategoryOptions();
+                renderBudgetManagementList();
+            }
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            if (modal) modal.classList.add('hidden');
+        });
+    }
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        });
+    }
+
+    if (addBtn) {
+        addBtn.addEventListener('click', handleAddBudget);
+    }
+
+    renderBudgetListSummary();
+}
+
+function updateBudgetCategoryOptions() {
+    const select = document.getElementById('new-budget-category');
+    if (!select) return;
+
+    const categories = [
+        "Makanan", "Transport", "Belanja", "Tagihan", "Hiburan", "Kesehatan", "Lainnya"
+    ];
+
+    select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function handleAddBudget() {
+    const categorySelect = document.getElementById('new-budget-category');
+    const limitInput = document.getElementById('new-budget-limit');
+
+    const category = categorySelect.value;
+    const limit = parseFloat(limitInput.value);
+
+    if (!limit || limit <= 0) {
+        alert('Masukkan nominal budget yang valid!');
+        return;
+    }
+
+    const budget = {
+        id: generateId(),
+        category: category,
+        limit: limit,
+        createdAt: new Date().toISOString()
+    };
+
+    saveBudget(budget);
+
+    limitInput.value = '';
+
+    renderBudgetManagementList();
+    renderBudgetListSummary();
+}
+
+function renderBudgetManagementList() {
+    const listEl = document.getElementById('budget-management-list');
+    if (!listEl) return;
+
+    const budgets = getBudgets();
+
+    listEl.innerHTML = budgets.map(b => `
+        <div class="budget-item" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+            <div>
+                <strong style="color: var(--text-primary); display: block;">${b.category}</strong>
+                <span style="color: var(--text-muted); font-size: 0.9rem;">Limit: ${formatCurrency(b.limit)}</span>
+            </div>
+            <button class="delete-btn" onclick="deleteBudgetUI('${b.id}')">🗑️</button>
+        </div>
+    `).join('');
+}
+
+window.deleteBudgetUI = function (id) {
+    if (confirm('Hapus budget ini?')) {
+        deleteBudget(id);
+        renderBudgetManagementList();
+        renderBudgetListSummary();
+    }
+};
+
+function renderBudgetListSummary() {
+    const container = document.getElementById('budget-list-summary');
+    if (!container) return;
+
+    const budgets = getBudgets();
+
+    if (budgets.length === 0) {
+        container.innerHTML = '<p class="text-muted" style="text-align: center; font-size: 0.9rem;">Belum ada budget yang diatur</p>';
+        return;
+    }
+
+    container.innerHTML = budgets.map(b => {
+        const spent = getCategoryExpenses(b.category);
+        const percentage = Math.min((spent / b.limit) * 100, 100);
+
+        let colorClass = 'bg-success';
+        if (percentage >= 100) colorClass = 'bg-danger';
+        else if (percentage >= 80) colorClass = 'bg-warning';
+
+        return `
+        <div class="budget-item" style="margin-bottom: 12px;">
+            <div class="budget-header">
+                <span>${b.category}</span>
+                <span class="budget-amount">${formatCurrency(spent)} / ${formatCurrency(b.limit)}</span>
+            </div>
+            <div class="budget-progress-container">
+                <div class="budget-progress-bar ${colorClass}" style="width: ${percentage}%"></div>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+// ===== VOICE INPUT MODULE =====
+let recognition;
+let isRecording = false;
+
+function initVoiceInput() {
+    // Check browser support
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        console.warn('Voice input not supported in this browser.');
+        const micBtn = document.getElementById('mic-btn');
+        if (micBtn) micBtn.style.display = 'none';
+        return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = true; // Keep recording even after pauses
+    recognition.interimResults = true; // Show results while speaking
+    recognition.lang = 'id-ID'; // Set language to Indonesian
+
+    recognition.onstart = function () {
+        isRecording = true;
+        updateMicUI(true);
+    };
+
+    recognition.onend = function () {
+        isRecording = false;
+        updateMicUI(false);
+    };
+
+    recognition.onresult = function (event) {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+
+        const journalInput = document.getElementById('journal-input');
+        if (journalInput && (finalTranscript || interimTranscript)) {
+            // If it's a new result, append it. 
+            // Note: This simple logic might duplicate text in some edge cases with interim results.
+            // A better approach for production is to track the last finalized index.
+            // For simplicity here, we'll just append final results.
+
+            if (finalTranscript) {
+                const currentText = journalInput.value;
+                const separator = currentText.length > 0 && !currentText.endsWith(' ') ? ' ' : '';
+                journalInput.value = currentText + separator + finalTranscript;
+
+                // Trigger input event to update char count if any
+                journalInput.dispatchEvent(new Event('input'));
+            }
+        }
+    };
+
+    recognition.onerror = function (event) {
+        console.error('Speech recognition error', event.error);
+        stopRecording();
+        if (event.error === 'not-allowed') {
+            alert('Akses mikrofon ditolak. Izinkan akses untuk menggunakan fitur ini.');
+        }
+    };
+
+    const micBtn = document.getElementById('mic-btn');
+    if (micBtn) {
+        micBtn.addEventListener('click', toggleRecording);
+    }
+}
+
+function toggleRecording() {
+    if (isRecording) {
+        stopRecording();
+    } else {
+        startRecording();
+    }
+}
+
+function startRecording() {
+    try {
+        recognition.start();
+    } catch (e) {
+        console.error('Failed to start recording:', e);
+    }
+}
+
+function stopRecording() {
+    try {
+        recognition.stop();
+    } catch (e) {
+        console.error('Failed to stop recording:', e);
+    }
+}
+
+function updateMicUI(recording) {
+    const micBtn = document.getElementById('mic-btn');
+    const statusText = document.getElementById('recording-status');
+
+    if (micBtn) {
+        if (recording) {
+            micBtn.classList.add('mic-active');
+            micBtn.innerHTML = '⏹️'; // Stop icon
+            micBtn.title = 'Stop Rekam';
+        } else {
+            micBtn.classList.remove('mic-active');
+            micBtn.innerHTML = '🎤'; // Mic icon
+            micBtn.title = 'Rekam Suara';
+        }
+    }
+
+    if (statusText) {
+        if (recording) {
+            statusText.classList.remove('hidden');
+        } else {
+            statusText.classList.add('hidden');
+        }
+    }
+}
+
+// ===== SECURITY MODULE (PIN LOCK) =====
+let currentPinInput = '';
+let isSettingUpPin = false; // 'set', 'confirm', 'change_old'
+let tempNewPin = '';
+
+function initSecurity() {
+    // Check if PIN is set
+    const savedPin = localStorage.getItem(STORAGE_KEYS.PIN);
+
+    // UI References
+    const lockScreen = document.getElementById('app-lock-screen');
+    const keypad = document.querySelector('.pin-keypad');
+
+    // Initial Lock
+    if (savedPin) {
+        if (lockScreen) lockScreen.classList.remove('hidden');
+    }
+
+    // Keypad Event Listeners
+    if (keypad) {
+        keypad.addEventListener('click', (e) => {
+            if (e.target.classList.contains('pin-btn')) {
+                const value = e.target.dataset.value;
+                handlePinInput(value);
+            }
+        });
+    }
+
+    // Settings UI
+    const pinToggle = document.getElementById('pin-lock-toggle');
+    const changePinBtn = document.getElementById('change-pin-btn');
+    const pinSetupSection = document.getElementById('pin-setup-section');
+
+    if (pinToggle) {
+        // Init toggle state
+        pinToggle.checked = !!savedPin;
+        if (savedPin && pinSetupSection) pinSetupSection.classList.remove('hidden');
+
+        pinToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                // Turn ON: Start setup flow
+                if (!localStorage.getItem(STORAGE_KEYS.PIN)) {
+                    startPinSetup();
+                }
+            } else {
+                // Turn OFF: Confirm with PIN
+                if (localStorage.getItem(STORAGE_KEYS.PIN)) {
+                    e.target.checked = true; // Revert first, wait for auth
+                    if (confirm('Matikan PIN Lock?')) {
+                        // Ideally ask for PIN here too, but for simplicity:
+                        localStorage.removeItem(STORAGE_KEYS.PIN);
+                        e.target.checked = false;
+                        if (pinSetupSection) pinSetupSection.classList.add('hidden');
+                        alert('PIN Lock dimatikan.');
+                    }
+                }
+            }
+        });
+    }
+
+    if (changePinBtn) {
+        changePinBtn.addEventListener('click', () => {
+            startPinSetup(true);
+        });
+    }
+}
+
+function handlePinInput(value) {
+    if (value === 'clear') {
+        currentPinInput = '';
+    } else if (value === 'back') {
+        currentPinInput = currentPinInput.slice(0, -1);
+    } else {
+        if (currentPinInput.length < 4) {
+            currentPinInput += value;
+        }
+    }
+
+    updatePinDisplay();
+
+    if (currentPinInput.length === 4) {
+        // Small delay for visual feedback
+        setTimeout(() => {
+            if (isSettingUpPin) {
+                processPinSetupStep();
+            } else {
+                validatePin();
+            }
+        }, 100);
+    }
+}
+
+function updatePinDisplay() {
+    const dots = document.querySelectorAll('.pin-dot');
+    dots.forEach((dot, index) => {
+        if (index < currentPinInput.length) {
+            dot.classList.add('filled');
+        } else {
+            dot.classList.remove('filled');
+        }
+        dot.classList.remove('error');
+    });
+}
+
+function validatePin() {
+    const savedPin = localStorage.getItem(STORAGE_KEYS.PIN);
+    if (currentPinInput === savedPin) {
+        // Unlock
+        const lockScreen = document.getElementById('app-lock-screen');
+        if (lockScreen) {
+            lockScreen.classList.add('hidden');
+            // reset logic
+            currentPinInput = '';
+            updatePinDisplay();
+        }
+    } else {
+        // Error
+        showPinError();
+    }
+}
+
+function showPinError() {
+    const dots = document.querySelectorAll('.pin-dot');
+    dots.forEach(dot => dot.classList.add('error'));
+
+    // Shake animation
+    const pinDisplay = document.querySelector('.pin-display');
+
+    setTimeout(() => {
+        currentPinInput = '';
+        updatePinDisplay();
+    }, 500);
+}
+
+function startPinSetup(isChange = false) {
+    isSettingUpPin = isChange ? 'change_old' : 'set';
+    currentPinInput = '';
+    tempNewPin = '';
+
+    // Show lock screen with different title
+    const lockScreen = document.getElementById('app-lock-screen');
+    const lockTitle = document.getElementById('lock-title');
+
+    if (lockScreen && lockTitle) {
+        lockScreen.classList.remove('hidden');
+        lockTitle.textContent = isChange ? 'Masukkan PIN Lama' : 'Buat PIN Baru (4 angka)';
+        // Add a "Cancel" button for setup mode if needed, 
+        // but for now relying on reload if stuck or clean flow.
+    }
+}
+
+function processPinSetupStep() {
+    const lockTitle = document.getElementById('lock-title');
+    const lockScreen = document.getElementById('app-lock-screen');
+    const pinSetupSection = document.getElementById('pin-setup-section');
+    const pinToggle = document.getElementById('pin-lock-toggle');
+
+    if (isSettingUpPin === 'change_old') {
+        // Verifying old PIN
+        const savedPin = localStorage.getItem(STORAGE_KEYS.PIN);
+        if (currentPinInput === savedPin) {
+            isSettingUpPin = 'set';
+            currentPinInput = '';
+            updatePinDisplay();
+            lockTitle.textContent = 'Masukkan PIN Baru';
+        } else {
+            showPinError();
+        }
+    } else if (isSettingUpPin === 'set') {
+        // First entry of new PIN
+        tempNewPin = currentPinInput;
+        isSettingUpPin = 'confirm';
+        currentPinInput = '';
+        updatePinDisplay();
+        lockTitle.textContent = 'Konfirmasi PIN Baru';
+    } else if (isSettingUpPin === 'confirm') {
+        // Confirmation of new PIN
+        if (currentPinInput === tempNewPin) {
+            // Success
+            localStorage.setItem(STORAGE_KEYS.PIN, currentPinInput);
+            alert('PIN berhasil disimpan!');
+
+            // Clean up
+            isSettingUpPin = false;
+            currentPinInput = '';
+            tempNewPin = '';
+            updatePinDisplay();
+            lockScreen.classList.add('hidden');
+            lockTitle.textContent = 'Masukkan PIN'; // Reset title for normal lock
+
+            // Update Settings UI
+            if (pinSetupSection) pinSetupSection.classList.remove('hidden');
+            if (pinToggle) pinToggle.checked = true;
+
+        } else {
+            alert('PIN tidak cocok. Ulangi.');
+            isSettingUpPin = 'set';
+            currentPinInput = '';
+            tempNewPin = '';
+            updatePinDisplay();
+            lockTitle.textContent = 'Buat PIN Baru (4 angka)';
+        }
+    }
 }

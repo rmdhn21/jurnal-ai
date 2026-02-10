@@ -114,6 +114,7 @@
             </div>
 
             <div class="header-actions">
+                <button id="theme-toggle-btn" class="icon-btn" title="Ganti Tema">🌙</button>
                 <button id="logout-btn" class="icon-btn" title="Logout">🚪</button>
                 <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
             </div>
@@ -217,6 +218,10 @@
                     <textarea id="journal-input" class="journal-textarea"
                         placeholder="Tulis apa saja yang kamu pikirkan atau rasakan hari ini..."></textarea>
                     <div class="journal-actions">
+                        <button id="mic-btn" class="icon-btn" title="Rekam Suara"
+                            style="margin-right: auto;">🎤</button>
+                        <span id="recording-status" class="text-muted hidden"
+                            style="margin-right: 10px; font-size: 0.9rem;">Mendengarkan...</span>
                         <span id="char-count" class="char-count">0 karakter</span>
                         <button id="ask-ai-btn" class="btn btn-primary">
                             <span class="btn-icon">🤖</span>
@@ -396,6 +401,17 @@
 
             <!-- Screen 4: Finance -->
             <section id="finance-screen" class="screen">
+                <!-- Wallet Summary -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>💳 Dompet Saya</h3>
+                        <button id="manage-wallets-btn" class="btn btn-small btn-secondary">⚙️ Kelola</button>
+                    </div>
+                    <div id="wallet-list-summary" class="wallet-list-summary">
+                        <!-- Wallets injected here -->
+                    </div>
+                </div>
+
                 <!-- Summary Cards -->
                 <div class="summary-row">
                     <div class="summary-card income">
@@ -407,7 +423,7 @@
                         <span id="total-expense" class="summary-value">Rp 0</span>
                     </div>
                     <div class="summary-card balance">
-                        <span class="summary-label">Saldo</span>
+                        <span class="summary-label">Saldo Total</span>
                         <span id="total-balance" class="summary-value">Rp 0</span>
                     </div>
                 </div>
@@ -420,6 +436,17 @@
                     </div>
                 </div>
 
+                <!-- Budget Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📉 Budgeting</h3>
+                        <button id="manage-budget-btn" class="btn btn-small btn-secondary">⚙️ Atur</button>
+                    </div>
+                    <div id="budget-list-summary" class="budget-list">
+                        <!-- Budgets injected here -->
+                    </div>
+                </div>
+
                 <!-- Add Transaction -->
                 <div class="card">
                     <h2>💰 Tambah Transaksi</h2>
@@ -429,13 +456,17 @@
                                 <option value="income">💵 Pemasukan</option>
                                 <option value="expense">💸 Pengeluaran</option>
                             </select>
-                            <input type="number" id="transaction-amount" placeholder="Jumlah" class="input">
+                            <select id="transaction-wallet" class="input">
+                                <!-- Wallets injected here -->
+                            </select>
                         </div>
                         <div class="form-row">
-                            <input type="text" id="transaction-category" placeholder="Kategori (misal: Gaji, Makan)"
-                                class="input">
+                            <input type="number" id="transaction-amount" placeholder="Jumlah" class="input">
                             <input type="date" id="transaction-date" class="input">
                         </div>
+                        <input type="text" id="transaction-category" placeholder="Kategori (misal: Gaji, Makan)"
+                            class="input">
+
                         <input type="text" id="transaction-desc" placeholder="Deskripsi (opsional)" class="input">
                         <button id="add-transaction-btn" class="btn btn-primary">+ Tambah Transaksi</button>
                     </div>
@@ -519,7 +550,24 @@
                 </div>
                 <button id="save-settings-btn" class="btn btn-primary">💾 Simpan API Key</button>
 
+                <!-- App Lock Section -->
+                <div class="form-group">
+                    <label>🛡️ App Lock (PIN)</label>
+                    <small style="display: block; margin-bottom: 0.5rem;">Kunci aplikasi saat dibuka.</small>
+                    <div class="reminder-settings">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="pin-lock-toggle">
+                            <span>Aktifkan PIN Lock</span>
+                        </label>
+                    </div>
+                    <div id="pin-setup-section" class="hidden" style="margin-top: 10px;">
+                        <button id="change-pin-btn" class="btn btn-secondary" style="width: 100%;">Ubah PIN</button>
+                    </div>
+                </div>
+
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 1.5rem 0;">
+
+
 
                 <!-- Security Section -->
                 <div class="form-group">
@@ -585,6 +633,74 @@
                         Hapus Akun Cloud</button>
                     <small style="display: block; margin-top: 0.5rem; color: #888;">Hapus Akun akan menghapus akun
                         Supabase dan semua data cloud Anda.</small>
+                </div>
+            </div>
+        </div>
+        <!-- Wallet Management Modal -->
+        <div id="wallet-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3>💳 Kelola Dompet</h3>
+                    <button id="close-wallet-modal" class="icon-btn">✕</button>
+                </div>
+
+                <div class="add-form">
+                    <input type="text" id="new-wallet-name" placeholder="Nama Dompet (misal: Bank Jago)" class="input">
+                    <input type="number" id="new-wallet-balance" placeholder="Saldo Awal" class="input" value="0">
+                    <button id="add-wallet-btn" class="btn btn-primary">+ Tambah</button>
+                </div>
+
+                <div id="wallet-management-list" class="wallet-list">
+                    <!-- List of wallets with delete buttons -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Management Modal -->
+        <div id="budget-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3>📉 Atur Budget Bulanan</h3>
+                    <button id="close-budget-modal" class="icon-btn">✕</button>
+                </div>
+
+                <div class="add-form">
+                    <select id="new-budget-category" class="input">
+                        <!-- Categories injected here -->
+                    </select>
+                    <input type="number" id="new-budget-limit" placeholder="Batas Budget (Rp)" class="input">
+                    <button id="add-budget-btn" class="btn btn-primary">+ Set</button>
+                </div>
+
+                <div id="budget-management-list" class="budget-list" style="margin-top: 1rem;">
+                    <!-- List of budgets with delete buttons -->
+                </div>
+            </div>
+        </div>
+        <!-- Lock Screen Overlay -->
+        <div id="app-lock-screen" class="lock-screen hidden">
+            <div class="lock-content">
+                <div class="lock-icon">🔒</div>
+                <h2 id="lock-title">Masukkan PIN</h2>
+                <div class="pin-display">
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                </div>
+                <div class="pin-keypad">
+                    <button class="pin-btn" data-value="1">1</button>
+                    <button class="pin-btn" data-value="2">2</button>
+                    <button class="pin-btn" data-value="3">3</button>
+                    <button class="pin-btn" data-value="4">4</button>
+                    <button class="pin-btn" data-value="5">5</button>
+                    <button class="pin-btn" data-value="6">6</button>
+                    <button class="pin-btn" data-value="7">7</button>
+                    <button class="pin-btn" data-value="8">8</button>
+                    <button class="pin-btn" data-value="9">9</button>
+                    <button class="pin-btn btn-clear" data-value="clear">C</button>
+                    <button class="pin-btn" data-value="0">0</button>
+                    <button class="pin-btn btn-back" data-value="back">⌫</button>
                 </div>
             </div>
         </div>
