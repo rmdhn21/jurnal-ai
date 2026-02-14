@@ -1,14 +1,35 @@
 // Service Worker for Jurnal AI PWA
-const CACHE_NAME = 'jurnal-ai-v4';
+const CACHE_NAME = 'jurnal-ai-v6';
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './app.js',
     './manifest.json',
-    './supabase.js',
     './icons/icon-192.png',
-    './icons/icon-512.png'
+    './icons/icon-512.png',
+    // Core / Data Layer
+    './js/storage.js',
+    './js/cloud-sync.js',
+    './js/ai.js',
+    './js/theme.js',
+    './js/encryption.js',
+    './js/auth.js',
+    './js/charts.js',
+    // UI Modules
+    './js/journal-ui.js',
+    './js/planner-ui.js',
+    './js/pomodoro.js',
+    './js/finance-ui.js',
+    './js/habits-goals-ui.js',
+    './js/navigation-settings.js',
+    './js/dashboard.js',
+    './js/wallet-budget-ui.js',
+    // Feature Modules
+    './js/features.js',
+    './js/extras.js',
+    './js/backup-tags.js',
+    // App Initialization
+    './js/app-init.js'
 ];
 
 // Install event - cache files

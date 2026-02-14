@@ -14,16 +14,35 @@ const STORAGE_KEYS = {
     WALLETS: 'jurnal_ai_wallets',
     THEME: 'jurnal_ai_theme',
     BUDGETS: 'jurnal_ai_budgets',
-    PIN: 'jurnal_ai_pin'
+    DAILY_BUDGET: 'jurnal_ai_global_daily_budget',
+    PIN: 'jurnal_ai_pin',
+    GLOBAL_BUDGET: 'jurnal_ai_global_budget',
+    RECURRING: 'jurnal_ai_recurring',
+    PRAYER_CITY: 'jurnal_ai_prayer_city',
+    PRAYER_DATA: 'jurnal_ai_prayer_data'
 };
 
 // ===== SUPABASE CONFIG =====
 const SUPABASE_URL_DEFAULT = 'https://oybywsjhgkilpceisxzn.supabase.co';
 const SUPABASE_KEY_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95Ynl3c2poZ2tpbHBjZWlzeHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQ0MDIsImV4cCI6MjA4NTk3MDQwMn0.sSNrv1LPn-WRrnrnwus0aJDEmulR6qoWMHc4KeQL_4w';
 
+// Auto sync when back online
+window.addEventListener('online', () => {
+    console.log('🌐 Online detected, triggering sync...');
+    if (isCloudSyncEnabled()) triggerCloudSync();
+    updateSyncStatus('Syncing');
+});
+
+window.addEventListener('offline', () => {
+    console.log('🔌 Offline detected');
+    updateSyncStatus('Offline');
+});
+
 let supabaseClient = null;
 
 function initSupabase() {
+    if (supabaseClient) return true; // Singleton: prevent multiple instances
+
     const customUrl = localStorage.getItem('supabase_url');
     const customKey = localStorage.getItem('supabase_key');
 
@@ -63,6 +82,12 @@ function disableCloudSync() {
 async function syncToCloud() {
     if (!supabaseClient || !isCloudSyncEnabled()) return;
 
+    // 1. Check consistency
+    if (!navigator.onLine) {
+        updateSyncStatus('Offline');
+        return;
+    }
+
     // Check session first
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError || !session) {
@@ -72,22 +97,29 @@ async function syncToCloud() {
     }
 
     const userId = session.user.id;
-    console.log('Syncing starting for user:', userId);
     updateSyncStatus('Syncing');
 
-    const data = {
-        journals: getJournals(),
-        tasks: getTasks(),
-        schedules: getSchedules(),
-        transactions: getTransactions(),
-        habits: getHabits(),
-        goals: getGoals(),
-        reminderSettings: getReminderSettings(),
-        wallets: getWallets(),
-        updatedAt: new Date().toISOString()
-    };
-
     try {
+        // 2. Pull first (Merge logic) to avoid overwriting cloud updates from other devices
+        console.log('🔄 Pre-sync: Pulling latest data from cloud...');
+        await syncFromCloud();
+
+        // 3. Prepare fresh data (now merged)
+        const data = {
+            journals: getJournals(),
+            tasks: getTasks(),
+            schedules: getSchedules(),
+            transactions: getTransactions(),
+            habits: getHabits(),
+            goals: getGoals(),
+            reminderSettings: getReminderSettings(),
+            wallets: getWallets(),
+            updatedAt: new Date().toISOString(),
+            version: '1.1' // Bump version
+        };
+
+        // 4. Push
+        console.log('📤 Pushing merged data to cloud...');
         const { error } = await supabaseClient
             .from('user_data')
             .upsert({ user_id: userId, data: data }, { onConflict: 'user_id' });
@@ -95,12 +127,11 @@ async function syncToCloud() {
         if (error) {
             console.error('Sync ERROR:', error);
             updateSyncStatus('Error');
-            // Show toast/alert if needed, but better to keep it silent normally unless critical
             if (error.code === '42501') {
-                alert('Sync Gagal: Permission Denied. Pastikan Anda sudah setup RLS Policies di Supabase!');
+                alert('Sync Gagal: Permission Denied. Pastikan RLS Policies sudah diset!');
             }
         } else {
-            console.log('✅ Synced to cloud successfully');
+            console.log('✅ Synced to cloud successfully (Pull+Push)');
             updateSyncStatus('Synced');
         }
     } catch (err) {
@@ -596,6 +627,23 @@ function saveApiKey(key) {
 // Utility
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function getTodayString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getPriorityLabel(priority) {
+    const labels = {
+        'allah': 'Ibadah',
+        'self': 'Pribadi',
+        'others': 'Sosial/Kerja'
+    };
+    return labels[priority] || '';
 }
 
 function formatDate(date) {
@@ -1234,6 +1282,29 @@ function initJournalUI() {
     // Save journal
     saveJournalBtn.addEventListener('click', handleSaveJournal);
 
+    // Template Button
+    document.getElementById('template-btn')?.addEventListener('click', () => {
+        const journalInput = document.getElementById('journal-input');
+        if (journalInput.value && !confirm('Timpa tulisan saat ini dengan template?')) return;
+
+        journalInput.value = `🕌 Muhasabah Hari Ini
+
+1. Bagaimana ibadah wajibku hari ini? (Salat 5 waktu)
+- 
+
+2. Adakah waktu yang terbuang sia-sia?
+- 
+
+3. Kebaikan apa yang sudah kulakukan untuk orang lain?
+- 
+
+4. Apa dosa/kesalahan hari ini yang perlu kutaubati?
+- 
+
+5. Target perbaikan besok:
+- `;
+    });
+
     // Load history
     initTagInput();
     renderJournalHistory();
@@ -1494,6 +1565,7 @@ function handleAddSchedule() {
 
     const title = titleInput.value.trim();
     const datetime = datetimeInput.value;
+    const priority = document.getElementById('new-schedule-priority').value;
 
     if (!title || !datetime) {
         alert('Isi nama kegiatan dan waktu!');
@@ -1504,6 +1576,7 @@ function handleAddSchedule() {
         id: generateId(),
         title: title,
         datetime: datetime,
+        priority: priority, // 'allah', 'self', 'others'
         createdAt: new Date().toISOString(),
         createdFrom: null
     };
@@ -1582,6 +1655,43 @@ function initPomodoroTimer() {
     document.getElementById('timer-start')?.addEventListener('click', startTimer);
     document.getElementById('timer-pause')?.addEventListener('click', pauseTimer);
     document.getElementById('timer-reset')?.addEventListener('click', resetTimer);
+
+    // Mode listeners
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const time = parseInt(btn.dataset.time);
+            const modeName = btn.textContent;
+
+            // Text to label
+            const labelEl = document.getElementById('timer-label');
+            if (labelEl) labelEl.textContent = modeName;
+
+            setPomodoroMode(time);
+
+            // Update active state
+            document.querySelectorAll('.mode-btn').forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-secondary');
+            });
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary');
+        });
+    });
+}
+
+function setPomodoroMode(minutes) {
+    // Reset timer
+    if (pomodoroState.intervalId) clearInterval(pomodoroState.intervalId);
+
+    pomodoroState.isRunning = false;
+    pomodoroState.isPaused = false;
+    pomodoroState.timeRemaining = minutes * 60;
+
+    // UI Reset
+    document.getElementById('timer-start').disabled = false;
+    document.getElementById('timer-pause').disabled = true;
+
+    updatePomodoroDisplay();
 }
 
 function startTimer() {
@@ -1725,29 +1835,79 @@ function renderTodoList() {
 
 function renderScheduleList() {
     const listEl = document.getElementById('schedule-list');
-    const schedules = getSchedules();
+    let schedules = getSchedules();
+
+    // --- INTEGRATE PRAYER TIMES ---
+    const todayStr = new Date().toISOString().split('T')[0];
+    const cachedData = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRAYER_DATA) || '{}');
+
+    // Only use cache if it matches today (or logic for multiple days could be added later)
+    if (cachedData.key && cachedData.key.includes(todayStr) && cachedData.timings) {
+        const timings = cachedData.timings;
+        const prayerNames = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+        const prayerMap = { 'Fajr': 'Subuh', 'Dhuhr': 'Dzuhur', 'Asr': 'Ashar', 'Maghrib': 'Maghrib', 'Isha': 'Isya' };
+
+        prayerNames.forEach(key => {
+            if (timings[key]) {
+                schedules.push({
+                    id: `prayer-${key}`,
+                    title: `🕌 ${prayerMap[key]}`,
+                    datetime: `${todayStr}T${timings[key]}`, // approximate ISO for sorting
+                    isPrayer: true
+                });
+            }
+        });
+    }
+    // -----------------------------
+
+    // Sort by time
+    schedules.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
 
     if (schedules.length === 0) {
         listEl.innerHTML = `<div class="empty-state"><p>Belum ada jadwal</p></div>`;
         return;
     }
 
-    listEl.innerHTML = schedules.map(schedule => `
-        <div class="schedule-item" data-id="${schedule.id}">
-            <span class="schedule-time">${formatShortDate(schedule.datetime)}</span>
-            <span class="task-text">${schedule.title}</span>
-            <button class="delete-btn">🗑️</button>
-        </div>
-    `).join('');
+    listEl.innerHTML = schedules.map(schedule => {
+        const isPrayer = schedule.isPrayer;
+        let style = '';
 
-    // Add event listeners
+        if (isPrayer) {
+            style = 'background: linear-gradient(to right, #eef2f3, #e0eafc); border-left: 4px solid #1e3c72;';
+        } else if (schedule.priority) {
+            // Priority Colors (Fiqh Al-Awlawiyyah)
+            const colors = {
+                'allah': '#dc3545', // Red (Wajib)
+                'self': '#28a745',  // Green (Health/Growth)
+                'others': '#007bff' // Blue (Ummah/Work)
+            };
+            const color = colors[schedule.priority] || '#ccc';
+            style = `border-left: 4px solid ${color}; padding-left: 10px;`;
+        }
+
+        const deleteBtn = isPrayer ? '' : `<button class="delete-btn">🗑️</button>`;
+        const timeStr = schedule.datetime.includes('T') ? schedule.datetime.split('T')[1].substring(0, 5) : formatShortDate(schedule.datetime);
+
+        return `
+        <div class="schedule-item" data-id="${schedule.id}" style="${style}">
+            <span class="schedule-time">${timeStr}</span>
+            <span class="task-text" style="${isPrayer ? 'font-weight:bold; color:#1e3c72;' : ''}">
+                ${schedule.title}
+                ${schedule.priority ? `<small style="display:block; font-size:0.7rem; color:#888;">${getPriorityLabel(schedule.priority)}</small>` : ''}
+            </span>
+            ${deleteBtn}
+        </div>
+    `}).join('');
+
+    // Add event listeners (only for non-prayer items)
     listEl.querySelectorAll('.schedule-item').forEach(item => {
         const deleteBtn = item.querySelector('.delete-btn');
-
-        deleteBtn.addEventListener('click', () => {
-            deleteSchedule(item.dataset.id);
-            renderScheduleList();
-        });
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                deleteSchedule(item.dataset.id);
+                renderScheduleList();
+            });
+        }
     });
 }
 
@@ -1805,13 +1965,67 @@ function handleAddTransaction() {
         createdAt: new Date().toISOString()
     };
 
+    // CHECK DAILY BUDGET
+    if (type === 'expense') {
+        const budgets = getBudgets();
+        const categoryBudget = budgets.find(b => b.category === category);
+
+        if (categoryBudget && categoryBudget.dailyLimit > 0) {
+            // Calculate today's expenses for this category
+            const today = date || getTodayString();
+            const transactions = getTransactions();
+
+            const todayExpenses = transactions
+                .filter(t => t.type === 'expense' && t.category === category && t.date === today)
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            if (todayExpenses + amount > categoryBudget.dailyLimit) {
+                alert(`⚠️ Peringatan: Pengeluaran hari ini (${formatCurrency(todayExpenses + amount)}) melebihi batas harian (${formatCurrency(categoryBudget.dailyLimit)}) untuk kategori ${category}!`);
+            }
+        }
+    }
+
+    const isRecurring = document.getElementById('is-recurring-transaction').checked;
+    const recurringDate = parseInt(document.getElementById('recurring-date').value);
+
+    // Validate
+    if (!amount || isNaN(amount) || amount <= 0) {
+        alert('Jumlah harus valid');
+        return;
+    }
+
+    if (isRecurring) {
+        if (!recurringDate || recurringDate < 1 || recurringDate > 31) {
+            alert('Tanggal rutin harus valid (1-31)');
+            return;
+        }
+        // Save Recurring Setting
+        saveRecurringTransaction(`Transaksi ${category}`, amount, type, category, walletId, recurringDate);
+        alert(`Transaksi rutin tgl ${recurringDate} berhasil dijadwalkan!`);
+    }
+
+
+
     saveTransaction(transaction);
     updateWalletBalance(walletId, amount, type);
 
-    // Clear form
+    // Reset form
     document.getElementById('transaction-amount').value = '';
-    document.getElementById('transaction-category').value = '';
+    document.getElementById('transaction-category').value = ''; // Keep clearing category
     document.getElementById('transaction-desc').value = '';
+    document.getElementById('is-recurring-transaction').checked = false;
+    const recurringDateGroup = document.getElementById('recurring-date-group');
+    if (recurringDateGroup) { // Check if element exists before manipulating
+        recurringDateGroup.classList.add('hidden');
+    }
+    document.getElementById('recurring-date').value = '';
+
+    // Assuming these functions exist elsewhere in the code
+    if (typeof hideAddTransactionModal === 'function') hideAddTransactionModal();
+    if (typeof renderTransactionsHistory === 'function') renderTransactionsHistory();
+    if (typeof updateDashboard === 'function') updateDashboard();
+    if (typeof updateBudgetUI === 'function') updateBudgetUI();
+    if (typeof updateGlobalBudgetUI === 'function') updateGlobalBudgetUI(); // Update global budget progress
 
     renderTransactionList();
     updateFinanceSummary();
@@ -2411,12 +2625,24 @@ function initSettings() {
     // Save settings
     saveSettingsBtn.addEventListener('click', () => {
         const apiKey = apiKeyInput.value.trim();
+        const dailyBudget = parseInt(document.getElementById('global-daily-budget-input').value);
+
         if (apiKey) {
             saveApiKey(apiKey);
-            alert('API key berhasil disimpan!');
-        } else {
-            alert('Masukkan API key yang valid');
         }
+
+        if (dailyBudget && dailyBudget > 0) {
+            localStorage.setItem(STORAGE_KEYS.GLOBAL_BUDGET, dailyBudget);
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.GLOBAL_BUDGET);
+        }
+
+        if (typeof updateGlobalBudgetUI === 'function') {
+            updateGlobalBudgetUI();
+        }
+
+        alert('Pengaturan berhasil disimpan!');
+        hideSettings();
     });
 
     // Save Cloud Config
@@ -2427,6 +2653,11 @@ function initSettings() {
 
     // Load existing API key
     apiKeyInput.value = getApiKey();
+
+    const savedDailyBudget = localStorage.getItem(STORAGE_KEYS.GLOBAL_BUDGET);
+    if (savedDailyBudget) {
+        document.getElementById('global-daily-budget-input').value = savedDailyBudget;
+    }
 
     // Export Data
     document.getElementById('export-data-btn').addEventListener('click', exportAllData);
@@ -3060,11 +3291,22 @@ function showMainApp() {
     // Initialize all modules
     initNavigation();
     initSettings();
+
+
+    // Add new modules above this line
     initDashboard();
     initJournalUI();
     initPlannerUI();
     initPomodoroTimer();
     initGoalsUI();
+
+    try {
+        if (typeof initPrayerTimes === 'function') {
+            initPrayerTimes();
+        }
+    } catch (e) {
+        console.error('Failed to init Prayer Times:', e);
+    }
     initFinanceUI();
     initHabitsUI();
     initGlobalSearch();
@@ -3292,7 +3534,7 @@ function updateDashboardStats() {
     // Best streak
     const habits = getHabits();
     const bestStreak = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
-    document.getElementById('stat-streak').textContent = bestStreak;
+    document.getElementById('current-streak').textContent = bestStreak;
 }
 
 function updateUpcomingSchedules() {
@@ -3715,8 +3957,61 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof initSecurity === 'function') {
             initSecurity();
         }
+        if (typeof initExportCSV === 'function') {
+            initExportCSV();
+        }
+        if (typeof initMoodCalendar === 'function') {
+            initMoodCalendar();
+        }
+        if (typeof initFinanceUpgrades === 'function') {
+            initFinanceUpgrades();
+        }
+        if (typeof initAuth === 'function') {
+            initAuth();
+        }
     }, 1000);
 });
+
+function initAuth() {
+    // Local Auth
+    document.getElementById('login-btn')?.addEventListener('click', handleLogin);
+    document.getElementById('register-btn')?.addEventListener('click', handleRegister);
+
+    // Toggle Forms
+    document.getElementById('show-register-btn')?.addEventListener('click', () => {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('register-form').classList.remove('hidden');
+    });
+
+    document.getElementById('show-login-btn')?.addEventListener('click', () => {
+        document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('login-form').classList.remove('hidden');
+    });
+
+    // Cloud Auth Navigation
+    const cloudLoginBtn = document.getElementById('cloud-login-btn');
+    const cloudForm = document.getElementById('cloud-login-form');
+    const loginForm = document.getElementById('login-form');
+    const backToLocalBtn = document.getElementById('back-to-local-btn');
+
+    if (cloudLoginBtn) {
+        cloudLoginBtn.addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            cloudForm.classList.remove('hidden');
+        });
+    }
+
+    if (backToLocalBtn) {
+        backToLocalBtn.addEventListener('click', () => {
+            cloudForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        });
+    }
+
+    // Cloud Auth Actions
+    document.getElementById('cloud-signin-btn')?.addEventListener('click', handleCloudSignIn);
+    document.getElementById('cloud-signup-btn')?.addEventListener('click', handleCloudSignUp);
+}
 
 // ===== BACKUP & RESTORE =====
 function initBackupRestore() {
@@ -4011,6 +4306,28 @@ window.deleteBudgetUI = function (id) {
         renderBudgetListSummary();
     }
 };
+
+
+
+function getCategoryExpenses(category) {
+    const transactions = getTransactions();
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    return transactions
+        .filter(t => {
+            if (!t.date || t.type !== 'expense' || t.category !== category) return false;
+
+            // Safe Monthly Check (string based to avoid timezone shift)
+            // t.date format is YYYY-MM-DD
+            const [tYear, tMonth] = t.date.split('-');
+            const currentMonthStr = String(currentMonth + 1).padStart(2, '0');
+
+            return Number(tYear) === currentYear && tMonth === currentMonthStr;
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
+}
 
 function renderBudgetListSummary() {
     const container = document.getElementById('budget-list-summary');
@@ -4371,3 +4688,594 @@ function processPinSetupStep() {
         }
     }
 }
+
+// ===== EXPORT DATA MODULE =====
+function initExportCSV() {
+    const exportFinanceBtn = document.getElementById('export-finance-csv-btn');
+    const exportJournalBtn = document.getElementById('export-journal-csv-btn');
+    const exportHabitsBtn = document.getElementById('export-habits-csv-btn');
+
+    if (exportFinanceBtn) {
+        exportFinanceBtn.addEventListener('click', () => exportToCSV('finance'));
+    }
+    if (exportJournalBtn) {
+        exportJournalBtn.addEventListener('click', () => exportToCSV('journal'));
+    }
+    if (exportHabitsBtn) {
+        exportHabitsBtn.addEventListener('click', () => exportToCSV('habits'));
+    }
+}
+
+function exportToCSV(type) {
+    let data = [];
+    let filename = `jurnal-ai-${type}-${formatShortDate(new Date()).replace(/ /g, '-')}.csv`;
+    let headers = [];
+
+    if (type === 'finance') {
+        const transactions = getTransactions();
+        if (transactions.length === 0) {
+            alert('Belum ada data keuangan untuk diexport.');
+            return;
+        }
+        headers = ['ID', 'Date', 'Type', 'Category', 'Amount', 'Description', 'Wallet'];
+        data = transactions.map(t => {
+            const wallet = getWallets().find(w => w.id === t.walletId);
+            return {
+                ID: t.id,
+                Date: t.date,
+                Type: t.type,
+                Category: t.category,
+                Amount: t.amount,
+                Description: t.description || '-',
+                Wallet: wallet ? wallet.name : '-'
+            };
+        });
+    } else if (type === 'journal') {
+        const journals = getJournals();
+        if (journals.length === 0) {
+            alert('Belum ada jurnal untuk diexport.');
+            return;
+        }
+        headers = ['ID', 'Date', 'Mood', 'Tags', 'Content'];
+        data = journals.map(j => ({
+            ID: j.id,
+            Date: j.date,
+            Mood: j.mood,
+            Tags: (j.tags || []).join('; '),
+            Content: j.content || ''
+        }));
+    } else if (type === 'habits') {
+        const habits = getHabits();
+        if (habits.length === 0) {
+            alert('Belum ada habits untuk diexport.');
+            return;
+        }
+        headers = ['ID', 'Name', 'Streak', 'CreatedAt'];
+        data = habits.map(h => ({
+            ID: h.id,
+            Name: h.name,
+            Streak: calculateStreak(h),
+            CreatedAt: h.createdAt
+        }));
+    }
+
+    if (data.length > 0) {
+        downloadCSV(data, headers, filename);
+    }
+}
+
+function downloadCSV(data, headers, filename) {
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+
+    for (const row of data) {
+        const values = headers.map(header => {
+            let val = row[header] || '';
+            let valStr = String(val);
+            // Escape double quotes by doubling them
+            valStr = valStr.replace(/"/g, '""');
+            // Wrap in double quotes
+            return `"${valStr}"`;
+        });
+        csvRows.push(values.join(','));
+    }
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', filename);
+    document.body.appendChild(a);
+    a.click();
+
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// ===== MOOD CALENDAR MODULE =====
+let currentCalendarDate = new Date();
+
+function initMoodCalendar() {
+    renderCalendar(currentCalendarDate);
+
+    const prevBtn = document.getElementById('prev-month-btn');
+    const nextBtn = document.getElementById('next-month-btn');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => changeMonth(-1));
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => changeMonth(1));
+    }
+}
+
+function changeMonth(offset) {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
+    renderCalendar(currentCalendarDate);
+}
+
+function renderCalendar(date) {
+    const monthYear = document.getElementById('calendar-month-year');
+    const calendarGrid = document.getElementById('mood-calendar-grid');
+
+    if (!monthYear || !calendarGrid) return;
+
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    // Set Header
+    const monthNames = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    monthYear.textContent = `${monthNames[month]} ${year}`;
+
+    // Clear Grid
+    calendarGrid.innerHTML = '';
+
+    // Calculate days
+    const firstDay = new Date(year, month, 1).getDay(); // 0 = Sunday
+    // Adjust for Monday start (Mon=0, Sun=6)
+    const startDay = firstDay === 0 ? 6 : firstDay - 1;
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Get Journal Data for this month
+    const journals = getJournals();
+    const moodMap = new Map(); // "YYYY-MM-DD" -> mood
+
+    journals.forEach(j => {
+        // Use the mood of the entry if it exists
+        if (j.date && j.mood) {
+            // Check if date matches current month/year view
+            // j.date is ISO string "YYYY-MM-DDTHH:mm..." or just "YYYY-MM-DD"
+            const jDate = new Date(j.date);
+            const dateStr = `${jDate.getFullYear()}-${String(jDate.getMonth() + 1).padStart(2, '0')}-${String(jDate.getDate()).padStart(2, '0')}`;
+            // If multiple entries, last one overwrites (simplest logic for now)
+            moodMap.set(dateStr, j.mood);
+        }
+    });
+
+    // Empty cells for previous month
+    for (let i = 0; i < startDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day empty';
+        calendarGrid.appendChild(emptyCell);
+    }
+
+    // Days
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day';
+        cell.textContent = day;
+
+        // Check if today
+        if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+            cell.classList.add('today');
+        }
+
+        // Check mood
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        if (moodMap.has(dateStr)) {
+            const mood = moodMap.get(dateStr);
+            cell.classList.add(`mood-${mood}`);
+            cell.title = `Mood: ${mood}`;
+        }
+
+        calendarGrid.appendChild(cell);
+    }
+}
+
+// ===== FINANCE UPGRADES MODULE =====
+function initFinanceUpgrades() {
+    // 1. Global Budget UI
+    const globalBudgetInput = document.getElementById('global-daily-budget-input');
+    const saveGlobalBudgetBtn = document.getElementById('save-global-budget-btn');
+
+    if (globalBudgetInput) {
+        // Load saved setting
+        const savedLimit = localStorage.getItem(STORAGE_KEYS.GLOBAL_BUDGET);
+        if (savedLimit) globalBudgetInput.value = savedLimit;
+
+        // Change listener
+        globalBudgetInput.addEventListener('change', (e) => {
+            const val = parseInt(e.target.value);
+            if (val > 0) {
+                localStorage.setItem(STORAGE_KEYS.GLOBAL_BUDGET, val);
+                updateGlobalBudgetUI();
+            } else {
+                localStorage.removeItem(STORAGE_KEYS.GLOBAL_BUDGET);
+                updateGlobalBudgetUI();
+            }
+        });
+
+        // Save Button Listener
+        if (saveGlobalBudgetBtn) {
+            saveGlobalBudgetBtn.addEventListener('click', () => {
+                const val = parseInt(globalBudgetInput.value);
+                if (val > 0) {
+                    localStorage.setItem(STORAGE_KEYS.GLOBAL_BUDGET, val);
+                    updateGlobalBudgetUI();
+                    alert('Budget harian global tersimpan!');
+                } else {
+                    localStorage.removeItem(STORAGE_KEYS.GLOBAL_BUDGET);
+                    updateGlobalBudgetUI();
+                    alert('Budget harian global dihapus!');
+                }
+            });
+        }
+    }
+
+    // 2. Recurring Transactions Toggle
+    const recurringToggle = document.getElementById('is-recurring-transaction');
+    const recurringDateGroup = document.getElementById('recurring-date-group');
+
+    if (recurringToggle && recurringDateGroup) {
+        recurringToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                recurringDateGroup.classList.remove('hidden');
+            } else {
+                recurringDateGroup.classList.add('hidden');
+            }
+        });
+    }
+
+    // Initial check
+    checkRecurringTransactions();
+    updateGlobalBudgetUI();
+}
+
+function updateGlobalBudgetUI() {
+    const budgetCard = document.getElementById('global-budget-card');
+    const budgetText = document.getElementById('global-budget-text');
+    const budgetProgress = document.getElementById('global-budget-progress');
+
+    // Hide if no limit set
+    const limit = parseInt(localStorage.getItem(STORAGE_KEYS.GLOBAL_BUDGET) || 0);
+    if (!budgetCard) return;
+
+    if (limit <= 0) {
+        budgetCard.classList.remove('hidden');
+        budgetText.textContent = "(Atur di Settings)";
+        budgetProgress.style.width = '0%';
+        return;
+    }
+
+    budgetCard.classList.remove('hidden');
+
+    // Calculate Today's Spend (Safe Local Time)
+    const transactions = getTransactions();
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    const todayExpense = transactions
+        .filter(t => t.type === 'expense' && t.date === todayStr)
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    // Update UI
+    const percentage = Math.min((todayExpense / limit) * 100, 100);
+
+    budgetText.textContent = `${formatCurrency(todayExpense)} / ${formatCurrency(limit)}`;
+    budgetProgress.style.width = `${percentage}%`;
+
+    // Colors
+    budgetProgress.className = 'progress-fill'; // reset
+    if (percentage < 50) {
+        budgetProgress.classList.add('bg-success');
+    } else if (percentage < 80) {
+        budgetProgress.classList.add('bg-warning');
+    } else {
+        budgetProgress.classList.add('bg-danger');
+    }
+}
+
+function checkRecurringTransactions() {
+    const recurringData = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECURRING) || '[]');
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth() + 1; // 1-12
+    const currentYear = today.getFullYear();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    let hasUpdates = false;
+    let newTransactionsCount = 0;
+
+    recurringData.forEach(item => {
+        // item: { id, name, amount, category, type, day, lastRunMonth }
+
+        // Logic: if today >= item.day AND lastRunMonth != currentMonth
+        // (Simplified: ensures it runs once per month on or after the date)
+        if (currentDay >= item.day && item.lastRunMonth !== currentMonth) {
+
+            // Generate Transaction
+            const newTx = {
+                id: Date.now() + Math.random(),
+                date: todayStr,
+                type: item.type,
+                amount: item.amount,
+                category: item.category,
+                description: `[Rutin] ${item.name}`,
+                walletId: item.walletId || 'main' // default wallet compatibility
+            };
+
+            // Add to main transactions
+            const transactions = getTransactions();
+            transactions.push(newTx);
+            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+
+            // Update recurring track
+            item.lastRunMonth = currentMonth;
+            hasUpdates = true;
+            newTransactionsCount++;
+        }
+    });
+
+    if (hasUpdates) {
+        localStorage.setItem(STORAGE_KEYS.RECURRING, JSON.stringify(recurringData));
+        alert(`${newTransactionsCount} Transaksi Rutin berhasil dicatat otomatis! 🔄`);
+        if (typeof updateDashboard === 'function') updateDashboard();
+        if (typeof updateGlobalBudgetUI === 'function') updateGlobalBudgetUI();
+    }
+}
+
+function saveRecurringTransaction(name, amount, type, category, walletId, day) {
+    const recurringData = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECURRING) || '[]');
+
+    const newItem = {
+        id: Date.now(),
+        name: name || 'Transaksi Rutin',
+        amount: amount,
+        type: type,
+        category: category,
+        walletId: walletId,
+        day: day,
+        lastRunMonth: new Date().getMonth() + 1 // Mark as ran for this month to avoid double-entry today (user just added it)
+    };
+
+    recurringData.push(newItem);
+    localStorage.setItem(STORAGE_KEYS.RECURRING, JSON.stringify(recurringData));
+}
+
+function updateBudgetUI() {
+    // This updates the specific category budget cards
+    const budgets = getBudgets(); // [{category, limit, dailyLimit...}]
+    const transactions = getTransactions();
+    const today = new Date().toISOString().split('T')[0];
+
+    // For each budget card finding in DOM
+    // Note: In a real app, we might re-render the whole list.
+    // Here we'll try to update existing elements if they exist or just rely on initBudgetUI/renderBudgetList
+    // But since handleAddTransaction calls this, let's make sure it updates the progress bars.
+
+
+    // Also update global budget
+    if (typeof updateGlobalBudgetUI === 'function') {
+        updateGlobalBudgetUI();
+    }
+}
+
+// ===== ISLAMIC PRODUCTIVITY MODULE =====
+let prayerInterval = null;
+
+function initPrayerTimes() {
+    const cityInput = document.getElementById('city-input');
+    const saveCityBtn = document.getElementById('save-city-btn');
+    const prayerCard = document.getElementById('prayer-card');
+
+    // Load saved city
+    const savedCity = localStorage.getItem(STORAGE_KEYS.PRAYER_CITY) || 'Jakarta';
+    if (cityInput) cityInput.value = savedCity;
+
+    // Initial Fetch
+    fetchPrayerTimes(savedCity);
+
+    // Save Listener
+    if (saveCityBtn) {
+        saveCityBtn.addEventListener('click', () => {
+            const newCity = cityInput.value.trim();
+            if (newCity) {
+                localStorage.setItem(STORAGE_KEYS.PRAYER_CITY, newCity);
+                fetchPrayerTimes(newCity); // Force refresh
+                alert(`Lokasi diubah ke ${newCity}. Mengambil jadwal salat...`);
+            }
+        });
+    }
+
+    // Start Countdown Interval
+    if (prayerInterval) clearInterval(prayerInterval);
+    prayerInterval = setInterval(updatePrayerCountdown, 1000);
+}
+
+async function fetchPrayerTimes(city) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const cachedData = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRAYER_DATA) || '{}');
+
+    // Check cache first (Key: "City-Date")
+    const cacheKey = `${city}-${todayStr}`;
+
+    if (cachedData.key === cacheKey && cachedData.timings) {
+        console.log('🕌 Using cached prayer times');
+        renderPrayerUI(cachedData.timings, city);
+        return;
+    }
+
+    try {
+        console.log(`🕌 Fetching prayer times for ${city}...`);
+        const response = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=Indonesia&method=20`); // Method 20: Kemenag RI (approximation, or standard)
+        const data = await response.json();
+
+        if (data.code === 200) {
+            const timings = data.data.timings;
+
+            // Save to cache
+            const cacheObj = {
+                key: cacheKey,
+                timings: timings
+            };
+            localStorage.setItem(STORAGE_KEYS.PRAYER_DATA, JSON.stringify(cacheObj));
+
+            renderPrayerUI(timings, city);
+        } else {
+            console.error('Prayer API Error:', data);
+            const locEl = document.getElementById('prayer-location');
+            if (locEl) locEl.textContent = 'Error mengambil data';
+        }
+    } catch (error) {
+        console.error('Network Error:', error);
+        const locEl = document.getElementById('prayer-location');
+        if (locEl) locEl.textContent = 'Offline / Error';
+    }
+}
+
+function renderPrayerUI(timings, city) {
+    const locationEl = document.getElementById('prayer-location');
+    const listEl = document.getElementById('prayer-list-mini');
+
+    if (locationEl) locationEl.textContent = city;
+
+    // Filter main 5 prayers
+    const mainPrayers = {
+        'Subuh': timings.Fajr,
+        'Dzuhur': timings.Dhuhr,
+        'Ashar': timings.Asr,
+        'Maghrib': timings.Maghrib,
+        'Isya': timings.Isha
+    };
+
+    // Render list
+    if (listEl) {
+        listEl.innerHTML = Object.entries(mainPrayers).map(([name, time]) => `
+            <div style="text-align: center;">
+                <div style="font-weight: bold;">${name}</div>
+                <div>${time}</div>
+            </div>
+        `).join('');
+    }
+
+    // Determine Next Prayer
+    updateNextPrayer(mainPrayers);
+}
+
+function updateNextPrayer(timings) {
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+    let nextPrayerName = 'Besok';
+    let nextPrayerTime = '';
+    let minDiff = Infinity;
+
+    // Helper to parse "HH:MM" to minutes
+    const parseTime = (t) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    for (const [name, timeStr] of Object.entries(timings)) {
+        const pMod = parseTime(timeStr);
+        let diff = pMod - currentTime;
+
+        if (diff > 0 && diff < minDiff) {
+            minDiff = diff;
+            nextPrayerName = name;
+            nextPrayerTime = timeStr;
+        }
+    }
+
+    // If no next prayer today (after Isya), target Subuh tomorrow
+    if (nextPrayerName === 'Besok') {
+        nextPrayerName = 'Subuh';
+        nextPrayerTime = timings['Subuh']; // Using today's Subuh time as proxy for tomorrow
+    }
+
+    // Update UI
+    const nameEl = document.getElementById('next-prayer-name');
+    const timeEl = document.getElementById('next-prayer-time');
+
+    if (nameEl) nameEl.textContent = nextPrayerName;
+    if (timeEl) timeEl.textContent = nextPrayerTime;
+
+    // Store for countdown
+    window.currentNextPrayer = { name: nextPrayerName, time: nextPrayerTime };
+    updatePrayerCountdown();
+}
+
+function updatePrayerCountdown() {
+    if (!window.currentNextPrayer) return;
+
+    const { time } = window.currentNextPrayer;
+    if (!time) return;
+
+    const now = new Date();
+    const [h, m] = time.split(':').map(Number);
+
+    let target = new Date();
+    target.setHours(h, m, 0, 0);
+
+    // If target is earlier than now, it means it's tomorrow (e.g. Subuh next day)
+    // Basic logic: if diff is negative, add 1 day
+    if (target < now) {
+        target.setDate(target.getDate() + 1);
+    }
+
+    const diff = target - now;
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    const countdownEl = document.getElementById('next-prayer-countdown');
+    if (countdownEl) {
+        countdownEl.textContent = `-${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+}
+
+// ===== APP INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 App Initializing...');
+
+    // Load theme
+    const theme = localStorage.getItem(STORAGE_KEYS.THEME) || 'light';
+    if (theme === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+
+    // Check for existing session
+    const sessionEmail = localStorage.getItem(STORAGE_KEYS.SESSION);
+
+    // Simple check: if we have a session, show app. Otherwise login.
+    // Note: In real app we might validate token, but here we trust local session
+    if (sessionEmail) {
+        console.log('Session found for:', sessionEmail);
+        showMainApp();
+    } else {
+        console.log('No session found, showing login.');
+        showLoginScreen();
+    }
+});

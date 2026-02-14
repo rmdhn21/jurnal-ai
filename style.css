@@ -1985,3 +1985,679 @@ body::before {
 .pin-btn.btn-back {
     font-size: 1.2rem;
 }
+
+/* ===== Mobile Search Fix ===== */
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+}
+
+/* ===== Mood Calendar ===== */
+.calendar-card {
+    margin-top: var(--spacing-lg);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.calendar-days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: bold;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-secondary);
+}
+
+.calendar-day:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.calendar-day.current-month {
+    color: var(--text-primary);
+}
+
+.calendar-day.today {
+    border: 2px solid var(--accent-primary);
+    font-weight: bold;
+}
+
+/* Mood Colors for Calendar */
+.calendar-day.mood-great {
+    background-color: var(--success);
+    color: white;
+}
+
+.calendar-day.mood-good {
+    background-color: var(--secondary);
+    color: white;
+}
+
+.calendar-day.mood-neutral {
+    background-color: #94a3b8;
+    color: white;
+}
+
+.calendar-day.mood-bad {
+    background-color: var(--warning);
+    color: black;
+}
+
+.calendar-day.mood-terrible {
+    background-color: var(--error);
+    color: white;
+}
+
+/* ===== Wallet UI ===== */
+.wallet-management-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.wallet-item-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.wallet-chip {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.wallet-name {
+    font-weight: bold;
+    color: #fff;
+}
+
+.wallet-balance {
+    display: block;
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+.badge-primary {
+    background: var(--primary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+/* ===== Budget Management UI ===== */
+.budget-management-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.budget-category-name {
+    color: var(--text-primary);
+    display: block;
+}
+
+.budget-limit-text {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.budget-summary-item {
+    margin-bottom: 12px;
+}
+
+.budget-empty {
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* ===== Prayer Time UI ===== */
+.prayer-time-item {
+    text-align: center;
+}
+
+.prayer-name {
+    font-weight: bold;
+}
+
+.prayer-time {
+    color: var(--text-secondary);
+}
+
+/* ===== Planner / Todo List ===== */
+.todo-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+    transition: all var(--transition-normal);
+}
+
+.todo-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.todo-item.completed {
+    opacity: 0.6;
+}
+
+.todo-item.completed .todo-text {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.todo-checkbox {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border: 2px solid var(--text-muted);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.8rem;
+    color: transparent;
+}
+
+.todo-checkbox:hover {
+    border-color: var(--accent-primary);
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.todo-checkbox.checked {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+.todo-text {
+    flex: 1;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.badge-ai {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+/* ===== Schedule Items ===== */
+.schedule-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+    border-left: 3px solid var(--accent-primary);
+    transition: all var(--transition-normal);
+}
+
+.schedule-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.schedule-item.past {
+    opacity: 0.5;
+    border-left-color: var(--text-muted);
+}
+
+.schedule-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.schedule-title {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.schedule-time {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.badge-priority-allah {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+}
+
+.badge-priority-self {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+}
+
+.badge-priority-others {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--accent-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+}
+
+/* ===== Prayer Schedule Items ===== */
+.schedule-item.schedule-prayer {
+    background: linear-gradient(to right, rgba(224, 234, 252, 0.15), rgba(238, 242, 243, 0.1));
+    border-left: 4px solid #1e3c72;
+}
+
+.dark-mode .schedule-item.schedule-prayer {
+    background: linear-gradient(to right, rgba(30, 60, 114, 0.3), rgba(30, 60, 114, 0.1));
+}
+
+.prayer-title {
+    font-weight: bold;
+    color: #5b8def;
+}
+
+/* ===== Settings Utilities ===== */
+.settings-divider {
+    border-color: rgba(255, 255, 255, 0.1);
+    margin: 1.5rem 0;
+}
+
+.settings-hint {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.flex-row {
+    display: flex;
+    gap: 8px;
+}
+
+.flex-row-sm {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.flex-row-wrap {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.flex-btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+.mt-sm {
+    margin-top: 0.5rem;
+}
+
+.mt-md {
+    margin-top: 1rem;
+}
+
+/* ===== Journal Actions ===== */
+.journal-actions .icon-btn:first-child {
+    margin-right: auto;
+}
+
+.recording-status {
+    margin-right: 10px;
+    font-size: 0.9rem;
+}
+
+.template-btn-space {
+    margin-right: 10px;
+}
+
+/* ===== Pomodoro Modes ===== */
+.pomodoro-modes {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+/* ===== Goals Grid ===== */
+.goals-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* ===== Dashboard Budget Card ===== */
+.budget-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.budget-card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.budget-card-header .text-muted {
+    font-size: 0.9rem;
+}
+
+.budget-card-hint {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.budget-font-sm {
+    font-size: 1rem;
+}
+
+.budget-progress-mt {
+    margin-top: 10px;
+}
+
+/* ===== Pin Setup ===== */
+.pin-setup-mt {
+    margin-top: 10px;
+}
+
+/* ===== Encryption ===== */
+.encryption-status {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* ===== Danger Zone ===== */
+.danger-label {
+    color: #ef4444;
+}
+
+.btn-danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.35);
+}
+
+.btn-danger-strong {
+    background: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    width: 100%;
+}
+
+.btn-danger-strong:hover {
+    background: rgba(239, 68, 68, 0.45);
+}
+
+.danger-hint {
+    display: block;
+    margin-top: 0.5rem;
+    color: #888;
+}
+
+/* ===== API Key Security Warning ===== */
+.api-key-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    color: #f59e0b;
+    line-height: 1.4;
+}
+
+.api-key-warning .warn-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+/* ===== File Input Hide ===== */
+.file-input-hidden {
+    display: none;
+}
+
+/* ===== Login Form ===== */
+.cloud-login-text {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+}
+
+/* ===== Prayer Dashboard Card ===== */
+#prayer-card {
+    grid-column: span 2;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+}
+
+.prayer-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.prayer-card-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prayer-card-icon {
+    font-size: 1.5rem;
+}
+
+.prayer-card-location {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.prayer-card-name {
+    font-weight: bold;
+}
+
+.prayer-card-right {
+    text-align: right;
+}
+
+.prayer-card-time {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.prayer-card-countdown {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+.prayer-list-mini {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+/* ===== Habit Frequency Picker ===== */
+.habit-freq-days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 0.5rem;
+}
+
+.habit-freq-days label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.habit-freq-days label:has(input:checked) {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.habit-freq-label {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-left: 0.5rem;
+}
+
+/* ===== Load More Button ===== */
+.btn-load-more {
+    width: 100%;
+    padding: 10px;
+    margin-top: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.btn-load-more:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ===== Chart Filter ===== */
+.chart-filter {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.chart-filter-btn {
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.chart-filter-btn.active {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #f59e0b;
+}
+
+/* ===== Edit Modal ===== */
+.edit-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.edit-field label {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+}
+
+.edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.edit-actions .btn {
+    flex: 1;
+}
+
+.edit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 4px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.edit-btn:hover {
+    opacity: 1;
+}

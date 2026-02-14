@@ -1,21 +1,30 @@
-// AI module - handles Gemini Pro API integration
-import { getApiKey } from './storage.js';
-
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+// ===== AI MODULE =====
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 const SYSTEM_PROMPT = `Kamu adalah AI pendamping produktivitas yang tenang, non-judgmental, dan ringkas.
 Tujuanmu: membantu pengguna melihat situasi dengan jernih dan memberi 1–2 saran kecil yang bisa langsung diubah menjadi tindakan (jadwal atau to-do).
-Aturan:
-1) Mulai dengan 1-2 kalimat validasi empatik.
-2) Berikan ringkasan singkat (3 poin max) dari jurnal.
-3) Berikan 1–2 saran praktis, realistis, dan spesifik untuk "besok" atau tindakan segera; setiap saran harus ditandai dengan tipe: "todo", "schedule", atau "note".
-4) Tutup dengan 1 pertanyaan pilihan untuk mendorong tindakan.
-5) Tidak memberi nasihat medis/psikologis atau memojokkan.
-6) Outputkan jawaban HANYA dalam format JSON valid dengan field: validation (string), summary (array of strings), suggestions (array of objects dengan id, text, type), closing_question (string).
-7) JANGAN tambahkan teks apapun di luar JSON. Response harus dimulai dengan { dan diakhiri dengan }.
-Gunakan bahasa Indonesia yang hangat dan tenang.`;
 
-export async function getAIResponse(journalText) {
+INSTRUKSI OUTPUT:
+Berikan output HANYA dalam format JSON dengan struktur berikut:
+{
+  "validation": "1-2 kalimat validasi empatik",
+  "summary": ["poin 1", "poin 2", "poin 3"],
+  "suggestions": [
+    {"id": "1", "text": "saran pertama", "type": "todo"},
+    {"id": "2", "text": "saran kedua", "type": "schedule"}
+  ],
+  "closing_question": "pertanyaan penutup"
+}
+
+ATURAN:
+- validation: 1-2 kalimat validasi empatik
+- summary: maksimal 3 poin ringkasan
+- suggestions: 1-2 saran dengan type "todo", "schedule", atau "note"
+- closing_question: 1 pertanyaan untuk mendorong tindakan
+- Gunakan bahasa Indonesia yang hangat
+- JANGAN tambahkan teks apapun di luar JSON`;
+
+async function getAIResponse(journalText) {
     const apiKey = getApiKey();
 
     if (!apiKey) {
@@ -25,9 +34,10 @@ export async function getAIResponse(journalText) {
     const requestBody = {
         contents: [
             {
+                role: "user",
                 parts: [
                     {
-                        text: `${SYSTEM_PROMPT}\n\nBerikut adalah jurnal saya:\n${journalText}`
+                        text: `${SYSTEM_PROMPT}\n\nBerikut adalah jurnal saya:\n${journalText}\n\nBerikan respons dalam format JSON.`
                     }
                 ]
             }
@@ -37,6 +47,7 @@ export async function getAIResponse(journalText) {
             topK: 40,
             topP: 0.95,
             maxOutputTokens: 1024,
+            responseMimeType: "application/json"
         }
     };
 
@@ -51,29 +62,43 @@ export async function getAIResponse(journalText) {
 
         if (!response.ok) {
             const error = await response.json();
+            console.error('API Error:', error);
             throw new Error(error.error?.message || 'Gagal mendapatkan respon dari AI');
         }
 
         const data = await response.json();
-        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        let textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!textResponse) {
+            console.error('Empty response from AI:', data);
             throw new Error('Respon AI kosong');
         }
 
-        // Parse JSON from response
-        const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            throw new Error('Format respon AI tidak valid');
+        console.log('Raw AI response:', textResponse);
+
+        textResponse = textResponse.trim();
+        textResponse = textResponse.replace(/^```json\s*/i, '').replace(/^```\s*/i, '');
+        textResponse = textResponse.replace(/\s*```$/i, '');
+
+        let jsonString = textResponse;
+
+        if (!jsonString.startsWith('{')) {
+            const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                jsonString = jsonMatch[0];
+            }
         }
 
-        const aiResponse = JSON.parse(jsonMatch[0]);
-
-        // Validate response structure
-        if (!aiResponse.validation || !aiResponse.summary || !aiResponse.suggestions) {
-            throw new Error('Struktur respon AI tidak lengkap');
+        let aiResponse;
+        try {
+            aiResponse = JSON.parse(jsonString);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            console.error('Attempted to parse:', jsonString);
+            aiResponse = createFallbackResponse(textResponse);
         }
 
+        aiResponse = validateAndFixResponse(aiResponse);
         return aiResponse;
 
     } catch (error) {
@@ -82,27 +107,39 @@ export async function getAIResponse(journalText) {
     }
 }
 
-// Mock response for testing without API key
-export function getMockResponse(journalText) {
+function createFallbackResponse(text) {
     return {
-        validation: "Kedengarannya hari ini cukup melelahkan dan banyak yang mengganggu pikiranmu.",
-        summary: [
-            "Ada beberapa hal yang sedang kamu pikirkan",
-            "Sepertinya ada perasaan lelah atau overwhelmed",
-            "Kamu sedang mencari cara untuk mengatasinya"
-        ],
+        validation: "Terima kasih sudah berbagi hari ini.",
+        summary: ["Jurnal Anda telah dicatat"],
         suggestions: [
-            {
-                id: "s1",
-                text: "Jadwalkan 30 menit besok pagi untuk menyelesaikan hal terpenting",
-                type: "schedule"
-            },
-            {
-                id: "s2",
-                text: "Buat daftar 3 prioritas utama untuk minggu ini",
-                type: "todo"
-            }
+            { id: "1", text: "Luangkan waktu untuk refleksi", type: "note" }
         ],
-        closing_question: "Mau saya tambahkan salah satu ke jadwal atau to-do sekarang?"
+        closing_question: "Apa satu hal kecil yang bisa Anda lakukan hari ini?"
     };
+}
+
+function validateAndFixResponse(response) {
+    if (!response.validation || typeof response.validation !== 'string') {
+        response.validation = "Terima kasih sudah berbagi.";
+    }
+
+    if (!Array.isArray(response.summary)) {
+        response.summary = response.summary ? [String(response.summary)] : ["Jurnal Anda telah dicatat"];
+    }
+
+    if (!Array.isArray(response.suggestions)) {
+        response.suggestions = [];
+    }
+
+    response.suggestions = response.suggestions.map((s, i) => ({
+        id: s.id || String(i + 1),
+        text: s.text || s.saran || String(s),
+        type: s.type || s.tipe || "note"
+    }));
+
+    if (!response.closing_question || typeof response.closing_question !== 'string') {
+        response.closing_question = "Apa langkah kecil yang bisa Anda ambil?";
+    }
+
+    return response;
 }
