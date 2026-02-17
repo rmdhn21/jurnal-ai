@@ -34,31 +34,48 @@ function initJournalUI() {
     });
 
     saveJournalBtn.addEventListener('click', handleSaveJournal);
-
-    document.getElementById('template-btn')?.addEventListener('click', () => {
-        const journalInput = document.getElementById('journal-input');
-        if (journalInput.value && !confirm('Timpa tulisan saat ini dengan template?')) return;
-
-        journalInput.value = `🕌 Muhasabah Hari Ini
-
-1. Bagaimana ibadah wajibku hari ini? (Salat 5 waktu)
-- 
-
-2. Adakah waktu yang terbuang sia-sia?
-- 
-
-3. Kebaikan apa yang sudah kulakukan untuk orang lain?
-- 
-
-4. Apa dosa/kesalahan hari ini yang perlu kutaubati?
-- 
-
-5. Target perbaikan besok:
-- `;
-    });
-
     initTagInput();
     renderJournalHistory();
+    renderTemplates();
+}
+
+function renderTemplates() {
+    const container = document.getElementById('journal-templates-container');
+    if (!container) return;
+
+    if (typeof JOURNAL_TEMPLATES === 'undefined') {
+        console.warn('JOURNAL_TEMPLATES not loaded');
+        return;
+    }
+
+    container.innerHTML = JOURNAL_TEMPLATES.map(t => `
+        <button class="template-chip" onclick="applyTemplate('${t.id}')">
+            ${t.name}
+        </button>
+    `).join('');
+}
+
+function applyTemplate(id) {
+    const journalInput = document.getElementById('journal-input');
+    const template = JOURNAL_TEMPLATES.find(t => t.id === id);
+
+    if (!template) return;
+
+    if (journalInput.value.trim().length > 0) {
+        if (!confirm('Timpa tulisan saat ini dengan template?')) {
+            return;
+        }
+    }
+
+    journalInput.value = template.content;
+
+    // Auto resize textarea
+    journalInput.style.height = 'auto';
+    journalInput.style.height = journalInput.scrollHeight + 'px';
+
+    // Update char count
+    const charCount = document.getElementById('char-count');
+    if (charCount) charCount.textContent = `${journalInput.value.length} karakter`;
 }
 
 async function handleAskAI() {
@@ -217,6 +234,9 @@ function handleSaveJournal() {
     renderJournalHistory();
 
     alert('Jurnal berhasil disimpan!');
+
+    // Gamification
+    if (typeof addXP === 'function') addXP(10, 'Jurnal Harian');
 }
 
 function renderJournalHistory() {

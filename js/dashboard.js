@@ -5,8 +5,123 @@ function initDashboard() {
     updateTodayReminders();
     initMoodChart();
 
+    updateDashboardPrayerCard(); // Initial render
+    setInterval(updateDashboardPrayerCard, 60000); // Update every minute for next prayer check
+
+    // Start distinct countdown interval
+    startPrayerCountdown();
+
     document.getElementById('get-daily-insight-btn').addEventListener('click', getDailyInsight);
 }
+
+// Global variable for countdown interval
+let prayerCountdownInterval;
+
+function updateDashboardPrayerCard() {
+    const locationEl = document.getElementById('prayer-location');
+    const nameEl = document.getElementById('next-prayer-name');
+    const timeEl = document.getElementById('next-prayer-time');
+    const listEl = document.getElementById('prayer-list-mini');
+
+    if (!locationEl || !nameEl || !timeEl) return;
+
+    const city = localStorage.getItem(STORAGE_KEYS.PRAYER_CITY) || 'Jakarta';
+    locationEl.textContent = city;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRAYER_DATA) || '{}');
+
+    if (!data.key || !data.key.includes(todayStr) || !data.timings) {
+        nameEl.textContent = '-';
+        timeEl.textContent = '--:--';
+        if (listEl) listEl.innerHTML = '<div class="text-xs text-center">Data tidak tersedia</div>';
+        return;
+    }
+
+    const timings = data.timings;
+    const prayerMap = { 'Fajr': 'Subuh', 'Dhuhr': 'Dzuhur', 'Asr': 'Ashar', 'Maghrib': 'Maghrib', 'Isha': 'Isya' };
+    const prayerOrder = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+    // Update Mini List
+    if (listEl) {
+        listEl.innerHTML = prayerOrder.map(key => `
+            <div class="${isNextPrayer(timings[key]) ? 'text-primary font-bold' : ''}">
+                ${prayerMap[key]}<br>${timings[key]}
+            </div>
+        `).join('');
+    }
+
+    // Find Next Prayer
+    const now = new Date();
+    const currentHm = now.toTimeString().slice(0, 5);
+    let nextPrayer = null;
+
+    for (const key of prayerOrder) {
+        if (timings[key] > currentHm) {
+            nextPrayer = { name: prayerMap[key], time: timings[key] };
+            break;
+        }
+    }
+
+    // If all passed, next is Fajr tomorrow (simplification: just show Fajr or "-" or handled by countdown)
+    if (!nextPrayer) {
+        // Assume next is Fajr tomorrow
+        nextPrayer = { name: 'Subuh', time: timings['Fajr'] };
+        // Note: Logic for tomorrow's Fajr countdown requires more robust date handling, 
+        // but for now displaying today's Fajr time as "next" cycle is acceptable or just stick to current day.
+        // Let's keep it simple: if no next prayer today, show "Besok: Subuh"
+        nameEl.textContent = 'Subuh (Bsk)';
+        timeEl.textContent = timings['Fajr'];
+    } else {
+        nameEl.textContent = nextPrayer.name;
+        timeEl.textContent = nextPrayer.time;
+    }
+}
+
+function isNextPrayer(timeStr) {
+    const now = new Date();
+    const currentHm = now.toTimeString().slice(0, 5);
+    return timeStr > currentHm; // Very naive check, works for sorted list on same day
+}
+
+function startPrayerCountdown() {
+    if (prayerCountdownInterval) clearInterval(prayerCountdownInterval);
+
+    const countdownEl = document.getElementById('next-prayer-countdown');
+    if (!countdownEl) return;
+
+    prayerCountdownInterval = setInterval(() => {
+        const timeEl = document.getElementById('next-prayer-time');
+        if (!timeEl) return;
+
+        const targetTimeStr = timeEl.textContent; // HH:mm
+        if (targetTimeStr === '--:--' || targetTimeStr.includes('Bsk')) {
+            countdownEl.textContent = '--:--:--';
+            return;
+        }
+
+        const now = new Date();
+        const target = new Date();
+        const [h, m] = targetTimeStr.split(':').map(Number);
+        target.setHours(h, m, 0, 0);
+
+        let diff = target - now;
+        if (diff < 0) {
+            // Target passed (or it's tomorrow's prayer but we used today's date)
+            // If it was supposed to be tomorrow, add 1 day
+            // But simple logic: if negative, refresh card to get next prayer
+            updateDashboardPrayerCard();
+            return;
+        }
+
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        countdownEl.textContent = `-${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }, 1000);
+}
+
 
 function updateDashboardStats() {
     const journals = getJournals();

@@ -128,12 +128,18 @@
             <button class="nav-btn" data-screen="goals">🎯 Goals</button>
             <button class="nav-btn" data-screen="finance">💰 Keuangan</button>
             <button class="nav-btn" data-screen="habits">✅ Habits</button>
+            <button class="nav-btn" data-screen="interview-prep">🎓 Interview</button>
         </nav>
 
         <!-- Main Content -->
         <main class="main">
             <!-- Screen 0: Dashboard -->
             <section id="dashboard-screen" class="screen active">
+                <!-- Gamification Profile Card -->
+                <div id="user-profile-card">
+                    <!-- Injected by gamification.js -->
+                </div>
+
                 <!-- Overview Cards -->
                 <div class="dashboard-grid">
                     <div class="dashboard-card">
@@ -182,6 +188,44 @@
                     </div>
                 </div>
 
+
+
+
+                <!-- Daily Discipline Motivation -->
+                <div class="card mt-md" id="motivation-card">
+                    <!-- Injected by JS -->
+                    <p class="text-muted">Memuat motivasi...</p>
+                </div>
+
+                <!-- Daily Brain Boost -->
+                <div class="card mt-md" id="brain-boost-card">
+                    <div class="brain-header-row">
+                        <h3>🧠 Brain Boost</h3>
+                        <span class="badge-ai">Daily XP</span>
+                    </div>
+
+                    <div class="brain-tabs">
+                        <button class="brain-tab active" id="tab-fact" onclick="switchTab('fact')">💡 Fakta</button>
+                        <button class="brain-tab" id="tab-vocab" onclick="switchTab('vocab')">🇬🇧 Vocab</button>
+                        <button class="brain-tab" id="tab-math" onclick="switchTab('math')">🧮 Math</button>
+                        <button class="brain-tab" id="tab-logic" onclick="switchTab('logic')">🧩 Logic</button>
+                    </div>
+
+                    <div id="brain-content" class="brain-content mt-sm">
+                        <!-- Injected by JS -->
+                        <p class="text-muted">Memuat data...</p>
+                    </div>
+                </div>
+
+                <!-- Daily Hadith -->
+                <div class="card mt-md hadith-card-container">
+                    <h3>✨ Hadits Harian</h3>
+                    <div id="hadith-content" class="hadith-content">
+                        <p class="text-muted">Memuat hadits...</p>
+                    </div>
+                </div>
+
+
                 <!-- Global Daily Budget -->
                 <div class="card mt-md" id="global-budget-card">
                     <div class="budget-card-header">
@@ -226,6 +270,8 @@
                         <button id="prev-month-btn" class="icon-btn">◀</button>
                         <h3 id="calendar-month-year"></h3>
                         <button id="next-month-btn" class="icon-btn">▶</button>
+                        <button id="year-view-btn" class="btn btn-small btn-secondary" style="margin-left: auto;">📅
+                            Year</button>
                     </div>
                     <div class="calendar-days-header">
                         <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
@@ -259,6 +305,15 @@
                             <button type="button" class="mood-btn" data-mood="neutral" title="Biasa">😐</button>
                             <button type="button" class="mood-btn" data-mood="bad" title="Kurang Baik">😔</button>
                             <button type="button" class="mood-btn" data-mood="terrible" title="Buruk">😢</button>
+                        </div>
+                        <input type="hidden" id="journal-mood" value="">
+                    </div>
+
+                    <!-- Journal Templates -->
+                    <div class="journal-templates-section mt-sm">
+                        <label class="form-label">Gunakan Template:</label>
+                        <div id="journal-templates-container" class="templates-scroll-container">
+                            <!-- Template chips injected by JS -->
                         </div>
                     </div>
 
@@ -388,13 +443,66 @@
                     </div>
                 </div>
 
-                <div class="card">
-                    <h2>📋 To-Do</h2>
-                    <div class="add-form">
-                        <input type="text" id="new-todo-input" placeholder="Tambah task baru..." class="input">
-                        <button id="add-todo-btn" class="btn btn-primary">+ Tambah</button>
+                <div class="card kanban-container-card">
+                    <!-- Calendar View -->
+                    <div class="calendar-view">
+                        <div class="calendar-header">
+                            <h3 id="calendar-month-year">Februari 2026</h3>
+                            <div class="calendar-nav">
+                                <button id="prev-month">◀</button>
+                                <button id="next-month">▶</button>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="calendar-grid">
+                            <!-- Injected by JS -->
+                        </div>
+                        <div id="selected-date-events" class="selected-date-events" style="display: none;">
+                            <h4 id="selected-date-label">Events</h4>
+                            <ul id="selected-date-list" class="date-events-list">
+                                <!-- Injected by JS -->
+                            </ul>
+                        </div>
                     </div>
-                    <div id="todo-list" class="task-list"></div>
+
+                    <div class="kanban-header">
+                        <h2>📋 Kanban Board</h2>
+                        <div class="add-form-inline">
+                            <input type="text" id="new-todo-input" placeholder="Tambah tugas..." class="input">
+                            <button id="add-todo-btn" class="btn btn-primary">+</button>
+                        </div>
+                    </div>
+
+                    <div id="kanban-board" class="kanban-board-grid">
+                        <!-- To Do Column -->
+                        <div class="kanban-column" data-status="todo">
+                            <div class="kanban-column-header header-todo">
+                                <h3>📝 Rencana</h3>
+                            </div>
+                            <div class="kanban-column-list" id="kanban-col-todo">
+                                <!-- Injected by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Doing Column -->
+                        <div class="kanban-column" data-status="doing">
+                            <div class="kanban-column-header header-doing">
+                                <h3>🚧 Proses</h3>
+                            </div>
+                            <div class="kanban-column-list" id="kanban-col-doing">
+                                <!-- Injected by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Done Column -->
+                        <div class="kanban-column" data-status="done">
+                            <div class="kanban-column-header header-done">
+                                <h3>✅ Selesai</h3>
+                            </div>
+                            <div class="kanban-column-list" id="kanban-col-done">
+                                <!-- Injected by JS -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -630,6 +738,12 @@
                 <!-- AI Analysis Button -->
                 <button id="analyze-habits-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Kebiasaan</button>
             </section>
+            <!-- Screen 5: Interview Prep -->
+            <section id="interview-prep-screen" class="screen">
+                <div class="card" id="interview-content">
+                    <!-- Content injected by interview-prep.js -->
+                </div>
+            </section>
         </main>
 
         <!-- AI Analysis Modal -->
@@ -700,6 +814,25 @@
                 <hr class="settings-divider">
 
 
+
+                <!-- Color Theme Section -->
+                <div class="form-group">
+                    <label>🎨 Tema Warna</label>
+                    <small class="settings-hint">Pilih warna aksen aplikasi favoritmu.</small>
+                    <div class="color-picker">
+                        <button class="color-option" data-color="gold" style="background: #f59e0b;"
+                            title="Emas (Default)"></button>
+                        <button class="color-option" data-color="blue" style="background: #3b82f6;"
+                            title="Biru Langit"></button>
+                        <button class="color-option" data-color="green" style="background: #10b981;"
+                            title="Hijau Segar"></button>
+                        <button class="color-option" data-color="purple" style="background: #8b5cf6;"
+                            title="Ungu Misterius"></button>
+                        <button class="color-option" data-color="rose" style="background: #f43f5e;"
+                            title="Merah Rose"></button>
+                    </div>
+                </div>
+                <hr class="settings-divider">
 
                 <!-- Security Section -->
                 <div class="form-group">
@@ -833,6 +966,107 @@
                 </div>
             </div>
         </div>
+
+        <!-- Year in Pixels Modal -->
+        <div id="year-in-pixels-modal" class="modal hidden">
+            <div class="modal-content card wide-modal">
+                <div class="modal-header">
+                    <h3>📅 Year in Pixels</h3>
+                    <button id="close-year-pixels" class="icon-btn">✕</button>
+                </div>
+                <!-- Calendar View -->
+                <div class="calendar-container card">
+                    <div class="calendar-header">
+                        <h3 id="calendar-month-year">Februari 2026</h3>
+                        <div class="calendar-nav">
+                            <button id="prev-month" class="btn-icon">❮</button>
+                            <button id="next-month" class="btn-icon">❯</button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid">
+                        <!-- Calendar days will be generated here -->
+                    </div>
+                    <div id="selected-date-events" class="selected-date-events" style="display: none;">
+                        <h4>Kegiatan pada <span id="selected-date-label"></span></h4>
+                        <ul id="selected-date-list" class="date-events-list"></ul>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h3>Jadwal & Deadline</h3>
+                    <button class="btn btn-primary btn-sm" id="add-schedule-btn">+ Jadwal</button>
+                </div>
+                <div class="year-pixels-controls">
+                    <button id="prev-year-btn" class="icon-btn">◀</button>
+                    <span id="year-pixels-title">2026</span>
+                    <button id="next-year-btn" class="icon-btn">▶</button>
+                </div>
+                <div class="year-pixels-container">
+                    <div id="year-pixels-matrix" class="year-pixels-matrix">
+                        <!-- Grid generated by JS -->
+                    </div>
+                </div>
+                <div class="year-pixels-legend">
+                    <div class="legend-item"><span class="dot mood-great"></span> Great</div>
+                    <div class="legend-item"><span class="dot mood-good"></span> Good</div>
+                    <div class="legend-item"><span class="dot mood-neutral"></span> Neutral</div>
+                    <div class="legend-item"><span class="dot mood-bad"></span> Bad</div>
+                    <div class="legend-item"><span class="dot mood-terrible"></span> Terrible</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div id="edit-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3 id="edit-modal-title">Edit Item</h3>
+                    <button id="close-edit-modal" class="icon-btn">✕</button>
+                </div>
+                <div id="edit-form-container" class="edit-form-container">
+                    <!-- Form injected by JS -->
+                </div>
+                <div class="modal-actions mt-md">
+                    <button id="save-edit-btn" class="btn btn-primary btn-full">💾 Simpan Perubahan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Year in Pixels Modal -->
+        <div id="year-in-pixels-modal" class="year-pixels-modal hidden">
+            <div class="year-pixels-content">
+                <div class="year-pixels-header">
+                    <div class="btn-group">
+                        <button id="prev-year-btn" class="icon-btn">◀</button>
+                        <h2 id="year-pixels-title">2026</h2>
+                        <button id="next-year-btn" class="icon-btn">▶</button>
+                    </div>
+                    <button id="close-year-pixels" class="icon-btn">✕</button>
+                </div>
+
+                <div id="year-pixels-matrix" class="year-pixels-grid">
+                    <!-- Injected by JS -->
+                </div>
+
+                <div class="year-pixels-legend">
+                    <div class="legend-item">
+                        <div class="legend-color mood-amazing"></div> Amazing
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color mood-good"></div> Good
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color mood-neutral"></div> Neutral
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color mood-bad"></div> Bad
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color mood-awful"></div> Awful
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Lock Screen Overlay -->
         <div id="app-lock-screen" class="lock-screen hidden">
             <div class="lock-content">
@@ -886,6 +1120,15 @@
     <!-- Feature Modules -->
     <script src="js/features.js"></script>
     <script src="js/extras.js"></script>
+    <script src="js/edit-modal.js"></script>
+    <script src="js/onboarding.js"></script>
+    <script src="js/insight.js"></script>
+    <script src="js/gamification.js"></script>
+    <script src="js/hadith.js"></script>
+    <script src="js/brain-boost.js"></script>
+    <script src="js/journal-templates.js"></script>
+    <script src="js/motivation.js"></script>
+    <script src="js/interview-prep.js"></script>
 
     <!-- App Initialization (must be last) -->
     <script src="js/app-init.js"></script>

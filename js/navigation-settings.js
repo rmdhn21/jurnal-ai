@@ -24,7 +24,7 @@ function initNavigation() {
                 updateTodayReminders();
                 initMoodChart();
             } else if (targetScreen === 'planner') {
-                renderTodoList();
+                if (typeof renderKanbanBoard === 'function') renderKanbanBoard();
                 renderScheduleList();
             } else if (targetScreen === 'journal') {
                 renderJournalHistory();
@@ -39,6 +39,8 @@ function initNavigation() {
             } else if (targetScreen === 'goals') {
                 renderGoalsList();
                 updateGoalsStats();
+            } else if (targetScreen === 'interview-prep') {
+                if (typeof initInterviewPrep === 'function') initInterviewPrep();
             }
         });
     });
@@ -58,6 +60,51 @@ function initSettings() {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) hideSettings();
     });
+
+    // Save City Button
+    const cityInput = document.getElementById('city-input');
+    const saveCityBtn = document.getElementById('save-city-btn');
+
+    if (saveCityBtn && cityInput) {
+        // Load saved city
+        const savedCity = localStorage.getItem(STORAGE_KEYS.PRAYER_CITY);
+        if (savedCity) cityInput.value = savedCity;
+
+        saveCityBtn.addEventListener('click', async () => {
+            const city = cityInput.value.trim();
+            if (!city) {
+                alert('Nama kota tidak boleh kosong!');
+                return;
+            }
+
+            localStorage.setItem(STORAGE_KEYS.PRAYER_CITY, city);
+
+            // Refresh Prayer Times
+            if (typeof initPrayerTimes === 'function') {
+                saveCityBtn.innerHTML = '⏳';
+                await initPrayerTimes();
+                saveCityBtn.innerHTML = '💾';
+            }
+
+            alert(`Lokasi diubah ke ${city}. Jadwal sholat diperbarui.`);
+        });
+    }
+
+    const saveGlobalBudgetBtn = document.getElementById('save-global-budget-btn');
+    if (saveGlobalBudgetBtn) {
+        saveGlobalBudgetBtn.addEventListener('click', () => {
+            const dailyBudget = parseInt(document.getElementById('global-daily-budget-input').value);
+            if (dailyBudget && dailyBudget > 0) {
+                localStorage.setItem(STORAGE_KEYS.GLOBAL_BUDGET, dailyBudget);
+                if (typeof updateGlobalBudgetUI === 'function') updateGlobalBudgetUI();
+                alert(`Budget harian disimpan: ${formatCurrency(dailyBudget)}`);
+            } else {
+                localStorage.removeItem(STORAGE_KEYS.GLOBAL_BUDGET);
+                if (typeof updateGlobalBudgetUI === 'function') updateGlobalBudgetUI();
+                alert('Budget harian dihapus (tidak terbatas).');
+            }
+        });
+    }
 
     saveSettingsBtn.addEventListener('click', () => {
         const apiKey = apiKeyInput.value.trim();

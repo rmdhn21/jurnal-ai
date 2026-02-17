@@ -137,7 +137,16 @@ function renderHabitsTodayList() {
     listEl.querySelectorAll('.habit-item').forEach(item => {
         const checkbox = item.querySelector('.habit-checkbox');
         checkbox.addEventListener('change', () => {
-            toggleHabitCompletion(item.dataset.id, today);
+            const habit = toggleHabitCompletion(item.dataset.id, today);
+
+            // Gamification
+            if (habit && habit.completions && habit.completions[today] && typeof addXP === 'function') {
+                addXP(10, 'Habit Selesai');
+                if (habit.streak > 0 && habit.streak % 7 === 0) {
+                    addXP(20, `${habit.streak} Hari Streak!`);
+                }
+            }
+
             renderHabitsTodayList();
             initHabitsChart();
         });
@@ -327,7 +336,10 @@ function createGoalItem(goal, isCompleted = false) {
                     <button class="increment-btn" title="Tambah Progress">➕</button>
                     <button class="complete-btn" title="Selesai">✅</button>
                     ` : ''}
-                    <button class="delete-goal-btn" title="Hapus">🗑️</button>
+                    <div class="action-buttons">
+                        <button class="edit-goal-btn" title="Edit">✏️</button>
+                        <button class="delete-goal-btn" title="Hapus">🗑️</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -360,8 +372,13 @@ function attachGoalEventListeners(container) {
 
         if (btn.classList.contains('complete-btn')) {
             completeGoal(goalId);
+            if (typeof addXP === 'function') addXP(50, 'Goal Tercapai!');
             renderGoalsList();
             updateGoalsStats();
+        }
+
+        if (btn.classList.contains('edit-goal-btn')) {
+            if (typeof showEditModal === 'function') showEditModal('goal', goalId);
         }
 
         if (btn.classList.contains('delete-goal-btn')) {

@@ -180,3 +180,78 @@ function updateFinanceSummary() {
     document.getElementById('total-expense').textContent = formatCurrency(expense);
     document.getElementById('total-balance').textContent = formatCurrency(income - expense);
 }
+
+// ===== GLOBAL DAILY BUDGET LOGIC =====
+function initGlobalBudgetUI() {
+    const manageBtn = document.getElementById('manage-wallets-btn'); // Reuse button or add new one?
+    // Actually, distinct from Wallets. Let's look for a specific trigger if any.
+    // The previous code had "Budget Harian Global" card.
+
+    // Check if we need a dedicated manage button or if it's part of Settings.
+    // For now, let's just ensure it updates on load.
+    updateGlobalBudgetUI();
+}
+
+function updateGlobalBudgetUI() {
+    const card = document.getElementById('global-budget-card');
+    const text = document.getElementById('global-budget-text');
+    const progressBar = document.getElementById('global-budget-progress');
+
+    // Get Settings directly
+    const settings = getSettings();
+    const globalLimit = parseFloat(settings.globalBudget) || 0;
+
+    if (!card || !text || !progressBar) return;
+
+    if (globalLimit <= 0) {
+        card.classList.add('hidden');
+        return;
+    }
+
+    card.classList.remove('hidden');
+
+    // Make editable
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-icon btn-small absolute-top-right';
+    editBtn.innerHTML = '✏️';
+    editBtn.onclick = () => {
+        const current = settings.globalBudget || 0;
+        const newLimit = prompt('Masukkan batasan budget harian (Rp):', current);
+        if (newLimit !== null) {
+            const val = parseFloat(newLimit);
+            if (!isNaN(val)) {
+                localStorage.setItem(STORAGE_KEYS.GLOBAL_BUDGET, val);
+                updateGlobalBudgetUI();
+            }
+        }
+    };
+
+    // Ensure we don't duplicate the button if it exists (naive check or clear header)
+    // Better: Add it to card-header if not present
+    const header = card.querySelector('.card-header');
+    if (header && !header.querySelector('button')) {
+        header.appendChild(editBtn);
+    }
+
+    const transactions = getTransactions();
+    const today = getTodayString();
+
+    const todayExpenses = transactions
+        .filter(t => t.type === 'expense' && t.date === today)
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const percentage = Math.min((todayExpenses / globalLimit) * 100, 100);
+
+    text.textContent = `${formatCurrency(todayExpenses)} / ${formatCurrency(globalLimit)}`;
+    progressBar.style.width = `${percentage}%`;
+
+    // Color coding
+    progressBar.className = 'budget-progress-bar'; // Reset
+    if (percentage >= 100) {
+        progressBar.classList.add('bg-danger');
+    } else if (percentage >= 75) {
+        progressBar.classList.add('bg-warning');
+    } else {
+        progressBar.classList.add('bg-success');
+    }
+}

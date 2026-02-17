@@ -31,7 +31,15 @@ function showMainApp() {
     initHabitsUI();
     initGlobalSearch();
     initAIAnalysis();
+    initAIAnalysis();
     initReminder();
+    if (typeof initBrainBoost === 'function') initBrainBoost();
+    if (typeof initHadithCard === 'function') initHadithCard();
+    if (typeof initGamification === 'function') initGamification();
+    if (typeof initMotivation === 'function') initMotivation();
+
+    // Check if Onboarding is needed
+    if (typeof initOnboarding === 'function') initOnboarding();
 
     // Check if API key is set
     if (!getApiKey()) {
@@ -102,6 +110,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof initFinanceUpgrades === 'function') initFinanceUpgrades();
         if (typeof initWalletUI === 'function') initWalletUI();
         if (typeof initBudgetUI === 'function') initBudgetUI();
-        if (typeof initAuth === 'function') initAuth();
+        if (typeof initGlobalBudgetUI === 'function') initGlobalBudgetUI();
+        if (typeof initInsightUI === 'function') initInsightUI();
+
     }, 1000);
 });

@@ -342,3 +342,57 @@ function downloadCSV(data, headers, filename) {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
 }
+
+// ===== PRAYER TIMES MODULE =====
+async function initPrayerTimes() {
+    const settings = getSettings(); // Defined in storage.js
+    const city = settings.prayerCity || 'Jakarta';
+    const country = 'Indonesia'; // Default
+    const method = 20; // Kemenag RI (approximate or standard) or use Default
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const cachedData = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRAYER_DATA) || '{}');
+
+    // Return cached if valid for today
+    if (cachedData.key === `${city}-${todayStr}` && cachedData.timings) {
+        console.log('Using cached prayer times');
+        return;
+    }
+
+    console.log(`Fetching prayer times for ${city}...`);
+    try {
+        // Using Aladhan API
+        const response = await fetch(`https://api.aladhan.com/v1/timingsByCity/${todayStr}?city=${city}&country=${country}&method=11`); // Method 11 is Majlis Ugama Islam Singapura, often good for region, or 20 for Kemenag if available in list. Let's stick to standard/auto.
+        // Actually Method 20 is Kemenag but sometimes ID changes. Let's use default or 11.
+
+        const data = await response.json();
+
+        if (data.code === 200 && data.data && data.data.timings) {
+            const timings = data.data.timings;
+
+            const toSave = {
+                key: `${city}-${todayStr}`,
+                timings: timings,
+                meta: data.data.meta
+            };
+
+            localStorage.setItem(STORAGE_KEYS.PRAYER_DATA, JSON.stringify(toSave));
+            console.log('Prayer times saved.');
+
+            // Trigger UI update if planner exists
+            if (typeof renderScheduleList === 'function') renderScheduleList();
+
+            // Trigger Dashboard update if exists
+            if (typeof updateDashboardPrayerCard === 'function') {
+                updateDashboardPrayerCard();
+                /* global startPrayerCountdown */ // hint for linter
+                // No need to restart countdown explicitly if updateDashboardPrayerCard handles state, 
+                // but startPrayerCountdown is separate. Let's just update the card content is enough.
+            }
+        } else {
+            console.warn('Invalid prayer data response');
+        }
+    } catch (e) {
+        console.error('Error fetching prayer times:', e);
+    }
+}

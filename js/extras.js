@@ -1,22 +1,24 @@
 // ===== MOOD CALENDAR MODULE =====
-let currentCalendarDate = new Date();
+let currentMoodDate = new Date();
 
 function initMoodCalendar() {
-    renderCalendar(currentCalendarDate);
+    renderMoodCalendar(currentMoodDate);
 
     const prevBtn = document.getElementById('prev-month-btn');
     const nextBtn = document.getElementById('next-month-btn');
 
     if (prevBtn) prevBtn.addEventListener('click', () => changeMonth(-1));
     if (nextBtn) nextBtn.addEventListener('click', () => changeMonth(1));
+
+    initYearInPixels();
 }
 
 function changeMonth(offset) {
-    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
-    renderCalendar(currentCalendarDate);
+    currentMoodDate.setMonth(currentMoodDate.getMonth() + offset);
+    renderMoodCalendar(currentMoodDate);
 }
 
-function renderCalendar(date) {
+function renderMoodCalendar(date) {
     const monthYear = document.getElementById('calendar-month-year');
     const calendarGrid = document.getElementById('mood-calendar-grid');
 
@@ -381,5 +383,115 @@ function updatePrayerCountdown() {
     const countdownEl = document.getElementById('next-prayer-countdown');
     if (countdownEl) {
         countdownEl.textContent = `-${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+}
+
+// ===== YEAR IN PIXELS MODULE =====
+let currentPixelsYear = new Date().getFullYear();
+
+function initYearInPixels() {
+    const btn = document.getElementById('year-view-btn');
+    const modal = document.getElementById('year-in-pixels-modal');
+    const closeBtn = document.getElementById('close-year-pixels');
+    const prevYearBtn = document.getElementById('prev-year-btn');
+    const nextYearBtn = document.getElementById('next-year-btn');
+
+    if (btn) {
+        btn.addEventListener('click', () => {
+            renderYearInPixels(currentPixelsYear);
+            modal.classList.remove('hidden');
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+    }
+
+    if (prevYearBtn) {
+        prevYearBtn.addEventListener('click', () => {
+            currentPixelsYear--;
+            renderYearInPixels(currentPixelsYear);
+        });
+    }
+
+    if (nextYearBtn) {
+        nextYearBtn.addEventListener('click', () => {
+            currentPixelsYear++;
+            renderYearInPixels(currentPixelsYear);
+        });
+    }
+
+    // Close on click outside
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        });
+    }
+}
+
+function renderYearInPixels(year) {
+    const grid = document.getElementById('year-pixels-matrix');
+    const title = document.getElementById('year-pixels-title');
+
+    if (!grid || !title) return;
+
+    title.textContent = year;
+    grid.innerHTML = '';
+
+    const journals = getJournals();
+    const moodMap = new Map();
+
+    journals.forEach(j => {
+        if (j.date && j.mood) {
+            moodMap.set(j.date, j.mood);
+        }
+    });
+
+    // 1. Header Row (Month Names)
+    // First cell empty (corner)
+    const corner = document.createElement('div');
+    grid.appendChild(corner);
+
+    const monthNames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+    monthNames.forEach(m => {
+        const header = document.createElement('div');
+        header.className = 'pixel-header-col';
+        header.textContent = m;
+        grid.appendChild(header);
+    });
+
+    // 2. Grid Rows (Days 1-31)
+    for (let day = 1; day <= 31; day++) {
+        // Day Number Column
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'pixel-header-row';
+        dayHeader.textContent = day;
+        grid.appendChild(dayHeader);
+
+        // 12 Months Columns
+        for (let month = 0; month < 12; month++) {
+            const cell = document.createElement('div');
+            cell.className = 'pixel-cell';
+
+            // Check if date is valid (e.g., Feb 30 doesn't exist)
+            const date = new Date(year, month, day);
+            if (date.getMonth() !== month) {
+                cell.style.background = 'transparent'; // Invalid date
+                cell.style.pointerEvents = 'none';
+            } else {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                if (moodMap.has(dateStr)) {
+                    const mood = moodMap.get(dateStr);
+                    cell.classList.add(`mood-${mood}`);
+                    cell.title = `${dateStr}: ${mood}`;
+                } else {
+                    cell.title = dateStr;
+                }
+            }
+            grid.appendChild(cell);
+        }
     }
 }

@@ -116,6 +116,12 @@ function saveTask(task) {
     return task;
 }
 
+// Bulk save for reordering or status updates
+function saveTasks(tasks) {
+    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+    triggerCloudSync();
+}
+
 function deleteTask(id) {
     const tasks = getTasks().filter(t => t.id !== id);
     localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
@@ -136,17 +142,31 @@ function toggleTask(id) {
 // ===== SCHEDULE OPERATIONS =====
 function getSchedules() {
     const data = localStorage.getItem(STORAGE_KEYS.SCHEDULES);
-    return data ? JSON.parse(data) : [];
+    let schedules = data ? JSON.parse(data) : [];
+    // SECURITY: Always filter out prayer times from read to ensure we don't propagate duplicates
+    // We filter by ID prefix AND by Title content (Mosque emoji) to catch legacy corrupted data
+    return schedules.filter(s => {
+        const isSystemPrayer = s.isPrayer || String(s.id).startsWith('prayer-') || (s.title && s.title.includes('🕌'));
+        return !isSystemPrayer;
+    });
 }
 
 function saveSchedule(schedule) {
-    const schedules = getSchedules();
+    let schedules = getSchedules(); // returns clean list
     const existing = schedules.findIndex(s => s.id === schedule.id);
     if (existing >= 0) {
         schedules[existing] = schedule;
     } else {
         schedules.push(schedule);
     }
+
+    // SAFETY: Ensure we never save prayer times
+    // We filter by ID prefix AND by Title content (Mosque emoji) to catch legacy corrupted data
+    schedules = schedules.filter(s => {
+        const isSystemPrayer = s.isPrayer || String(s.id).startsWith('prayer-') || (s.title && s.title.includes('🕌'));
+        return !isSystemPrayer;
+    });
+
     schedules.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
     localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(schedules));
     triggerCloudSync();
@@ -154,7 +174,12 @@ function saveSchedule(schedule) {
 }
 
 function deleteSchedule(id) {
-    const schedules = getSchedules().filter(s => s.id !== id);
+    let schedules = getSchedules().filter(s => s.id !== id);
+    // SAFETY: Ensure we never save prayer times
+    schedules = schedules.filter(s => {
+        const isSystemPrayer = s.isPrayer || String(s.id).startsWith('prayer-') || (s.title && s.title.includes('🕌'));
+        return !isSystemPrayer;
+    });
     localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(schedules));
     triggerCloudSync();
 }
