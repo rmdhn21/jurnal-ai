@@ -77,16 +77,17 @@ async function syncToCloud() {
         await syncFromCloud();
 
         const data = {
-            journals: getJournals(),
-            tasks: getTasks(),
-            schedules: getSchedules(),
-            transactions: getTransactions(),
-            habits: getHabits(),
-            goals: getGoals(),
+            journals: getJournals(true),
+            tasks: getTasks(true),
+            schedules: getSchedules(true),
+            transactions: getTransactions(true),
+            habits: getHabits(true),
+            goals: getGoals(true),
             reminderSettings: getReminderSettings(),
-            wallets: getWallets(),
+            wallets: getWallets(true),
+            budgets: getBudgets(true),
             updatedAt: new Date().toISOString(),
-            version: '1.1'
+            version: '1.3'
         };
 
         console.log('📤 Pushing merged data to cloud...');

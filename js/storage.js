@@ -73,16 +73,20 @@ function formatCurrency(amount) {
 }
 
 // ===== JOURNAL OPERATIONS =====
-function getJournals() {
+function getJournals(includeDeleted = false) {
     const data = localStorage.getItem(STORAGE_KEYS.JOURNALS);
-    return data ? JSON.parse(data) : [];
+    const journals = data ? JSON.parse(data) : [];
+    return includeDeleted ? journals : journals.filter(j => !j.deleted);
 }
 
 function saveJournal(journal) {
-    const journals = getJournals();
+    const journals = getJournals(true);
     const existing = journals.findIndex(j => j.id === journal.id);
+
+    if (!journal.deleted) delete journal.deleted;
+
     if (existing >= 0) {
-        journals[existing] = journal;
+        journals[existing] = { ...journals[existing], ...journal, updatedAt: new Date().toISOString() };
     } else {
         journals.unshift(journal);
     }
@@ -92,22 +96,31 @@ function saveJournal(journal) {
 }
 
 function deleteJournal(id) {
-    const journals = getJournals().filter(j => j.id !== id);
-    localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(journals));
-    triggerCloudSync();
+    const journals = getJournals(true);
+    const index = journals.findIndex(j => j.id === id);
+    if (index >= 0) {
+        journals[index].deleted = true;
+        journals[index].updatedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(journals));
+        triggerCloudSync();
+    }
 }
 
 // ===== TASK OPERATIONS =====
-function getTasks() {
+function getTasks(includeDeleted = false) {
     const data = localStorage.getItem(STORAGE_KEYS.TASKS);
-    return data ? JSON.parse(data) : [];
+    const tasks = data ? JSON.parse(data) : [];
+    return includeDeleted ? tasks : tasks.filter(t => !t.deleted);
 }
 
 function saveTask(task) {
-    const tasks = getTasks();
+    const tasks = getTasks(true);
     const existing = tasks.findIndex(t => t.id === task.id);
+
+    if (!task.deleted) delete task.deleted;
+
     if (existing >= 0) {
-        tasks[existing] = task;
+        tasks[existing] = { ...tasks[existing], ...task, updatedAt: new Date().toISOString() };
     } else {
         tasks.unshift(task);
     }
@@ -118,21 +131,35 @@ function saveTask(task) {
 
 // Bulk save for reordering or status updates
 function saveTasks(tasks) {
-    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+    const allTasks = getTasks(true);
+    const taskMap = new Map(allTasks.map(t => [t.id, t]));
+
+    tasks.forEach(t => {
+        const existing = taskMap.get(t.id);
+        taskMap.set(t.id, { ...(existing || {}), ...t, updatedAt: new Date().toISOString() });
+    });
+
+    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(Array.from(taskMap.values())));
     triggerCloudSync();
 }
 
 function deleteTask(id) {
-    const tasks = getTasks().filter(t => t.id !== id);
-    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
-    triggerCloudSync();
+    const tasks = getTasks(true);
+    const index = tasks.findIndex(t => t.id === id);
+    if (index >= 0) {
+        tasks[index].deleted = true;
+        tasks[index].updatedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+        triggerCloudSync();
+    }
 }
 
 function toggleTask(id) {
-    const tasks = getTasks();
+    const tasks = getTasks(true);
     const task = tasks.find(t => t.id === id);
     if (task) {
         task.done = !task.done;
+        task.updatedAt = new Date().toISOString();
         localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
         triggerCloudSync();
     }
@@ -140,22 +167,28 @@ function toggleTask(id) {
 }
 
 // ===== SCHEDULE OPERATIONS =====
-function getSchedules() {
+function getSchedules(includeDeleted = false) {
     const data = localStorage.getItem(STORAGE_KEYS.SCHEDULES);
     let schedules = data ? JSON.parse(data) : [];
+
     // SECURITY: Always filter out prayer times from read to ensure we don't propagate duplicates
     // We filter by ID prefix AND by Title content (Mosque emoji) to catch legacy corrupted data
-    return schedules.filter(s => {
+    schedules = schedules.filter(s => {
         const isSystemPrayer = s.isPrayer || String(s.id).startsWith('prayer-') || (s.title && s.title.includes('🕌'));
         return !isSystemPrayer;
     });
+
+    return includeDeleted ? schedules : schedules.filter(s => !s.deleted);
 }
 
 function saveSchedule(schedule) {
-    let schedules = getSchedules(); // returns clean list
+    let schedules = getSchedules(true);
     const existing = schedules.findIndex(s => s.id === schedule.id);
+
+    if (!schedule.deleted) delete schedule.deleted;
+
     if (existing >= 0) {
-        schedules[existing] = schedule;
+        schedules[existing] = { ...schedules[existing], ...schedule, updatedAt: new Date().toISOString() };
     } else {
         schedules.push(schedule);
     }
@@ -174,47 +207,72 @@ function saveSchedule(schedule) {
 }
 
 function deleteSchedule(id) {
-    let schedules = getSchedules().filter(s => s.id !== id);
+    let schedules = getSchedules(true);
     // SAFETY: Ensure we never save prayer times
     schedules = schedules.filter(s => {
         const isSystemPrayer = s.isPrayer || String(s.id).startsWith('prayer-') || (s.title && s.title.includes('🕌'));
         return !isSystemPrayer;
     });
-    localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(schedules));
-    triggerCloudSync();
+
+    const index = schedules.findIndex(s => s.id === id);
+    if (index >= 0) {
+        schedules[index].deleted = true;
+        schedules[index].updatedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(schedules));
+        triggerCloudSync();
+    }
 }
 
 // ===== TRANSACTION OPERATIONS =====
-function getTransactions() {
+function getTransactions(includeDeleted = false) {
     const data = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-    return data ? JSON.parse(data) : [];
+    const transactions = data ? JSON.parse(data) : [];
+    return includeDeleted ? transactions : transactions.filter(t => !t.deleted);
 }
 
 function saveTransaction(transaction) {
-    const transactions = getTransactions();
-    transactions.unshift(transaction);
+    const transactions = getTransactions(true); // Get ALL including deleted to update if re-saving
+    const existing = transactions.findIndex(t => t.id === transaction.id);
+
+    // Ensure deleted flag is preserved or reset if explicitly intended (usually new saves are not deleted)
+    if (!transaction.deleted) delete transaction.deleted;
+
+    if (existing >= 0) {
+        transactions[existing] = { ...transactions[existing], ...transaction, updatedAt: new Date().toISOString() };
+    } else {
+        transactions.unshift(transaction);
+    }
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
     triggerCloudSync();
     return transaction;
 }
 
 function deleteTransaction(id) {
-    const transactions = getTransactions().filter(t => t.id !== id);
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
-    triggerCloudSync();
+    const transactions = getTransactions(true);
+    const index = transactions.findIndex(t => t.id === id);
+    if (index >= 0) {
+        transactions[index].deleted = true;
+        transactions[index].updatedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+        triggerCloudSync();
+    }
 }
 
 // ===== HABIT OPERATIONS =====
-function getHabits() {
+function getHabits(includeDeleted = false) {
     const data = localStorage.getItem(STORAGE_KEYS.HABITS);
-    return data ? JSON.parse(data) : [];
+    const habits = data ? JSON.parse(data) : [];
+    return includeDeleted ? habits : habits.filter(h => !h.deleted);
 }
 
 function saveHabit(habit) {
-    const habits = getHabits();
+    const habits = getHabits(true);
     const existing = habits.findIndex(h => h.id === habit.id);
+
+    if (!habit.deleted) delete habit.deleted;
+
     if (existing >= 0) {
-        habits[existing] = habit;
+        habits[existing] = { ...habits[existing], ...habit, updatedAt: new Date().toISOString() };
     } else {
         habits.push(habit);
     }
@@ -224,18 +282,24 @@ function saveHabit(habit) {
 }
 
 function deleteHabit(id) {
-    const habits = getHabits().filter(h => h.id !== id);
-    localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
-    triggerCloudSync();
+    const habits = getHabits(true);
+    const index = habits.findIndex(h => h.id === id);
+    if (index >= 0) {
+        habits[index].deleted = true;
+        habits[index].updatedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+        triggerCloudSync();
+    }
 }
 
 function toggleHabitCompletion(habitId, date) {
-    const habits = getHabits();
+    const habits = getHabits(true);
     const habit = habits.find(h => h.id === habitId);
     if (habit) {
         if (!habit.completions) habit.completions = {};
         habit.completions[date] = !habit.completions[date];
         habit.streak = calculateStreak(habit);
+        habit.updatedAt = new Date().toISOString();
         localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
         triggerCloudSync();
     }
@@ -243,16 +307,20 @@ function toggleHabitCompletion(habitId, date) {
 }
 
 // ===== GOALS OPERATIONS =====
-function getGoals() {
+function getGoals(includeDeleted = false) {
     const data = localStorage.getItem(STORAGE_KEYS.GOALS);
-    return data ? JSON.parse(data) : [];
+    const goals = data ? JSON.parse(data) : [];
+    return includeDeleted ? goals : goals.filter(g => !g.deleted);
 }
 
 function saveGoal(goal) {
-    const goals = getGoals();
+    const goals = getGoals(true);
     const existing = goals.findIndex(g => g.id === goal.id);
+
+    if (!goal.deleted) delete goal.deleted;
+
     if (existing >= 0) {
-        goals[existing] = goal;
+        goals[existing] = { ...goals[existing], ...goal, updatedAt: new Date().toISOString() };
     } else {
         goals.push(goal);
     }
@@ -262,13 +330,18 @@ function saveGoal(goal) {
 }
 
 function deleteGoal(id) {
-    const goals = getGoals().filter(g => g.id !== id);
-    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
-    triggerCloudSync();
+    const goals = getGoals(true);
+    const index = goals.findIndex(g => g.id === id);
+    if (index >= 0) {
+        goals[index].deleted = true;
+        goals[index].updatedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+        triggerCloudSync();
+    }
 }
 
 function updateGoalProgress(goalId, progress) {
-    const goals = getGoals();
+    const goals = getGoals(true);
     const goal = goals.find(g => g.id === goalId);
     if (goal) {
         goal.currentProgress = progress;
@@ -284,7 +357,7 @@ function updateGoalProgress(goalId, progress) {
 }
 
 function completeGoal(goalId) {
-    const goals = getGoals();
+    const goals = getGoals(true);
     const goal = goals.find(g => g.id === goalId);
     if (goal) {
         goal.completed = true;
@@ -305,8 +378,10 @@ function saveApiKey(key) {
 }
 
 // ===== WALLET OPERATIONS =====
-function getWallets() {
-    const wallets = JSON.parse(localStorage.getItem(STORAGE_KEYS.WALLETS)) || [];
+function getWallets(includeDeleted = false) {
+    const data = localStorage.getItem(STORAGE_KEYS.WALLETS);
+    let wallets = data ? JSON.parse(data) : [];
+
     if (wallets.length === 0) {
         wallets.push({
             id: 'wallet_default',
@@ -317,47 +392,63 @@ function getWallets() {
         });
         localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
     }
-    return wallets;
+
+    return includeDeleted ? wallets : wallets.filter(w => !w.deleted);
 }
 
 function saveWallet(wallet) {
-    const wallets = getWallets();
-    wallets.push(wallet);
+    const wallets = getWallets(true);
+    const existing = wallets.findIndex(w => w.id === wallet.id);
+
+    if (existing >= 0) {
+        wallets[existing] = { ...wallets[existing], ...wallet, updatedAt: new Date().toISOString() };
+    } else {
+        wallets.push(wallet);
+    }
     localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
 }
 
 function deleteWallet(id) {
-    let wallets = getWallets();
-    const wallet = wallets.find(w => w.id === id);
-    if (wallet && wallet.isDefault) {
-        alert('Tidak bisa menghapus dompet utama!');
-        return;
+    const wallets = getWallets(true);
+    const index = wallets.findIndex(w => w.id === id);
+
+    if (index >= 0) {
+        if (wallets[index].isDefault) {
+            alert('Tidak bisa menghapus dompet utama!');
+            return;
+        }
+        wallets[index].deleted = true;
+        wallets[index].updatedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
+        triggerCloudSync(); // Ensure sync triggers
     }
-    wallets = wallets.filter(w => w.id !== id);
-    localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
 }
 
 function updateWalletBalance(walletId, amount, type) {
-    const wallets = getWallets();
+    const wallets = getWallets(true); // Update even if somehow hidden/deleted to maintain integrity
     const walletIndex = wallets.findIndex(w => w.id === walletId);
     if (walletIndex !== -1) {
         const change = type === 'income' ? amount : -amount;
         wallets[walletIndex].balance = (wallets[walletIndex].balance || 0) + change;
+        wallets[walletIndex].updatedAt = new Date().toISOString();
         localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
     }
 }
 
 // ===== BUDGET OPERATIONS =====
-function getBudgets() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.BUDGETS)) || [];
+function getBudgets(includeDeleted = false) {
+    const data = localStorage.getItem(STORAGE_KEYS.BUDGETS);
+    const budgets = data ? JSON.parse(data) : [];
+    return includeDeleted ? budgets : budgets.filter(b => !b.deleted);
 }
 
 function saveBudget(budget) {
-    const budgets = getBudgets();
-    const existingIndex = budgets.findIndex(b => b.category === budget.category);
+    const budgets = getBudgets(true);
+    const existingIndex = budgets.findIndex(b => b.category === budget.category && !b.deleted); // Check active only for collision
+
     if (existingIndex !== -1) {
         if (confirm('Kategori ini sudah ada budget-nya. Timpa dengan nilai baru?')) {
-            budgets[existingIndex] = budget;
+            budgets[existingIndex] = { ...budgets[existingIndex], ...budget, updatedAt: new Date().toISOString() };
         } else {
             return;
         }
@@ -368,9 +459,14 @@ function saveBudget(budget) {
 }
 
 function deleteBudget(id) {
-    let budgets = getBudgets();
-    budgets = budgets.filter(b => b.id !== id);
-    localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(budgets));
+    const budgets = getBudgets(true);
+    const index = budgets.findIndex(b => b.id === id);
+    if (index >= 0) {
+        budgets[index].deleted = true;
+        budgets[index].updatedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(budgets));
+        triggerCloudSync();
+    }
 }
 
 // ===== SETTINGS =====
