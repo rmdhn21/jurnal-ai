@@ -251,10 +251,16 @@ function deleteTransaction(id) {
     const transactions = getTransactions(true);
     const index = transactions.findIndex(t => t.id === id);
     if (index >= 0) {
-        transactions[index].deleted = true;
-        transactions[index].updatedAt = new Date().toISOString();
-        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
-        triggerCloudSync();
+        const t = transactions[index];
+        if (!t.deleted) {
+            t.deleted = true;
+            t.updatedAt = new Date().toISOString();
+            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+
+            // Refund (kembalikan) saldo dompet sesuai jenis transaksi yang dihapus
+            updateWalletBalance(t.walletId, -t.amount, t.type);
+            triggerCloudSync();
+        }
     }
 }
 

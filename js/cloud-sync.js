@@ -181,31 +181,39 @@ async function syncFromCloud() {
         }
 
         if (cloudData.journals) {
-            const merged = mergeArrays(getJournals(), cloudData.journals);
+            const merged = mergeArrays(getJournals(true), cloudData.journals);
             localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(merged));
         }
         if (cloudData.tasks) {
-            const merged = mergeArrays(getTasks(), cloudData.tasks);
+            const merged = mergeArrays(getTasks(true), cloudData.tasks);
             localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(merged));
         }
         if (cloudData.schedules) {
-            const merged = mergeArrays(getSchedules(), cloudData.schedules);
+            const merged = mergeArrays(getSchedules(true), cloudData.schedules);
             localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(merged));
         }
         if (cloudData.transactions) {
-            const merged = mergeArrays(getTransactions(), cloudData.transactions);
+            const merged = mergeArrays(getTransactions(true), cloudData.transactions);
             localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(merged));
         }
         if (cloudData.habits) {
-            const merged = mergeHabits(getHabits(), cloudData.habits);
+            const merged = mergeHabits(getHabits(true), cloudData.habits);
             localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(merged));
+        }
+        if (cloudData.goals) {
+            const merged = mergeArrays(getGoals(true), cloudData.goals);
+            localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(merged));
         }
         if (cloudData.reminderSettings) {
             localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
         }
         if (cloudData.wallets) {
-            const merged = mergeArrays(getWallets(), cloudData.wallets);
+            const merged = mergeArrays(getWallets(true), cloudData.wallets);
             localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(merged));
+        }
+        if (cloudData.budgets) {
+            const merged = mergeArrays(getBudgets(true), cloudData.budgets);
+            localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(merged));
         }
 
         console.log('✅ Smart sync from cloud completed');
@@ -264,6 +272,8 @@ async function syncFromCloudReplace() {
         if (cloudData.transactions) localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cloudData.transactions));
         if (cloudData.habits) localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(cloudData.habits));
         if (cloudData.goals) localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(cloudData.goals));
+        if (cloudData.wallets) localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(cloudData.wallets));
+        if (cloudData.budgets) localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(cloudData.budgets));
         if (cloudData.reminderSettings) localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
 
         console.log('✅ Cloud-Only Sync completed - local data replaced with cloud data');
