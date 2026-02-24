@@ -23,11 +23,11 @@ const BADGES_CONFIG = [
 
 // --- SHOP ITEMS CONFIG ---
 const SHOP_ITEMS = [
-    // Avatars
-    { id: 'avatar_cat', type: 'avatar', name: 'Kucing Oren', price: 200, value: '🐱', desc: 'Si raja jalanan.' },
-    { id: 'avatar_robot', type: 'avatar', name: 'Mecha Bot', price: 300, value: '🤖', desc: 'Teknologi masa depan.' },
-    { id: 'avatar_dragon', type: 'avatar', name: 'Naga Api', price: 500, value: '🐲', desc: 'Simbol kekuatan.' },
-    { id: 'avatar_wizard', type: 'avatar', name: 'Penyihir', price: 400, value: '🧙‍♂️', desc: 'Penuh misteri.' },
+    // Avatars (Digantikan oleh fitur AI Dynamic Avatar DiceBear)
+    // { id: 'avatar_cat', type: 'avatar', name: 'Kucing Oren', price: 200, value: '🐱', desc: 'Si raja jalanan.' },
+    // { id: 'avatar_robot', type: 'avatar', name: 'Mecha Bot', price: 300, value: '🤖', desc: 'Teknologi masa depan.' },
+    // { id: 'avatar_dragon', type: 'avatar', name: 'Naga Api', price: 500, value: '🐲', desc: 'Simbol kekuatan.' },
+    // { id: 'avatar_wizard', type: 'avatar', name: 'Penyihir', price: 400, value: '🧙‍♂️', desc: 'Penuh misteri.' },
 
     // Themes
     { id: 'theme_midnight', type: 'theme', name: 'Midnight Gold', price: 800, value: 'midnight', desc: 'Tema gelap dengan aksen emas mewah.' },
@@ -175,6 +175,14 @@ function equipItem(itemId) {
 }
 
 
+// --- DYNAMIC AVATAR LOGIC ---
+function getDynamicAvatarUrl(level) {
+    // Generate an evolving bot avatar based on the user's level.
+    // Level changes the seed, which completely changes the Bot's visual parts!
+    const seed = `Jurnal_AI_Pioneer_Lv${level}`;
+    return `https://api.dicebear.com/9.x/bottts/svg?seed=${seed}&backgroundColor=transparent`;
+}
+
 // --- UI FUNCTIONS ---
 function renderProfileCard() {
     const card = document.getElementById('user-profile-card');
@@ -182,8 +190,8 @@ function renderProfileCard() {
 
     const { xp, level, equipped } = getGamificationStats();
 
-    // Safety check for equipped
-    const currentAvatar = equipped && equipped.avatar ? equipped.avatar : '🌱';
+    // Use dynamic AI Avatar URL instead of static emoji
+    const avatarUrl = getDynamicAvatarUrl(level);
 
     const nextLevelXP = LEVEL_THRESHOLDS[level] || 99999;
     const prevLevelXP = LEVEL_THRESHOLDS[level - 1] || 0;
@@ -192,7 +200,7 @@ function renderProfileCard() {
     card.innerHTML = `
         <div class="profile-header">
             <div class="profile-avatar-container" onclick="showShopModal()" style="cursor: pointer; position: relative;">
-                <div class="profile-avatar">${currentAvatar}</div>
+                <img src="${avatarUrl}" alt="AI Tamagotchi Avatar" class="profile-avatar" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.src=''; this.alt='🤖';">
                 <div class="profile-level-badge">${level}</div>
             </div>
             <div class="profile-info">
@@ -299,16 +307,6 @@ function showShopModal() {
 
     // Add Default Options
     itemsHTML += `
-        <div class="shop-item card">
-            <div class="shop-icon">🌱</div>
-            <div class="shop-details">
-                <h4>Default Avatar</h4>
-                <p>Kembali ke awal</p>
-            </div>
-            <div class="shop-action">
-                <button class="btn-shop owned" onclick="handleEquipItem('default_avatar')">Pakai</button>
-            </div>
-        </div>
         <div class="shop-item card">
             <div class="shop-icon">🌑</div>
             <div class="shop-details">

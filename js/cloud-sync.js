@@ -86,8 +86,9 @@ async function syncToCloud() {
             reminderSettings: getReminderSettings(),
             wallets: getWallets(true),
             budgets: getBudgets(true),
+            islamicTracks: getIslamicTracks(),
             updatedAt: new Date().toISOString(),
-            version: '1.3'
+            version: '1.4'
         };
 
         console.log('📤 Pushing merged data to cloud...');
@@ -215,6 +216,11 @@ async function syncFromCloud() {
             const merged = mergeArrays(getBudgets(true), cloudData.budgets);
             localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(merged));
         }
+        if (cloudData.islamicTracks) {
+            const localTracks = getIslamicTracks();
+            const mergedTracks = { ...localTracks, ...cloudData.islamicTracks };
+            localStorage.setItem(STORAGE_KEYS.ISLAMIC_TRACKS, JSON.stringify(mergedTracks));
+        }
 
         console.log('✅ Smart sync from cloud completed');
 
@@ -223,6 +229,7 @@ async function syncFromCloud() {
         initFinanceUI();
         initHabitsUI();
         initDashboard();
+        if (typeof initIslamTrackerUI === 'function') initIslamTrackerUI();
 
         return true;
     } catch (err) {
@@ -274,6 +281,7 @@ async function syncFromCloudReplace() {
         if (cloudData.goals) localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(cloudData.goals));
         if (cloudData.wallets) localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(cloudData.wallets));
         if (cloudData.budgets) localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(cloudData.budgets));
+        if (cloudData.islamicTracks) localStorage.setItem(STORAGE_KEYS.ISLAMIC_TRACKS, JSON.stringify(cloudData.islamicTracks));
         if (cloudData.reminderSettings) localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
 
         console.log('✅ Cloud-Only Sync completed - local data replaced with cloud data');
@@ -284,6 +292,7 @@ async function syncFromCloudReplace() {
         if (typeof initHabitsUI === 'function') initHabitsUI();
         if (typeof initGoalsUI === 'function') initGoalsUI();
         if (typeof initDashboard === 'function') initDashboard();
+        if (typeof initIslamTrackerUI === 'function') initIslamTrackerUI();
 
         return true;
     } catch (err) {

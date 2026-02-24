@@ -19,7 +19,10 @@ const STORAGE_KEYS = {
     GLOBAL_BUDGET: 'jurnal_ai_global_budget',
     RECURRING: 'jurnal_ai_recurring',
     PRAYER_CITY: 'jurnal_ai_prayer_city',
-    PRAYER_DATA: 'jurnal_ai_prayer_data'
+    PRAYER_DATA: 'jurnal_ai_prayer_data',
+    ISLAMIC_TRACKS: 'jurnal_ai_islamic_tracks',
+    CACHED_NEWS: 'jurnal_ai_cached_news',
+    TUTOR_LAST_DATE: 'jurnal_ai_tutor_last_date'
 };
 
 // ===== UTILITY FUNCTIONS =====
@@ -441,6 +444,44 @@ function updateWalletBalance(walletId, amount, type) {
     }
 }
 
+// ===== ISLAMIC TRACKER OPERATIONS =====
+function getIslamicTracks() {
+    const data = localStorage.getItem(STORAGE_KEYS.ISLAMIC_TRACKS);
+    return data ? JSON.parse(data) : {};
+}
+
+function getIslamicTrackByDate(dateStr) {
+    const tracks = getIslamicTracks();
+    // Default structure for a new day
+    return tracks[dateStr] || {
+        date: dateStr,
+        prayers: { subuh: false, dzuhur: false, ashar: false, maghrib: false, isya: false },
+        qobliyah: false,
+        sedekah: false,
+        waqiah: false,
+        fasting: false,
+        quranText: '',
+        dhikrCount: 0,
+        updatedAt: new Date().toISOString()
+    };
+}
+
+function saveIslamicTrack(dateStr, trackData) {
+    const tracks = getIslamicTracks();
+    trackData.updatedAt = new Date().toISOString();
+    tracks[dateStr] = trackData;
+
+    // Opt-in cleanup: Keep only last 365 days to avoid localStorage bloat
+    const keys = Object.keys(tracks).sort();
+    if (keys.length > 365) {
+        delete tracks[keys[0]];
+    }
+
+    localStorage.setItem(STORAGE_KEYS.ISLAMIC_TRACKS, JSON.stringify(tracks));
+    triggerCloudSync();
+    return trackData;
+}
+
 // ===== BUDGET OPERATIONS =====
 function getBudgets(includeDeleted = false) {
     const data = localStorage.getItem(STORAGE_KEYS.BUDGETS);
@@ -484,4 +525,38 @@ function getSettings() {
         globalBudget: localStorage.getItem(STORAGE_KEYS.GLOBAL_BUDGET) || '',
         reminderSettings: getReminderSettings()
     };
+}
+
+// ==== NEWS CACHE FUNCTIONS ====
+function getCachedNews(category) {
+    const raw = localStorage.getItem(`${STORAGE_KEYS.CACHED_NEWS}_${category}`);
+    if (!raw) return null;
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+}
+
+function saveCachedNews(category, data, timestamp) {
+    const cacheObj = {
+        timestamp: timestamp,
+        data: data
+    };
+    localStorage.setItem(`${STORAGE_KEYS.CACHED_NEWS}_${category}`, JSON.stringify(cacheObj));
+}
+
+// ==== AI TUTOR DAILY LIMIT FUNCTIONS ====
+function hasLearnedToday() {
+    const lastDate = localStorage.getItem(STORAGE_KEYS.TUTOR_LAST_DATE);
+    if (!lastDate) return false;
+
+    // Check if the stored date string matches today's date string
+    const today = new Date().toLocaleDateString('en-CA'); // strict YYYY-MM-DD format
+    return lastDate === today;
+}
+
+function markTutorLearned() {
+    const today = new Date().toLocaleDateString('en-CA');
+    localStorage.setItem(STORAGE_KEYS.TUTOR_LAST_DATE, today);
 }

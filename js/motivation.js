@@ -66,30 +66,47 @@ const MOTIVATION_QUOTES = [
     }
 ];
 
-function initMotivation() {
+async function initMotivation() {
     const container = document.getElementById('motivation-card');
     if (!container) return; // Silent fail if element doesn't exist
 
-    const today = new Date().toDateString();
-    const storedDate = localStorage.getItem('motivation_date');
-    let quoteIndex = parseInt(localStorage.getItem('motivation_index'));
+    // 1. Loading State (Animasi Saat Realtime Fetch)
+    container.innerHTML = `
+        <div class="motivation-content" style="text-align: center; padding: 15px;">
+            <div class="loading-spinner" style="display: inline-block; margin-bottom: 15px;"></div>
+            <p class="text-muted" style="margin: 0; font-size: 0.9em; animation: pulse 1.5s infinite;">Mencari kutipan penuh makna...</p>
+        </div>
+    `;
 
-    // Check if we need a new quote (new day or no stored quote)
-    if (today !== storedDate || isNaN(quoteIndex)) {
-        // Randomly select a new quote
-        quoteIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
+    try {
+        // 2. Fetch data (Menggunakan API Quotes yang sudah CORS- friendly bawaan)
+        // DummyJSON Random Quote API cukup konsisten dan cepat tanpa perlu blokir perantara AllOrigins
+        const response = await fetch('https://dummyjson.com/quotes/random');
 
-        // Save to storage
-        localStorage.setItem('motivation_date', today);
-        localStorage.setItem('motivation_index', quoteIndex.toString());
+        if (!response.ok) throw new Error('Gagal menghubungi server kutipan.');
 
-        console.log('🔥 New Daily Motivation generated for:', today);
-    } else {
-        console.log('🔥 Loaded cached Motivation for:', today);
+        const data = await response.json();
+
+        if (data && data.quote) {
+            renderMotivation(container, {
+                text: data.quote,           // String kutipannya
+                author: data.author,        // Penulisnya
+                category: 'general'         // Agar icon jadi api (🔥)
+            });
+            return;
+        } else {
+            throw new Error('Struktur data balasan kosong.');
+        }
+
+    } catch (error) {
+        console.error('🔥 ZenQuotes API gagal, memuat kutipan Offline/Fallback:', error);
+
+        // 3. Graceful Fallback (Jika internet mati, acak daftar lokal bawaan)
+        const fallbackIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
+        const fallbackQuote = MOTIVATION_QUOTES[fallbackIndex];
+
+        renderMotivation(container, fallbackQuote);
     }
-
-    const quote = MOTIVATION_QUOTES[quoteIndex] || MOTIVATION_QUOTES[0];
-    renderMotivation(container, quote);
 }
 
 function renderMotivation(container, quote) {

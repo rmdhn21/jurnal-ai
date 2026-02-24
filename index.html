@@ -128,7 +128,9 @@
             <button class="nav-btn" data-screen="goals">🎯 Goals</button>
             <button class="nav-btn" data-screen="finance">💰 Keuangan</button>
             <button class="nav-btn" data-screen="habits">✅ Habits</button>
+            <button class="nav-btn" data-screen="islam">☪️ Ibadah</button>
             <button class="nav-btn" data-screen="interview-prep">🎓 Interview</button>
+            <button class="nav-btn" data-screen="news">📰 Berita</button>
         </nav>
 
         <!-- Main Content -->
@@ -197,6 +199,30 @@
                     <p class="text-muted">Memuat motivasi...</p>
                 </div>
 
+                <!-- Daily AI Tutors -->
+                <div class="card mt-md" id="ai-tutor-card" style="border-left: 4px solid var(--secondary);">
+                    <div class="brain-header-row">
+                        <h3>🎓 Guru Privat AI</h3>
+                        <span class="badge-ai" id="tutor-status-badge">Tersedia</span>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-top: 5px; margin-bottom: 12px;">Pilih 1 topik
+                        mikro untuk dipelajari hari ini. Beri AI beberapa detik untuk menyusun modul pendek khusus
+                        untukmu.</p>
+
+                    <div class="tutor-actions" id="tutor-action-btn-group"
+                        style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <button class="btn btn-primary" onclick="requestTutor('AI')" style="flex:1;"><span
+                                class="btn-icon">🧠</span> Belajar AI</button>
+                        <button class="btn btn-secondary" onclick="requestTutor('Fisika')" style="flex:1;"><span
+                                class="btn-icon">⚛️</span> Belajar Fisika</button>
+                    </div>
+
+                    <div id="tutor-content-area" class="hidden"
+                        style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
+                        <!-- Loading or Content goes here -->
+                    </div>
+                </div>
+
                 <!-- Daily Brain Boost -->
                 <div class="card mt-md" id="brain-boost-card">
                     <div class="brain-header-row">
@@ -209,6 +235,7 @@
                         <button class="brain-tab" id="tab-vocab" onclick="switchTab('vocab')">🇬🇧 Vocab</button>
                         <button class="brain-tab" id="tab-math" onclick="switchTab('math')">🧮 Math</button>
                         <button class="brain-tab" id="tab-logic" onclick="switchTab('logic')">🧩 Logic</button>
+                        <button class="brain-tab" id="tab-myth" onclick="switchTab('myth')">🕵️ Mitos</button>
                     </div>
 
                     <div id="brain-content" class="brain-content mt-sm">
@@ -293,6 +320,24 @@
 
             <!-- Screen 1: Journal Write -->
             <section id="journal-screen" class="screen">
+                <!-- On This Day Widget -->
+                <div class="card" id="on-this-day-card"
+                    style="display: none; background: linear-gradient(135deg, var(--surface), var(--surface-hover)); border-left: 4px solid var(--primary);">
+                    <div class="on-this-day-header"
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600; font-size: 0.9rem; color: var(--primary);">
+                            ⏳ Pada Hari Ini <span id="otd-year" style="opacity:0.8;">...</span>
+                        </span>
+                    </div>
+                    <div id="otd-loading" class="loading-spinner" style="margin: 10px 0; width: 20px; height: 20px;">
+                    </div>
+                    <p id="otd-text" class="text-muted"
+                        style="font-size: 0.9rem; margin-bottom: 5px; line-height: 1.4; display: none;"></p>
+                    <a id="otd-link" href="#" target="_blank"
+                        style="font-size: 0.8rem; color: var(--primary); text-decoration: none; display: none;">Baca
+                        selengkapnya &rarr;</a>
+                </div>
+
                 <div class="card journal-card">
                     <h2>Apa yang ada di pikiranmu?</h2>
 
@@ -744,6 +789,187 @@
                     <!-- Content injected by interview-prep.js -->
                 </div>
             </section>
+
+            <!-- Screen 6: Islam Tracker -->
+            <section id="islam-screen" class="screen">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🕌 Ibadah Hari Ini</h3>
+                        <span id="islam-date-display" class="text-muted"></span>
+                    </div>
+
+                    <!-- Islamic Progress Chart & Motivation (Added) -->
+                    <div class="mt-sm" style="margin-bottom: 20px;">
+
+                        <!-- Calendar Controls -->
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 10px;">
+                            <button id="islam-prev-month" class="btn"
+                                style="padding: 4px 12px; min-width: auto; background: var(--bg-secondary); border: 1px solid var(--border);">&larr;</button>
+                            <h4 id="islam-current-month-label"
+                                style="margin: 0; font-size: 1.1rem; color: var(--text-primary); font-weight: 600;">
+                                Bulan</h4>
+                            <button id="islam-next-month" class="btn"
+                                style="padding: 4px 12px; min-width: auto; background: var(--bg-secondary); border: 1px solid var(--border);">&rarr;</button>
+                        </div>
+
+                        <div class="yearly-grid-container" style="padding: 10px;">
+                            <div class="yearly-grid" id="islam-yearly-grid">
+                                <!-- Grid will be injected here by JS -->
+                            </div>
+                            <div
+                                style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 15px; font-size: 0.8em; color: var(--text-muted);">
+                                <span>Kurang</span>
+                                <div class="grid-cell level-0" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <div class="grid-cell level-1" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <div class="grid-cell level-2" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <div class="grid-cell level-3" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <div class="grid-cell level-4" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <span>Sempurna</span>
+                            </div>
+                        </div>
+                        <div class="islam-motivation-box mt-sm"
+                            style="background: rgba(var(--primary-rgb), 0.1); border-left: 4px solid var(--primary); padding: 12px; border-radius: 4px;">
+                            <p id="islam-motivation-text"
+                                style="font-size: 0.95em; color: var(--text-color); margin: 0; line-height: 1.4;">
+                                <em>"Maka nikmat Tuhanmu yang manakah yang kamu dustakan?" - Memuat inspirasi...</em>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Wajib: Sholat 5 Waktu -->
+                    <div class="mt-sm">
+                        <label class="form-label" style="font-weight: 600;">Sholat Wajib</label>
+                        <div class="prayer-checkbox-row"
+                            style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-subuh" class="islam-checkbox"> <span>Subuh</span></label>
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-dzuhur" class="islam-checkbox">
+                                <span>Dzuhur</span></label>
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-ashar" class="islam-checkbox"> <span>Ashar</span></label>
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-maghrib" class="islam-checkbox">
+                                <span>Maghrib</span></label>
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-isya" class="islam-checkbox"> <span>Isya</span></label>
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider" style="margin: 16px 0;">
+
+                    <!-- Sunnah Pagi -->
+                    <div>
+                        <label class="form-label" style="font-weight: 600;">Rutinitas Subuh & Istimewa</label>
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-qobliyah" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Sholat Sunnah Qobliyah Subuh</span>
+                            </label>
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-sedekah" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Sedekah Subuh</span>
+                            </label>
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-waqiah" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Membaca / Mendengar Surah Al-Waqi'ah</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider" style="margin: 16px 0;">
+
+                    <!-- Qur'an & Puasa -->
+                    <div>
+                        <label class="form-label" style="font-weight: 600;">Amalan Lainnya</label>
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-fasting" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Puasa (Sunnah / Wajib) Hari Ini</span>
+                            </label>
+                        </div>
+                        <div class="form-group mt-sm">
+                            <label class="form-label" style="font-size: 0.9em;">Bacaan Al-Quran Biasa
+                                (Target/Capaian)</label>
+                            <input type="text" id="islam-quran-text" class="input" placeholder="Misal: Al-Baqarah 1-10">
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider" style="margin: 16px 0;">
+
+                    <!-- Dhikr Counter -->
+                    <div class="mt-md" style="text-align: center;">
+                        <label class="form-label" style="font-weight: 600;">Tasbih Digital</label>
+                        <div style="display: flex; flex-direction: column; align-items: center; margin-top: 10px;">
+                            <div
+                                style="font-size: 4rem; font-weight: bold; color: var(--primary); background: var(--bg-color); border-radius: 20px; width: 150px; height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0px 4px 6px rgba(0,0,0,0.1);">
+                                <span id="dhikr-count">0</span>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                <button id="dhikr-reset-btn" class="btn btn-secondary"
+                                    style="border-radius: 50%; width: 50px; height: 50px; padding: 0;"
+                                    title="Reset">🔄</button>
+                                <button id="dhikr-add-btn" class="btn btn-primary"
+                                    style="border-radius: 50%; width: 100px; height: 100px; font-size: 2rem;">+1</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Analysis Button -->
+                <button id="analyze-islam-btn" class="btn btn-ai btn-full mt-md">🧠 Analisis AI - Ibadah</button>
+                <div id="islam-ai-result" class="hidden mt-md"
+                    style="background: var(--surface-hover); border-radius: 10px; padding: 15px; border-left: 4px solid var(--primary);">
+                </div>
+            </section>
+
+            <!-- Screen 7: Realtime News / Berita (Added) -->
+            <section id="news-screen" class="screen">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📰 Berita Pasar & Kripto</h3>
+                        <span id="news-last-updated" class="text-muted">Memuat...</span>
+                    </div>
+
+                    <!-- Category Tabs -->
+                    <div class="news-category-tabs"
+                        style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 20px;">
+                        <button id="btn-news-crypto" class="btn btn-primary" style="flex: 1;">🪙 Kripto</button>
+                        <button id="btn-news-etf" class="btn btn-secondary" style="flex: 1;">📈 Saham</button>
+                        <button id="btn-news-ai" class="btn btn-secondary" style="flex: 1;">🤖 AI</button>
+                    </div>
+
+                    <!-- Loading Spinner -->
+                    <div id="news-loading-spinner" style="text-align: center; padding: 20px; display: none;">
+                        <div class="loading-spinner" style="display: inline-block; margin-bottom: 10px;"></div>
+                        <p class="text-muted" style="margin: 0; font-size: 0.9em;">Mengambil artikel terbaru...</p>
+                    </div>
+
+                    <!-- News List Container -->
+                    <div id="news-content-list" style="display: flex; flex-direction: column; gap: 15px;">
+                        <!-- News cards injected by JS -->
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- AI Analysis Modal -->
@@ -1129,6 +1355,9 @@
     <script src="js/journal-templates.js"></script>
     <script src="js/motivation.js"></script>
     <script src="js/interview-prep.js"></script>
+    <script src="js/islam-tracker.js"></script>
+    <script src="js/news-api.js"></script>
+    <script src="js/ai-tutors.js"></script>
 
     <!-- App Initialization (must be last) -->
     <script src="js/app-init.js"></script>

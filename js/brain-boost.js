@@ -234,10 +234,31 @@ const BRAIN_DATA = {
         { q: "Apa yang bisa dimakan tapi tidak bisa ditelan?", a: "Piring", hint: "Alat makan." },
         { q: "Apa yang punya banyak mata tapi tidak bisa melihat?", a: "Nanas", hint: "Buah." },
         { q: "Apa yang punya banyak daun tapi tidak punya batang?", a: "Buku", hint: "Halaman." },
-        { q: "Apa yang punya banyak gigi tapi tidak pernah sakit gigi?", a: "Ritsleting", hint: "Celana." },
-        { q: "Apa yang punya banyak kunci tapi tidak bisa membuka kunci?", a: "Kunci jawaban", hint: "Ujian." },
+        { q: "Apa yang punya banyak masalah tapi selalu benar?", a: "Buku Matematika", hint: "Angka." },
         { q: "Apa yang punya banyak air tapi tidak pernah basah?", a: "Peta", hint: "Laut." },
         { q: "Apa yang punya banyak cerita tapi tidak bisa bicara?", a: "Buku sejarah", hint: "Masa lalu." }
+    ],
+    // Myth vs Fact (Debunking common misconceptions)
+    myth: [
+        { myth: "Manusia hanya menggunakan 10% dari otaknya.", fact: "Pindaian neurologis membuktikan kita menggunakan seluruh bagian otak kita secara konstan, bahkan saat tidur." },
+        { myth: "Banteng membenci warna merah.", fact: "Banteng sebenarnya buta warna merah-hijau. Mereka menyerang matador karena gerakan kain yang agresif, bukan warnanya." },
+        { myth: "Penyihir dibakar di tiang gantungan pada Pengadilan Penyihir Salem.", fact: "Tidak ada seorang pun yang dibakar di Salem. Sebagian besar digantung, dan satu dihukum mati dengan ditindih batu." },
+        { myth: "Kelelawar itu buta.", fact: "Semua spesies kelelawar bisa melihat, bahkan beberapa punya penglihatan malam yang sangat baik selain ekolokasinya." },
+        { myth: "Napoleon Bonaparte bertubuh sangat pendek.", fact: "Tinggi Napoleon adalah 168 cm, yang mana merupakan tinggi rata-rata pria Prancis pada awal abad ke-19. Mitos ini hasil propaganda Inggris." },
+        { myth: "Viking memakai helm bertanduk.", fact: "Helm bertanduk sangat tidak praktis dalam pertarungan. Mitos ini lahir dari desain kostum opera oleh Carl Emil Doepler pada 1876." },
+        { myth: "Ikan mas koki hanya punya daya ingat 3 detik.", fact: "Penelitan ilmiah menunjukkan ikan mas dapat mengingat banyak hal berminggu-minggu hingga hitungan bulan dan bisa dilatih." },
+        { myth: "Petir tidak pernah menyambar tempat yang sama dua kali.", fact: "Petir menyambar struktur tinggi berkali-kali. Gedung Empire State AS disambar sekitar 25 kali setiap tahunnya." },
+        { myth: "Menelan permen karet akan membekas di perut selama 7 tahun.", fact: "Sistem pencernaan kita tidak bisa mengurainya, tetapi permen karet akan langsung dibuang lewat kotoran dalam beberapa hari." },
+        { myth: "Rambut dan kuku tetap tumbuh setelah kita mati.", fact: "Tubuh kita dehidrasi dan menyusut setelah mati, sehingga kulit tertarik ke belakang, menciptakan ilusi optik seolah kuku & rambut memanjang." },
+        { myth: "Membangunkan penderita keluyuran saat tidur (sleepwalker) berbahaya.", fact: "Membiarkan mereka berjalan tanpa sadar jusru lebih berbahaya (risiko jatuh). Hanya saja mereka akan sangat bingung kalau dibangunkan." },
+        { myth: "Gula membuat anak-anak menjadi hiperaktif.", fact: "Kajian buta ganda bertahun-tahun gagal menemukan hubungan langsung antara gula dan hiperaktivitas. Ini hanya efek plasebo orang tua." },
+        { myth: "Mencukur bulu membuatnya tumbuh lebih lebat dan gelap.", fact: "Akar bulu di bawah kulit tidak terpengaruh oleh pisau cukur. Batang bulu barunya tampak lebih gelap karena belum pudar oleh mentari." },
+        { myth: "Bunglon mengubah warnanya untuk kamuflase lingkungan.", fact: "Perubahan warna mereka lebih dipengaruhi oleh suhu lingkungan, komunikasi antar bunglon, status kawin, dan kondisi stres." },
+        { myth: "Vaksinasi bisa menyebabkan autisme.", fact: "Penelitian fiktif tahun 1998 garapan Andrew Wakefield yang memulai mitos ini telah lama ditarik secara medis karena data palsu (fraud)." },
+        { myth: "Minum susu baik untuk memproduksi lendir meredakan flu.", fact: "Susu tidak merangsang lendir, melainkan hanya menyisakan lapisan emulsi tebal di tenggorokan yang teksturnya mirip lendir." },
+        { myth: "Orang dewasa butuh tidur tepat 8 jam malam.", fact: "Kebutuhan tidur genetis setiap orang sangat bervariasi. Beberapa orang berfungsi prima pada 6 jam, lainnya butuh 9-10 jam." },
+        { myth: "Alkohol di dalam makanan akan menguap total jika dipanaskan/dimasak.", fact: "Tergantung metode dan durasi masaknya, makanan yang dipanggang atau diolah dengan alkohol masih menyisakan 5% - 85% kadar alkohol asli." },
+        { myth: "Sisi gelap Bulan tidak pernah terkena cahaya matahari.", fact: "Karena Bulan terkunci secara pasang surut orbit, kita menangkap sisi yang sama dari bumi, tapi semua sisinya bergilir mengalami siang & malam." }
     ]
 };
 
@@ -247,7 +268,8 @@ let currentBrainState = {
     counters: {
         fact: 0,
         vocab: 0,
-        logic: 0
+        logic: 0,
+        myth: 0
     },
     activeMathQuestion: null, // Stores current generated math question
     mathCounter: 0,  // Counts total math solved
@@ -255,7 +277,8 @@ let currentBrainState = {
         fact: 0,
         vocab: 0,
         math: 0,
-        logic: 0
+        logic: 0,
+        myth: 0
     },
     today: ''
 };
@@ -283,9 +306,16 @@ function loadBrainState() {
     } else {
         currentBrainState = savedState;
 
+        // --- Migration Patch: For older saved states without 'myth' ---
+        if (typeof currentBrainState.counters.myth === 'undefined') currentBrainState.counters.myth = 0;
+        if (typeof currentBrainState.dailyProgress.myth === 'undefined') currentBrainState.dailyProgress.myth = 0;
+        if (currentBrainState.limits && typeof currentBrainState.limits.myth === 'undefined') currentBrainState.limits.myth = 3;
+        if (currentBrainState.completed && typeof currentBrainState.completed.myth === 'undefined') currentBrainState.completed.myth = false;
+        // --------------------------------------------------------------
+
         if (currentBrainState.today !== today) {
             // New day reset
-            currentBrainState.dailyProgress = { fact: 0, vocab: 0, math: 0, logic: 0 };
+            currentBrainState.dailyProgress = { fact: 0, vocab: 0, math: 0, logic: 0, myth: 0 };
             currentBrainState.today = today;
             // Note: activeMathQuestion is KEPT to prevent rerolling by waiting a day.
             // Or maybe we should clear it? Let's keep it.
@@ -407,7 +437,7 @@ function renderBrainBoostCard() {
     switchTab(activeTab);
 }
 
-function switchTab(tab) {
+async function switchTab(tab) {
     const contentDiv = document.getElementById('brain-content');
     const dailyCount = currentBrainState.dailyProgress[tab];
 
@@ -467,26 +497,88 @@ function switchTab(tab) {
         const item = dataList[currentIndex];
 
         if (tab === 'fact') {
+            // Show loading state
+            contentDiv.innerHTML = `
+                <div class="brain-item fade-in text-center">
+                    <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
+                    <div class="loading-spinner" style="display:inline-block; margin: 15px 0;"></div>
+                    <p class="text-muted small">Fetching rare wisdom...</p>
+                </div>
+            `;
+
+            let factText = "";
+            try {
+                const response = await fetch('https://uselessfacts.jsph.pl/api/v2/facts/random?language=en');
+                if (!response.ok) throw new Error('API failed');
+                const data = await response.json();
+                factText = data.text;
+            } catch (error) {
+                console.warn("Fact API failed, using fallback.", error);
+                factText = item; // Fallback to hardcoded item translated to local language
+            }
+
             contentDiv.innerHTML = `
                 <div class="brain-item fade-in">
                     <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
                     <div class="brain-icon">💡</div>
-                    <p class="brain-text">"${item}"</p>
+                    <p class="brain-text" style="font-size: 1rem; line-height: 1.5;">"${factText}"</p>
                     <button id="fact-btn" class="btn btn-primary mt-sm" onclick="markRead('fact')">
-                        Saya Jadi Lebih Pintar (+5 XP)
+                        Saya Jadi Pintar (+5 XP)
                     </button>
                 </div>
             `;
         } else if (tab === 'vocab') {
+            // Show loading state
+            contentDiv.innerHTML = `
+                <div class="brain-item fade-in text-center">
+                    <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
+                    <div class="loading-spinner" style="display:inline-block; margin: 15px 0;"></div>
+                    <p class="text-muted small">Searching dictionary...</p>
+                </div>
+            `;
+
+            let vWord = "", vType = "", vMeaning = "", vExample = "";
+            let apiSuccess = false;
+
+            // List of random seed words for the API dictionary to look up
+            const seedWords = ["serendipity", "petrichor", "ephemeral", "resilient", "eloquent", "ethereal", "solitude", "euphoria", "halcyon", "luminous", "zenith", "vibrant", "zeal", "enigmatic", "fastidious", "gregarious", "idyllic", "ubiquitous", "wanderlust", "kismet", "surreal"];
+            const randomSeed = seedWords[Math.floor(Math.random() * seedWords.length)];
+
+            try {
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${randomSeed}`);
+                if (!response.ok) throw new Error('Dict API failed');
+                const data = await response.json();
+
+                const entry = data[0];
+                const meaningObj = entry.meanings[0];
+                const defObj = meaningObj.definitions[0];
+
+                vWord = entry.word;
+                vType = meaningObj.partOfSpeech;
+                vMeaning = defObj.definition;
+                vExample = defObj.example || "No example provided by dictionary.";
+                apiSuccess = true;
+            } catch (error) {
+                console.warn("Vocab API failed, using fallback.", error);
+            }
+
+            // If API failed, fallback to local array item
+            if (!apiSuccess) {
+                vWord = item.word;
+                vType = item.type;
+                vMeaning = item.meaning;
+                vExample = item.example;
+            }
+
             contentDiv.innerHTML = `
                 <div class="brain-item fade-in">
                     <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
                     <div class="brain-header">
-                        <span class="vocab-word">${item.word}</span>
-                        <span class="vocab-type">${item.type}</span>
+                        <span class="vocab-word" style="text-transform: capitalize;">${vWord}</span>
+                        <span class="vocab-type">${vType}</span>
                     </div>
-                    <p class="vocab-meaning">${item.meaning}</p>
-                    <p class="vocab-example">"${item.example}"</p>
+                    <p class="vocab-meaning mt-xs" style="font-size: 0.95rem;">${vMeaning}</p>
+                    <p class="vocab-example text-muted mt-xs" style="font-style: italic;">"${vExample}"</p>
                     <button id="vocab-btn" class="btn btn-primary mt-sm" onclick="markRead('vocab')">
                         Mengerti (+5 XP)
                     </button>
@@ -505,12 +597,28 @@ function switchTab(tab) {
                     <div id="logic-feedback" class="mt-sm"></div>
                 </div>
             `;
+        } else if (tab === 'myth') {
+            contentDiv.innerHTML = `
+                <div class="brain-item fade-in text-center" style="border-left: 3px solid var(--secondary);">
+                    <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
+                    <div class="brain-icon" style="font-size: 2.5rem; margin-bottom: 10px;">🕵️</div>
+                    <p class="brain-text" style="font-weight: bold; color: var(--danger); margin-bottom: 15px;">Mitos: "${item.myth}"</p>
+                    <div style="background: var(--surface-hover); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                        <span style="color: var(--success); font-weight: bold; display: block; margin-bottom: 5px;">✅ Fakta Sebenarnya:</span>
+                        <p style="font-size: 0.95rem; color: var(--text);">${item.fact}</p>
+                    </div>
+                    <button id="myth-btn" class="btn btn-primary" onclick="markRead('myth')" style="width: 100%;">
+                        Terpencerahkan! (+10 XP)
+                    </button>
+                </div>
+            `;
         }
     }
 }
 
 function markRead(type) {
-    if (typeof addXP === 'function') addXP(5, `Brain Boost: ${type} read`);
+    let xp = type === 'myth' ? 10 : 5;
+    if (typeof addXP === 'function') addXP(xp, `Brain Boost: ${type} read`);
     advanceState(type);
 }
 

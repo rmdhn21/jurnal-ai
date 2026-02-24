@@ -37,6 +37,60 @@ function initJournalUI() {
     initTagInput();
     renderJournalHistory();
     renderTemplates();
+
+    // Trigger On This Day if online
+    fetchOnThisDay();
+}
+
+// ===== ON THIS DAY (WIKIPEDIA API) =====
+async function fetchOnThisDay() {
+    const otdCard = document.getElementById('on-this-day-card');
+    const otdText = document.getElementById('otd-text');
+    const otdYear = document.getElementById('otd-year');
+    const otdLink = document.getElementById('otd-link');
+    const otdLoading = document.getElementById('otd-loading');
+
+    if (!otdCard) return;
+
+    if (!navigator.onLine) {
+        otdCard.style.display = 'none';
+        return;
+    }
+
+    otdCard.style.display = 'block';
+
+    const mm = String(new Date().getMonth() + 1).padStart(2, '0');
+    const dd = String(new Date().getDate()).padStart(2, '0');
+
+    try {
+        const response = await fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${mm}/${dd}`);
+        if (!response.ok) throw new Error('Wiki API Error');
+
+        const data = await response.json();
+        const events = data.events;
+
+        if (events && events.length > 0) {
+            // Pick a random historical event from today's list
+            const randIndex = Math.floor(Math.random() * events.length);
+            const histEvent = events[randIndex];
+
+            otdYear.textContent = histEvent.year;
+            otdText.textContent = histEvent.text;
+
+            if (histEvent.pages && histEvent.pages.length > 0) {
+                otdLink.href = histEvent.pages[0].content_urls.desktop.page;
+                otdLink.style.display = 'inline-block';
+            }
+
+            otdLoading.style.display = 'none';
+            otdText.style.display = 'block';
+        }
+    } catch (err) {
+        console.warn('Failed to load On This Day:', err);
+        otdLoading.style.display = 'none';
+        otdText.textContent = "Gagal memuat catatan sejarah dunia hari ini.";
+        otdText.style.display = 'block';
+    }
 }
 
 function renderTemplates() {
@@ -142,11 +196,29 @@ async function handleAskAI() {
         currentJournal = {
             id: generateId(),
             text: text,
-            mood: currentMood || 'neutral',
+            mood: currentMood || aiResponse.detected_mood || 'neutral',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             aiResponse: aiResponse
         };
+
+        // Auto-select the mood button based on AI detection if user hasn't selected one
+        if (!currentMood && aiResponse.detected_mood) {
+            currentMood = aiResponse.detected_mood;
+            const moodBtn = document.querySelector(`.mood-btn[data-mood="${currentMood}"]`);
+            if (moodBtn) {
+                document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+                moodBtn.classList.add('selected');
+
+                // Optional: Show a tiny toast indicator that AI detected the mood
+                const moodLabel = document.querySelector('.mood-label');
+                if (moodLabel) {
+                    const originalText = moodLabel.textContent;
+                    moodLabel.innerHTML = `Bagaimana perasaanmu hari ini? <span style="color:var(--primary); font-size:0.8rem; margin-left:10px;">✨ Dipilih oleh AI</span>`;
+                    setTimeout(() => moodLabel.textContent = originalText, 5000); // revert after 5s
+                }
+            }
+        }
 
         renderAIResponse(aiResponse);
         responseSection.classList.remove('hidden');

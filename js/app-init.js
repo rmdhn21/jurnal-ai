@@ -37,9 +37,13 @@ function showMainApp() {
     if (typeof initHadithCard === 'function') initHadithCard();
     if (typeof initGamification === 'function') initGamification();
     if (typeof initMotivation === 'function') initMotivation();
+    if (typeof initIslamTrackerUI === 'function') initIslamTrackerUI();
 
     // Check if Onboarding is needed
     if (typeof initOnboarding === 'function') initOnboarding();
+
+    // Init AI Tutors Check
+    if (typeof checkTutorDailyStatus === 'function') checkTutorDailyStatus();
 
     // Check if API key is set
     if (!getApiKey()) {

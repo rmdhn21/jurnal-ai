@@ -7,6 +7,7 @@ Tujuanmu: membantu pengguna melihat situasi dengan jernih dan memberi 1–2 sara
 INSTRUKSI OUTPUT:
 Berikan output HANYA dalam format JSON dengan struktur berikut:
 {
+  "detected_mood": "pilih salah satu: great, good, neutral, bad, terrible",
   "validation": "1-2 kalimat validasi empatik",
   "summary": ["poin 1", "poin 2", "poin 3"],
   "suggestions": [
@@ -17,6 +18,7 @@ Berikan output HANYA dalam format JSON dengan struktur berikut:
 }
 
 ATURAN:
+- detected_mood: Wajib analisis teks pengguna secara psikologis dan klasifikasikan ke salah satu string ini (great/good/neutral/bad/terrible).
 - validation: 1-2 kalimat validasi empatik
 - summary: maksimal 3 poin ringkasan
 - suggestions: 1-2 saran dengan type "todo", "schedule", atau "note"
@@ -109,6 +111,7 @@ async function getAIResponse(journalText) {
 
 function createFallbackResponse(text) {
     return {
+        detected_mood: "neutral",
         validation: "Terima kasih sudah berbagi hari ini.",
         summary: ["Jurnal Anda telah dicatat"],
         suggestions: [
@@ -119,6 +122,11 @@ function createFallbackResponse(text) {
 }
 
 function validateAndFixResponse(response) {
+    const validMoods = ['great', 'good', 'neutral', 'bad', 'terrible'];
+    if (!response.detected_mood || !validMoods.includes(response.detected_mood)) {
+        response.detected_mood = "neutral";
+    }
+
     if (!response.validation || typeof response.validation !== 'string') {
         response.validation = "Terima kasih sudah berbagi.";
     }

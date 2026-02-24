@@ -41,6 +41,8 @@ function initNavigation() {
                 updateGoalsStats();
             } else if (targetScreen === 'interview-prep') {
                 if (typeof initInterviewPrep === 'function') initInterviewPrep();
+            } else if (targetScreen === 'news') {
+                if (typeof initNewsUI === 'function') initNewsUI();
             }
         });
     });
