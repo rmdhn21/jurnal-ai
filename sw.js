@@ -28,6 +28,7 @@ const urlsToCache = [
     './js/features.js',
     './js/extras.js',
     './js/backup-tags.js',
+    './js/english-hse.js',
     // App Initialization
     './js/app-init.js'
 ];

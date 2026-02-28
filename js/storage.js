@@ -22,7 +22,8 @@ const STORAGE_KEYS = {
     PRAYER_DATA: 'jurnal_ai_prayer_data',
     ISLAMIC_TRACKS: 'jurnal_ai_islamic_tracks',
     CACHED_NEWS: 'jurnal_ai_cached_news',
-    TUTOR_LAST_DATE: 'jurnal_ai_tutor_last_date'
+    TUTOR_LAST_DATE: 'jurnal_ai_tutor_last_date',
+    HSE_VOCAB_BANK: 'jurnal_ai_hse_vocab_bank'
 };
 
 // ===== UTILITY FUNCTIONS =====
@@ -559,4 +560,34 @@ function hasLearnedToday() {
 function markTutorLearned() {
     const today = new Date().toLocaleDateString('en-CA');
     localStorage.setItem(STORAGE_KEYS.TUTOR_LAST_DATE, today);
+}
+
+// ==== HSE VOCAB BANK FUNCTIONS ====
+function getVocabBank() {
+    const data = localStorage.getItem(STORAGE_KEYS.HSE_VOCAB_BANK);
+    return data ? JSON.parse(data) : [];
+}
+
+function saveVocabToBank(vocabObject) {
+    const bank = getVocabBank();
+    const existingIndex = bank.findIndex(v => v.word.toLowerCase() === vocabObject.word.toLowerCase());
+
+    if (existingIndex >= 0) {
+        // Update existing loosely
+        bank[existingIndex] = { ...bank[existingIndex], ...vocabObject, updatedAt: new Date().toISOString() };
+    } else {
+        // Add new
+        vocabObject.id = generateId();
+        vocabObject.createdAt = new Date().toISOString();
+        bank.unshift(vocabObject);
+    }
+
+    localStorage.setItem(STORAGE_KEYS.HSE_VOCAB_BANK, JSON.stringify(bank));
+    return vocabObject;
+}
+
+function deleteVocabFromBank(id) {
+    let bank = getVocabBank();
+    bank = bank.filter(v => v.id !== id);
+    localStorage.setItem(STORAGE_KEYS.HSE_VOCAB_BANK, JSON.stringify(bank));
 }

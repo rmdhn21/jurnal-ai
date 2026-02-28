@@ -130,6 +130,7 @@
             <button class="nav-btn" data-screen="habits">✅ Habits</button>
             <button class="nav-btn" data-screen="islam">☪️ Ibadah</button>
             <button class="nav-btn" data-screen="interview-prep">🎓 Interview</button>
+            <button class="nav-btn" data-screen="english-hse">🇬🇧 English O&G</button>
             <button class="nav-btn" data-screen="news">📰 Berita</button>
         </nav>
 
@@ -1320,6 +1321,170 @@
                 </div>
             </div>
         </div>
+        <!-- Screen 7: English HSE -->
+        <section id="english-hse-screen" class="screen">
+            <div class="card">
+                <h2>🇬🇧 English for Migas & HSE</h2>
+                <p class="text-muted">Tingkatkan kefasihan Bahasa Inggris dan kosakata safety Anda.</p>
+            </div>
+
+            <!-- Daily Listening Case -->
+            <div class="card mt-md" style="border-left: 4px solid var(--primary);">
+                <h3>🎧 Daily Listening Case</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Dengarkan cerita insiden K3 pendek dan jawab
+                    pertanyaannya. Latih pendengaran Anda!</p>
+                <button id="generate-listening-btn" class="btn btn-ai btn-full mt-sm">🔄 Generate New Case</button>
+
+                <div id="listening-case-area" class="mt-md hidden"
+                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
+                    <button id="play-listening-btn" class="btn btn-secondary"
+                        style="display: block; width: 100%; font-size: 1.1rem; margin-bottom: 15px;">🔊 PLAY
+                        AUDIO</button>
+
+                    <button id="show-transcript-btn" class="btn btn-small"
+                        style="background: transparent; color: var(--text-muted); text-decoration: underline; border: none; cursor: pointer; display: block; margin: 0 auto 15px;">Tampilkan
+                        Teks (Transcript)</button>
+                    <div id="listening-transcript" class="hidden"
+                        style="font-style: italic; color: var(--text-color); margin-bottom: 20px; padding: 10px; background: var(--bg-color); border-radius: 4px; border-left: 3px solid var(--secondary); font-size: 0.9rem;">
+                        <!-- Transcript injected here -->
+                    </div>
+
+                    <div id="listening-questions-area">
+                        <!-- Questions injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI JSA & PTW Generator -->
+            <div class="card mt-md" style="border-left: 4px solid var(--secondary);">
+                <h3>📑 AI JSA & PTW Generator</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Deskripsikan pekerjaan Anda, dan AI akan membuat draf
+                    Job Safety Analysis / Permit to Work standar internasional dalam bahasa Inggris.</p>
+
+                <div class="form-group mt-sm">
+                    <label style="font-size: 0.9rem; font-weight: 500;">Tipe Dokumen</label>
+                    <select id="jsa-doc-type" class="form-control"
+                        style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color);">
+                        <option value="JSA">Job Safety Analysis (JSA)</option>
+                        <option value="PTW">Permit to Work (PTW)</option>
+                        <option value="JSA & PTW">Keduanya (JSA + PTW)</option>
+                    </select>
+                </div>
+
+                <div class="form-group mt-sm">
+                    <label style="font-size: 0.9rem; font-weight: 500;">Deskripsi Pekerjaan Singkat</label>
+                    <textarea id="jsa-job-desc" class="form-control"
+                        placeholder="Contoh: Pengelasan pipa di area terbatas (confined space), durasi 4 jam."
+                        style="width: 100%; height: 80px; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
+                </div>
+
+                <button id="generate-jsa-btn" class="btn btn-primary btn-full mt-sm">Mulai Generate Dokumen ⚡</button>
+
+                <div id="jsa-result-area" class="mt-md hidden">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="copy-jsa-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
+                        <button id="translate-jsa-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                    </div>
+                    <div id="jsa-content"
+                        style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
+                        <!-- AI Table Content Injected Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Vocab -->
+            <div class="card mt-md" style="border-left: 4px solid var(--primary);">
+                <h3>📚 Daily HSE Vocabulary</h3>
+                <div id="hse-vocab-content">
+                    <p class="text-muted">Loading vocabulary...</p>
+                </div>
+                <div class="flex-row mt-sm">
+                    <button id="generate-vocab-btn" class="btn btn-secondary flex-1">🔄 Kosakata Lain</button>
+                    <button id="save-vocab-btn" class="btn btn-primary flex-1 hidden">💾 Simpan ke Flashcard</button>
+                </div>
+            </div>
+
+            <!-- Vocab Bank (Flashcards) -->
+            <div class="card mt-md">
+                <div class="card-header">
+                    <h3>🗃️ Vocab Bank (Flashcards)</h3>
+                    <span id="vocab-bank-count" class="badge-ai">0 Kata</span>
+                </div>
+                <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 12px;">Koleksi kosakata yang Anda simpan
+                    untuk dipelajari kembali.</p>
+                <div id="vocab-bank-list"
+                    style="display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+                    <!-- Flashcard items injected by JS -->
+                </div>
+                <!-- Mini Quiz Button -->
+                <button id="start-vocab-quiz-btn" class="btn btn-secondary mt-md hidden" style="width: 100%;">🧠 Mulai
+                    Review Kuis</button>
+            </div>
+
+            <!-- Quiz Modal Area -->
+            <div id="vocab-quiz-area" class="mt-md hidden"
+                style="background: var(--surface-hover); padding: 15px; border-radius: 8px; border: 1px solid var(--primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="margin: 0; color: var(--primary);">Quick Review</h4>
+                    <span id="quiz-progress" style="font-size: 0.85rem; color: var(--text-muted);">1/5</span>
+                </div>
+                <div id="quiz-question"
+                    style="font-size: 1.1rem; text-align: center; margin-bottom: 20px; font-weight: 500;">Apa bahasa
+                    Inggris dari 'Sabuk Pengaman'?</div>
+                <div id="quiz-options" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Options injected by JS -->
+                </div>
+                <button id="close-quiz-btn" class="btn btn-danger mt-md" style="width: 100%;">Tutup Kuis</button>
+            </div>
+
+            <!-- Roleplay -->
+            <div class="card mt-md">
+                <h3>🗣️ AI Roleplay Practice</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Berlatih percakapan dengan peran Supervisor/Rekan
+                    Kerja.</p>
+                <div class="form-row mt-sm">
+                    <select id="roleplay-scenario" class="input">
+                        <option value="toolbox_talk">Toolbox Talk Briefing</option>
+                        <option value="incident_report">Reporting an Incident</option>
+                        <option value="ptw">Permit to Work (PTW) Request</option>
+                        <option value="stop_work">Stop Work Authority Intervention</option>
+                    </select>
+                </div>
+                <button id="start-roleplay-btn" class="btn btn-primary mt-sm">▶️ Mulai Skenario</button>
+                <button id="stop-roleplay-btn" class="btn btn-danger mt-sm hidden">🛑 Hentikan</button>
+
+                <div id="roleplay-chat-area" class="mt-md hidden"
+                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
+                    <div id="roleplay-chat-history"
+                        style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Chat bubbles -->
+                    </div>
+                    <div class="flex-row">
+                        <input type="text" id="roleplay-input" class="input flex-1" placeholder="Type your message...">
+                        <button id="roleplay-mic-btn" class="btn btn-secondary"
+                            title="Gunakan Suara (Speech-to-Text)">🎙️</button>
+                        <button id="roleplay-send-btn" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Assistant -->
+            <div class="card mt-md">
+                <h3>📝 HSE Report Assistant</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Masukkan draft laporan (boleh campur Bahasa Indonesia)
+                    untuk diubah ke format HSE baku berbahasa Inggris.</p>
+                <textarea id="hse-report-input" class="input mt-sm" rows="4"
+                    placeholder="Contoh: Ada pekerja yang jatuh karena tidak pakai safety harness di scaffolding..."></textarea>
+                <button id="translate-report-btn" class="btn btn-ai btn-full mt-sm">🧠 Minta AI Perbaiki
+                    Laporan</button>
+
+                <div id="hse-report-result" class="mt-sm hidden"
+                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap;">
+                </div>
+            </div>
+        </section>
     </div>
 
     <!-- Scripts (modular) -->
@@ -1358,6 +1523,7 @@
     <script src="js/islam-tracker.js"></script>
     <script src="js/news-api.js"></script>
     <script src="js/ai-tutors.js"></script>
+    <script src="js/english-hse.js"></script>
 
     <!-- App Initialization (must be last) -->
     <script src="js/app-init.js"></script>
