@@ -131,6 +131,7 @@
             <button class="nav-btn" data-screen="islam">☪️ Ibadah</button>
             <button class="nav-btn" data-screen="interview-prep">🎓 Interview</button>
             <button class="nav-btn" data-screen="english-hse">🇬🇧 English O&G</button>
+            <button class="nav-btn" data-screen="hse-rig">🛢️ HSE Rig</button>
             <button class="nav-btn" data-screen="news">📰 Berita</button>
         </nav>
 
@@ -1328,6 +1329,45 @@
                 <p class="text-muted">Tingkatkan kefasihan Bahasa Inggris dan kosakata safety Anda.</p>
             </div>
 
+            <!-- AI HSE Regulation Expert (Chatbot) -->
+            <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
+                <h3>🤖 AI HSE Regulation Expert</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Asisten pinter untuk menanyakan standar K3 (PTK 005,
+                    OSHA, API, dll). Anda bisa mengetik atau ngomong langsung.</p>
+
+                <div id="hse-chat-history"
+                    style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 15px; height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Initial AI Greeting -->
+                    <div
+                        style="align-self: flex-start; background: var(--surface-hover); color: var(--text-color); padding: 10px 14px; border-radius: 12px; border-bottom-left-radius: 2px; max-width: 85%; line-height: 1.5; font-size: 0.9rem;">
+                        <strong>🤖 System:</strong><br>
+                        Halo! Saya adalah Penasihat Regulasi K3 tersertifikasi internasional (OSHA/NEBOSH) yang memahami
+                        standar Pertamina Hulu Energi (PHE) & SKK Migas. Ada standar operasi, jarak aman, atau
+                        <em>permit</em> yang ingin Anda tanyakan hari ini?
+                    </div>
+                </div>
+
+                <div class="form-group mt-sm" style="position: relative; margin-top: 15px;">
+                    <textarea id="hse-chat-input" class="form-control"
+                        placeholder="Ketik pertanyaan atau tekan mic... (Contoh: Apa standar confined space?)"
+                        style="width: 100%; height: 60px; padding: 10px; padding-right: 45px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: none;"></textarea>
+
+                    <button id="hse-chat-mic-btn"
+                        style="position: absolute; right: 8px; top: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        🎙️
+                    </button>
+
+                    <div id="hse-chat-recording-indicator" class="hidden"
+                        style="position: absolute; right: 10px; bottom: -20px; color: #38b2ac; font-size: 0.8rem; display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                        <div class="recording-dot" style="background-color: #38b2ac;"></div> Mendengarkan...
+                    </div>
+                </div>
+
+                <button id="send-hse-chat-btn" class="btn btn-primary btn-full mt-sm"
+                    style="background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); border: none;">Kirim
+                    Pertanyaan 💬</button>
+            </div>
+
             <!-- Daily Listening Case -->
             <div class="card mt-md" style="border-left: 4px solid var(--primary);">
                 <h3>🎧 Daily Listening Case</h3>
@@ -1355,6 +1395,38 @@
                 </div>
             </div>
 
+            <!-- Daily TBT & P5M Briefing Generator -->
+            <div class="card mt-md" style="border-left: 4px solid #ed8936;">
+                <h3>📢 Daily TBT & P5M Briefing Generator</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Ketik ringkasan operasi hari ini, dan AI akan meracik
+                    naskah Briefing K3 (Toolbox Talk) yang terstruktur, lengkap dengan bahaya kritikal dan zona
+                    merahnya.</p>
+
+                <div class="form-group mt-sm">
+                    <label style="font-size: 0.9rem; font-weight: 500;">Target Operasi Hari Ini</label>
+                    <textarea id="tbt-operation-desc" class="form-control"
+                        placeholder="Contoh: Tripping in Drill Pipe 5 inch dan maintenance pompa lumpur #2."
+                        style="width: 100%; height: 80px; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
+                </div>
+
+                <button id="generate-tbt-btn" class="btn btn-primary btn-full mt-sm"
+                    style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border: none;">Generate
+                    Toolbox Talk ⚡</button>
+
+                <div id="tbt-result-area" class="mt-md hidden">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="copy-tbt-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
+                        <button id="translate-tbt-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                    </div>
+                    <div id="tbt-content"
+                        style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.6; overflow-x: auto;">
+                        <!-- TBT Content Injected Here -->
+                    </div>
+                </div>
+            </div>
+
             <!-- AI JSA & PTW Generator -->
             <div class="card mt-md" style="border-left: 4px solid var(--secondary);">
                 <h3>📑 AI JSA & PTW Generator</h3>
@@ -1365,9 +1437,8 @@
                     <label style="font-size: 0.9rem; font-weight: 500;">Tipe Dokumen</label>
                     <select id="jsa-doc-type" class="form-control"
                         style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color);">
-                        <option value="JSA">Job Safety Analysis (JSA)</option>
-                        <option value="PTW">Permit to Work (PTW)</option>
-                        <option value="JSA & PTW">Keduanya (JSA + PTW)</option>
+                        <option value="JSA">Job Safety Analysis (JSA) - Tabel Spesifik</option>
+                        <option value="RA">Risk Assessment (RA) - General Form PHE (5 Lembar)</option>
                     </select>
                 </div>
 
@@ -1390,6 +1461,47 @@
                     <div id="jsa-content"
                         style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
                         <!-- AI Table Content Injected Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Incident Investigator (RCA) -->
+            <div class="card mt-md" style="border-left: 4px solid #f56565;">
+                <h3>🚨 AI Incident Investigator (RCA)</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Ceritakan kronologi insiden (bisa via suara), dan AI
+                    akan menyusun Laporan Investigasi lengkap dengan analisis "5-Whys".</p>
+
+                <div class="form-group mt-sm" style="position: relative;">
+                    <label style="font-size: 0.9rem; font-weight: 500;">Kronologi Insiden Singkat</label>
+                    <textarea id="rca-incident-desc" class="form-control"
+                        placeholder="Tekan mic dan ceritakan: 'Pekerja jatuh jam 2 siang karena ceceran oli...'"
+                        style="width: 100%; height: 100px; padding: 10px; padding-right: 40px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
+
+                    <button id="rca-mic-btn"
+                        style="position: absolute; right: 10px; top: 40px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        🎙️
+                    </button>
+                </div>
+
+                <div id="rca-recording-indicator" class="hidden"
+                    style="color: #e53e3e; font-size: 0.85rem; margin-top: 5px; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                    <div class="recording-dot"></div> Merekam suara...
+                </div>
+
+                <button id="generate-rca-btn" class="btn btn-primary btn-full mt-sm"
+                    style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); border: none;">Analyze
+                    Incident (5-Whys) 🔍</button>
+
+                <div id="rca-result-area" class="mt-md hidden">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="copy-rca-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
+                        <button id="translate-rca-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                    </div>
+                    <div id="rca-content"
+                        style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
+                        <!-- RCA Content Injected Here -->
                     </div>
                 </div>
             </div>
@@ -1485,6 +1597,59 @@
                 </div>
             </div>
         </section>
+        <!-- Screen 8: HSE Rig -->
+        <section id="hse-rig-screen" class="screen">
+            <div class="card">
+                <h2>🛢️ HSE Rig Learning</h2>
+                <p class="text-muted">Panduan dasar keselamatan dan operasi di Oil Rig untuk pemula dan HSE Officer.</p>
+            </div>
+
+            <!-- Introduction -->
+            <div class="card mt-md" style="border-left: 4px solid var(--primary);">
+                <h3>🏗️ Pengenalan Rig</h3>
+                <img src="img/hse-rig/intro.png" alt="Rig Introduction"
+                    style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                <p class="text-muted" style="font-size: 0.9rem;">Pahami komponen utama dari onshore rig (rig darat),
+                    seperti
+                    derrick, drill floor, dan mud pit.</p>
+                <div id="rig-intro-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    <!-- Cards will be injected by JS -->
+                </div>
+            </div>
+
+            <!-- Main Hazards -->
+            <div class="card mt-md" style="border-left: 4px solid #f56565;">
+                <h3>⚠️ Bahaya Utama (Major Hazards)</h3>
+                <img src="img/hse-rig/hazards.png" alt="Rig Hazards"
+                    style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                <p class="text-muted" style="font-size: 0.9rem;">Ketahui risiko tetinggi di area rig seperti H2S,
+                    Blowout, dan Dropped Objects.</p>
+                <div id="rig-hazards-modules"
+                    style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+
+            <!-- PPE requirements -->
+            <div class="card mt-md" style="border-left: 4px solid #ed8936;">
+                <h3>👷 Standar APD (PPE)</h3>
+                <img src="img/hse-rig/ppe.png" alt="Rig PPE"
+                    style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                <p class="text-muted" style="font-size: 0.9rem;">Alat Pelindung Diri wajib di rig: Coverall, Hard Hat,
+                    Safety Glasses, Boots, dll.</p>
+                <div id="rig-ppe-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                </div>
+            </div>
+
+            <!-- Daily Routine -->
+            <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
+                <h3>📋 Rutinitas HSE Officer</h3>
+                <img src="img/hse-rig/routine.png" alt="HSE Routine"
+                    style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                <p class="text-muted" style="font-size: 0.9rem;">Agenda harian seorang HSE Officer: Toolbox Talk,
+                    Inspection, dan Permit Control.</p>
+                <div id="rig-routine-modules"
+                    style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+        </section>
     </div>
 
     <!-- Scripts (modular) -->
@@ -1524,6 +1689,7 @@
     <script src="js/news-api.js"></script>
     <script src="js/ai-tutors.js"></script>
     <script src="js/english-hse.js"></script>
+    <script src="js/hse-rig.js"></script>
 
     <!-- App Initialization (must be last) -->
     <script src="js/app-init.js"></script>

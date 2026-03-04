@@ -84,9 +84,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyJsaBtn = document.getElementById('copy-jsa-btn');
     const translateJsaBtn = document.getElementById('translate-jsa-btn');
 
-    if (generateJsaBtn) generateJsaBtn.addEventListener('click', generateJSADocument);
-    if (copyJsaBtn) copyJsaBtn.addEventListener('click', copyJsaText);
-    if (translateJsaBtn) translateJsaBtn.addEventListener('click', translateJSADocument);
+    // AI JSA & PTW Generator
+    document.getElementById('generate-jsa-btn')?.addEventListener('click', generateJSADocument);
+    document.getElementById('copy-jsa-btn')?.addEventListener('click', copyJsaText);
+    document.getElementById('translate-jsa-btn')?.addEventListener('click', translateJSADocument);
+
+    // AI Incident Investigator (RCA)
+    document.getElementById('generate-rca-btn')?.addEventListener('click', generateRCADocument);
+    document.getElementById('copy-rca-btn')?.addEventListener('click', copyRcaText);
+    document.getElementById('translate-rca-btn')?.addEventListener('click', translateRCADocument);
+    document.getElementById('rca-mic-btn')?.addEventListener('click', toggleRcaVoiceInput);
+
+    // AI Daily TBT & P5M Briefing Generator
+    document.getElementById('generate-tbt-btn')?.addEventListener('click', generateTBTDocument);
+    document.getElementById('copy-tbt-btn')?.addEventListener('click', copyTbtText);
+    document.getElementById('translate-tbt-btn')?.addEventListener('click', translateTBTDocument);
+
+    // AI HSE Regulation Expert (Chatbot)
+    document.getElementById('send-hse-chat-btn')?.addEventListener('click', sendHseChatMessage);
+    document.getElementById('hse-chat-mic-btn')?.addEventListener('click', toggleHseChatVoiceInput);
 
     // Auto render vocab bank on load
     renderVocabBank();
@@ -180,7 +196,7 @@ function saveCurrentVocab() {
         const saveBtn = document.getElementById('save-vocab-btn');
         if (saveBtn) {
             const originalText = saveBtn.innerHTML;
-            saveBtn.innerHTML = '✅ Berhasil  Disimpan';
+            saveBtn.innerHTML = '✅ Berhasil Disimpan';
             saveBtn.disabled = true;
             setTimeout(() => {
                 saveBtn.innerHTML = originalText;
@@ -877,6 +893,24 @@ window.checkListeningAnswer = function (radioInput, questionIndex, correctAnswer
 let currentJsaContentEn = "";
 let currentJsaContentId = "";
 
+let currentRcaContentEn = "";
+let currentRcaContentId = "";
+
+let currentTbtContentEn = "";
+let currentTbtContentId = "";
+
+let hseChatHistory = [
+    {
+        role: "user",
+        parts: [{ text: "System Prompt: You are a Senior HSE Regulatory Advisor for Pertamina Hulu Energi (PHE). You have encyclopedic knowledge of Indonesian K3 Laws (Undang-Undang No. 1 Tahun 1970), PTK 005 SKK Migas, OSHA standards, API, and NEBOSH guidelines. Answer users' questions about safety protocols, required permits, safe clearances, and hazard mitigations concisely and accurately. Respond primarily in formal Indonesian suitable for the Oil & Gas industry. Never break character." }]
+    },
+    {
+        role: "model",
+        parts: [{ text: "Dimengerti. Saya siap melayani sebagai Penasihat Regulasi K3 PHE Anda." }]
+    }
+];
+
+let listeningAudio = null;
 async function generateJSADocument() {
     const jobDescInput = document.getElementById('jsa-job-desc');
     const docTypeSelect = document.getElementById('jsa-doc-type');
@@ -907,17 +941,97 @@ async function generateJSADocument() {
 
     document.getElementById('translate-jsa-btn').innerHTML = '🇮🇩 Terjemahkan'; // Reset translate button
 
-    const prompt = `Act as a Senior HSE (Health, Safety, and Environment) Officer with international certification (NEBOSH/OSHA).
-Create a professional, highly detailed, and realistic ${docType} (Job Safety Analysis / Permit to Work) document in ENGLISH based on this job description:
+    let prompt = "";
+    if (docType === "RA") {
+        prompt = `Act as a Senior HSE (Health, Safety, and Environment) Officer with international certification (NEBOSH/OSHA) working for Pertamina Hulu Energi (PHE).
+Create a highly professional and realistic Risk Assessment (RA) document in ENGLISH based on this job description:
 "${jobDesc}"
 
-Format the output as a clean, styled HTML structure (using standard table tags, divs, h3, ul, li).
-Include the following sections if applicable to the document type:
-1. Document header (Title, Date, Task Description).
-2. For JSA: A detailed table with 4 columns: Sequence of Basic Job Steps, Potential Hazards, Recommended Safe Job Procedures (Mitigations), Required PPE.
-3. For PTW: General requirements, Specific hazards checker (Yes/No format), Control measures, and Sign-off section.
-Ensure the English vocabulary used is formal, technical, and accurate to the Oil & Gas / construction industry standard.
+You must strictly output exactly 5 SEPARATE HTML TABLES that perfectly and comprehensively mirror the 5 pages/sections of the standard Pertamina Hulu Energi (PHE) JSA/RA format. DO NOT omit any fields. DO NOT collapse tables.
+
+Table 1: Document Header
+- It must contain 3 columns.
+- Col 1: "Fasilitas/site:", "Tipe PTW:" (Choose between: Hot work (merah) / Critical work (kuning) / Breaking containment (hitam) / General work (biru) / Confined Space (biru)), "Deskripsi Pekerjaan (termasuk peralatan kerja):"
+- Col 2: The Title "RISK ASSESSMENT (RA)" or "Job Safety Analysis (JSA)", centered, large and bold.
+- Col 3: "Lokasi:", "RA No.:", "Tanggal registrasi:"
+
+Table 2: Preparer Information & Risk Committee (Tim Kaji Risiko)
+- Heading row spanning all columns: "Tim Kaji Risiko RA mengkonfirmasi bahwa risiko pekerjaan yang dideskripsikan telah dikaji dan tindakan pengendalian yang memadai telah ditetapkan untuk menurunkan risiko pekerjaan."
+- Below this, a sub-table header: "Tim Kaji Risiko"
+- Columns: "Nama", "Jabatan", "Tanda tangan".
+- Rows exactly for: "Risk Assessment Facilitator", "AA", "PA".
+
+Table 3: Risk Assessment (RA) Reviewer & Matrix Guide
+- Heading row spanning Col 1: "Risk Assessment (RA) Reviewer. Saya telah meninjau tindakan pengendalian yang ditetapkan dapat menurunkan risiko dan menyetujui pekerjaan untuk dilaksanakan."
+- Col 1 Details: Columns for "Nama", "Tanda tangan", "Tanggal".
+- Col 2 (The Guide Matrix): A reference guide showing the approval levels vertically stacked.
+  - Row 1: "1-3 (rendah) dan 4 (rendah ke moderate): Site Controller" [Green Background]
+  - Row 2: "5-9 (moderate): Manager Lini" [Yellow Background]
+  - Row 3: "10-12 (moderate ke tinggi): Field Manager/Sr. Manager" [Orange Background]
+  - Row 4: "15-25 (tinggi): General Manager" [Red Background]
+
+Table 4: The Main JSA / Hazard Identification Table (The core analysis)
+- MUST use a 2-tier header row with proper HTML rowspan and colspan.
+- First Header Row MUST EXACTLY BE:
+  - <th rowspan="2">No (1)</th>
+  - <th rowspan="2">Deskripsi Langkah Pekerjaan (2)</th>
+  - <th rowspan="2">Bahaya (3)</th>
+  - <th rowspan="2">Dampak (4)</th>
+  - <th colspan="3">Risiko Awal (5)</th>
+  - <th rowspan="2">Tindakan Pengendalian (6)</th>
+  - <th colspan="3">Risiko Sisa (7)</th>
+- Second Header Row MUST EXACTLY BE:
+  - <th>Keparahan (5a)</th>
+  - <th>Kemungkinan (5b)</th>
+  - <th>Tingkat Risiko (5c)</th>
+  - <th>Keparahan (7a)</th>
+  - <th>Kemungkinan (7b)</th>
+  - <th>Tingkat Risiko (7c)</th>
+- CRITICAL: You MUST fill in the actual analysis rows based on the job description! DO NOT leave the table empty. Generate at least 3 to 5 realistic, step-by-step job sequences with their hazards.
+- Tindakan Pengendalian (6) MUST list the Hierarchy of Controls explicitly (1. Eliminasi, 2. Subtitusi, 3. Engineering, 4. Administratif, 5. APD).
+- Clearly state the calculated Initial and Residual Risk scores as numbers (e.g. 3) in columns 5a, 5b, 7a, 7b. Multiply them to get Tingkat Risiko (5c, 7c) as a number (e.g. 9) and color the "Tingkat Risiko" cell background (Green/Yellow/Orange/Red) with dark text.
+
+Table 5: Sign-off & Verification
+- Section 1 Header MUST EXACTLY BE: "Identifikasi Bahaya Baru Ketika Pelaksanaan Pekerjaan" with columns:
+  - No (1), Deskripsi Langkah Pekerjaan (2), Bahaya (3), Tindakan Pengendalian (4), Nama Pekerja Pelaksana (5), Paraf Pelaksana (6), Tanggal dan Paraf PA (7).
+- Leave 3 empty rows here for the user.
+- Section 2: "Diskusi Penyelesaian Pekerjaan & Lesson Learned". (Leave a large empty text area cell for notes).
+- Section 3: "Nama, Paraf PA, dan Tanggal" alongside "Nama, Paraf AA, dan Tanggal".
+
+CRITICAL UI/CSS RULES: The output will be displayed on a dark-themed app. You MUST inject inline CSS to ensure readability:
+- Main text color must be very light (e.g., 'color: #e2e8f0;').
+- Tables must have clean borders (e.g., 'border: 1px solid #4a5568;' and 'border-collapse: collapse; margin-bottom: 30px; width: 100%; font-family: sans-serif;').
+- Table Headers (th) must have a distinct background (e.g., 'background-color: #2d3748;') and bright text ('color: #63b3ed;').
+- Table Cells (td) must have adequate padding (e.g., 'padding: 10px 14px;').
+- The Risk text backgrounds (Green, Yellow, Orange, Red) MUST have dark text ('color: #000; font-weight: bold; padding: 4px; display: inline-block; border-radius: 4px;') so they are readable!
+DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code starting with the first table.`;
+    } else {
+        prompt = `Act as a Senior HSE (Health, Safety, and Environment) Officer with international certification (NEBOSH/OSHA) working for Pertamina Hulu Energi (PHE).
+Create a highly professional and realistic Job Safety Analysis (JSA) document in ENGLISH based on this job description:
+"${jobDesc}"
+
+Format the output strictly as a single, clean, styled HTML table matching standard operational JSA formats.
+The document MUST ONLY include ONE table:
+Table: The Main JSA / Hazard Identification Table
+- Headers MUST BE EXACTLY:
+  - No (1)
+  - Deskripsi Langkah Pekerjaan (2)
+  - Bahaya (3)
+  - Tindakan Pengendalian (4)
+  - Nama Pekerja Pelaksana (5)
+  - Paraf Pelaksana (6)
+  - Tanggal dan Paraf PA (7)
+- CRITICAL: You MUST fill in the actual analysis rows based on the job description! DO NOT leave the table empty. Generate at least 3 to 5 realistic, step-by-step job sequences with their hazards.
+- DO NOT INCLUDE RISK SCORES OR MATRICES. Focus purely on the practical steps, hazards, and mitigations.
+- Leave columns 5, 6, 7 blank for users to sign.
+
+CRITICAL UI/CSS RULES: The output will be displayed on a dark-themed app. You MUST inject inline CSS to ensure readability:
+- Main text color must be very light (e.g., 'color: #e2e8f0;').
+- Tables must have clean borders (e.g., 'border: 1px solid #4a5568;' and 'border-collapse: collapse; margin-bottom: 30px; width: 100%; font-family: sans-serif;').
+- Table Headers (th) must have a distinct background (e.g., 'background-color: #2d3748;') and bright text ('color: #63b3ed;').
+- Table Cells (td) must have adequate padding (e.g., 'padding: 10px 14px;').
 DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code.`;
+    }
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -939,10 +1053,10 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code.`
             if (!responseText.includes('<style>')) {
                 responseText = `
                  <style>
-                    .jsa-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
-                    .jsa-table th, .jsa-table td { border: 1px solid var(--border); padding: 8px; text-align: left; vertical-align: top; }
-                    .jsa-table th { background-color: var(--surface-hover); font-weight: bold; color: var(--primary); }
-                    .jsa-header { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 15px; }
+                    .jsa-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95em; color: var(--text-color, #e0e0e0); }
+                    .jsa-table th, .jsa-table td { border: 1px solid rgba(255,255,255,0.2); padding: 12px; text-align: left; vertical-align: top; }
+                    .jsa-table th { background-color: rgba(255,255,255,0.05); font-weight: bold; color: var(--primary, #64B5F6); }
+                    .jsa-header { border-bottom: 2px solid var(--primary, #64B5F6); padding-bottom: 10px; margin-bottom: 20px; }
                  </style>
                  ` + responseText;
             }
@@ -1040,7 +1154,599 @@ function copyJsaText() {
             copyBtn.innerHTML = originalText;
         }, 2000);
     }).catch(err => {
-        console.error('Could not copy text: ', err);
+        console.error('Failed to copy text: ', err);
         alert('Gagal menyalin teks.');
     });
+}
+
+// ==========================================
+// AI Incident Investigator (RCA) LOGIC
+// ==========================================
+
+let rcaRecognition = null;
+let isRcaRecording = false;
+
+function initRcaSpeechRecognition() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Browser Anda tidak mendukung fitur Voice-to-Text. Gunakan Chrome.");
+        return null;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true; // Keep listening until manually stopped
+    recognition.interimResults = true;
+    recognition.lang = 'id-ID'; // We default to Indonesian for easy dictation
+
+    return recognition;
+}
+
+function toggleRcaVoiceInput() {
+    const micBtn = document.getElementById('rca-mic-btn');
+    const indicator = document.getElementById('rca-recording-indicator');
+    const textArea = document.getElementById('rca-incident-desc');
+
+    if (isRcaRecording) {
+        // Stop recording
+        if (rcaRecognition) {
+            rcaRecognition.stop();
+        }
+        isRcaRecording = false;
+        micBtn.innerHTML = '🎙️';
+        micBtn.style.color = 'var(--text-muted)';
+        indicator.classList.add('hidden');
+    } else {
+        // Start recording
+        if (!rcaRecognition) {
+            rcaRecognition = initRcaSpeechRecognition();
+        }
+
+        if (!rcaRecognition) return;
+
+        rcaRecognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript + ' ';
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+
+            // Append final sentences securely, but only preview interim ones
+            if (finalTranscript !== '') {
+                // Append to existing text but respect cursor position roughly by just adding to end.
+                // Ideally we’d need complex cursor tracking, but append is safe for now.
+                const currentVal = textArea.value;
+                textArea.value = currentVal + (currentVal && !currentVal.endsWith(' ') ? ' ' : '') + finalTranscript;
+            }
+        };
+
+        rcaRecognition.onerror = (event) => {
+            console.error("RCA Speech recognition error", event.error);
+            isRcaRecording = false;
+            micBtn.innerHTML = '🎙️';
+            micBtn.style.color = 'var(--text-muted)';
+            indicator.classList.add('hidden');
+        };
+
+        rcaRecognition.onend = () => {
+            // Failsafe auto-stop UI update
+            if (isRcaRecording) {
+                isRcaRecording = false;
+                micBtn.innerHTML = '🎙️';
+                micBtn.style.color = 'var(--text-muted)';
+                indicator.classList.add('hidden');
+            }
+        };
+
+        rcaRecognition.start();
+        isRcaRecording = true;
+        micBtn.innerHTML = '🔴';
+        micBtn.style.color = '#e53e3e';
+        indicator.classList.remove('hidden');
+    }
+}
+
+async function generateRCADocument() {
+    const incidentDesc = document.getElementById('rca-incident-desc').value.trim();
+    const btn = document.getElementById('generate-rca-btn');
+    const resultArea = document.getElementById('rca-result-area');
+    const contentArea = document.getElementById('rca-content');
+
+    if (!incidentDesc) {
+        alert("Mohon ceritakan kronologi insiden terlebih dahulu.");
+        return;
+    }
+
+    // Auto stop recording if they hit generate while still recording
+    if (isRcaRecording) {
+        toggleRcaVoiceInput();
+    }
+
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+    if (!apiKey) {
+        alert('⚠️ API Key Gemini belum diatur di Settings.');
+        return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Analyzing Incident & Plotting Root Causes... <div class="loading-spinner" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-left: 5px;"></div>';
+    btn.disabled = true;
+
+    resultArea.classList.remove('hidden');
+    contentArea.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div><p class="text-center text-muted">AI is investigating the timeline and building the RCA tree...</p>';
+
+    document.getElementById('translate-rca-btn').innerHTML = '🇮🇩 Terjemahkan';
+
+    let prompt = `Act as a Senior HSE (Health, Safety, and Environment) Lead Investigator with international certification (NEBOSH/OSHA) working for Pertamina Hulu Energi (PHE).
+Analyze the following informal incident chronology and formulate a highly professional Root Cause Analysis (RCA) report in ENGLISH using the "5-Whys" methodology.
+
+Incident Chronology Provided:
+"${incidentDesc}"
+
+Format the output strictly as a clean, styled HTML document containing professional tables.
+The document MUST include:
+
+1. A clear header: "INCIDENT INVESTIGATION & ROOT CAUSE ANALYSIS"
+2. Table 1: Incident Summary
+   - Columns: "Date of Analysis", "Incident Type" (e.g. Near Miss, Recondable, LTI), "Brief Description" (Formalize the provided chronology).
+3. Table 2: Immediate Causes Analysis
+   - Identify the direct "Unsafe Acts" and "Unsafe Conditions" that triggered this event.
+4. Table 3: The 5-Whys Root Cause Analysis. THIS IS CRITICAL.
+   - Use a structured table tracing from the incident down to the systemic root cause through at least 4-5 "Why" iterations.
+   - Example Structure: "Problem Statement", "Why 1", "Why 2", "Why 3", "Why 4", "Root Cause (Why 5)".
+   - The final Root Cause must point to a systemic failure (e.g., Lack of training, inadequate procedure, management failure, not just "worker made a mistake").
+5. Table 4: Corrective and Preventive Actions (CAPA)
+   - Action Items, Responsibility (Roles), Target Date.
+
+CRITICAL UI/CSS RULES: The output will be displayed on a dark-themed app. You MUST inject inline CSS to ensure readability:
+- Main text color must be very light (e.g., 'color: #e2e8f0;').
+- Tables must have clean borders (e.g., 'border: 1px solid #4a5568;' and 'border-collapse: collapse; margin-bottom: 30px; width: 100%; font-family: sans-serif;').
+- Table Headers (th) must have a distinct background (e.g., 'background-color: #c53030;') and bright text ('color: #fff;').
+- Table Cells (td) must have adequate padding (e.g., 'padding: 10px 14px;').
+- Highlight the final Root Cause text in strong red/orange to make it stand out.
+DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code starting directly with the heading or first table.`;
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5 } })
+        });
+
+        if (!response.ok) throw new Error('API Error');
+
+        const data = await response.json();
+        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (responseText) {
+            responseText = responseText.replace(/```html/g, '').replace(/```/g, '').trim();
+
+            contentArea.innerHTML = responseText;
+            currentRcaContentEn = responseText;
+            currentRcaContentId = "";
+
+        } else {
+            throw new Error("Empty response output");
+        }
+    } catch (error) {
+        console.error('RCA generation error:', error);
+        contentArea.innerHTML = '<p class="text-danger">Gagal membuat analisis. Periksa API key atau koneksi internet Anda.</p>';
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function translateRCADocument() {
+    if (!currentRcaContentEn) return;
+
+    const contentArea = document.getElementById('rca-content');
+    const translateBtn = document.getElementById('translate-rca-btn');
+
+    if (currentRcaContentId && translateBtn.innerHTML.includes('🇬🇧')) {
+        contentArea.innerHTML = currentRcaContentEn;
+        translateBtn.innerHTML = '🇮🇩 Terjemahkan';
+        return;
+    }
+
+    if (currentRcaContentId) {
+        contentArea.innerHTML = currentRcaContentId;
+        translateBtn.innerHTML = '🇬🇧 Show English';
+        return;
+    }
+
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+    if (!apiKey) return;
+
+    const originalHtml = contentArea.innerHTML;
+    contentArea.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div><p class="text-center text-muted">Translating RCA document to Indonesian...</p>';
+    translateBtn.disabled = true;
+
+    const prompt = `Translate the following Root Cause Analysis HTML into formal Indonesian (Bahasa Indonesia baku yang digunakan di industri Migas).
+Keep ALL the HTML tags and structure exactly the same. ONLY translate the text content inside the tags.
+Do not wrap it in markdown block.
+Here is the HTML:
+${currentRcaContentEn}`;
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
+        });
+
+        if (!response.ok) throw new Error('API Error');
+
+        const data = await response.json();
+        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (responseText) {
+            responseText = responseText.replace(/```html/g, '').replace(/```/g, '').trim();
+            currentRcaContentId = responseText;
+            contentArea.innerHTML = currentRcaContentId;
+            translateBtn.innerHTML = '🇬🇧 Show English';
+        } else {
+            throw new Error("Empty response output");
+        }
+    } catch (error) {
+        console.error('RCA translation error:', error);
+        alert('Gagal menerjemahkan dokumen RCA.');
+        contentArea.innerHTML = originalHtml;
+    }
+
+    // ==========================================
+    // AI Daily TBT & P5M Briefing Generator LOGIC
+    // ==========================================
+
+    async function generateTBTDocument() {
+        const operationDesc = document.getElementById('tbt-operation-desc').value.trim();
+        const btn = document.getElementById('generate-tbt-btn');
+        const resultArea = document.getElementById('tbt-result-area');
+        const contentArea = document.getElementById('tbt-content');
+
+        if (!operationDesc) {
+            alert("Mohon ketik ringkasan operasi hari ini terlebih dahulu.");
+            return;
+        }
+
+        const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+        if (!apiKey) {
+            alert('⚠️ API Key Gemini belum diatur di Settings.');
+            return;
+        }
+
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Drafting TBT Briefing Script... <div class="loading-spinner" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-left: 5px;"></div>';
+        btn.disabled = true;
+
+        resultArea.classList.remove('hidden');
+        contentArea.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div><p class="text-center text-muted">AI is preparing the morning safety briefing...</p>';
+
+        document.getElementById('translate-tbt-btn').innerHTML = '🇮🇩 Terjemahkan';
+
+        let prompt = `Act as a Senior Rig Superintendent and HSE Coordinator with Pertamina Hulu Energi (PHE).
+Draft a highly engaging, professional, and practical Daily Toolbox Talk (TBT) / P5M Briefing Script in ENGLISH based on today's planned operations:
+"${operationDesc}"
+
+Format the output strictly as a clean, styled HTML document. Make it highly readable so a supervisor can directly read it to the crew.
+The briefing MUST include these sections:
+
+1. <h2 style="color: #ed8936; border-bottom: 1px solid #ed8936; padding-bottom: 5px;">📢 Daily Toolbox Talk (TBT)</h2>
+2. <strong>Operation Goal:</strong> Briefly state what we are trying to achieve today based on the input.
+3. <h3>⚠️ Top Critical Hazards Today</h3>
+   - Use an unordered list (<ul>) to highlight the 3 most dangerous/fatal hazards specific to today's task (e.g., Dropped Objects, High Pressure, Line of Fire).
+4. <h3>🛑 Red Zones & Mandatory Controls</h3>
+   - Use a styled box (e.g. <div style="background-color: rgba(229, 62, 62, 0.1); border-left: 4px solid #e53e3e; padding: 10px;">) to explain which physical areas are completely restricted today and the mandatory mitigations.
+5. <h3>✅ Mandatory Physical Checks & PPE</h3>
+   - Specific equipment or PPE that MUST be verified before work starts (e.g., "Check harness expiration", "Bump test H2S monitor").
+6. <h3>🤝 SWA & Closing</h3>
+   - A strong, motivational closing statement explicitly reminding every crew member they have the "Stop Work Authority" (SWA) if they see anything unsafe.
+
+CRITICAL UI/CSS RULES: The output will be displayed on a dark-themed app. You MUST inject inline CSS to ensure readability:
+- Main text color must be very light (e.g., 'color: #e2e8f0;').
+- Headings (h2, h3) must be colored brightly (e.g., '#ed8936', '#fb6340').
+- Bullet points must have some spacing (e.g., 'margin-bottom: 8px;').
+DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code starting directly with the heading.`;
+
+        try {
+            const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6 } }) // Slightly higher temp for more natural speaking tone
+        });
+
+        if (!response.ok) throw new Error('API Error');
+
+        const data = await response.json();
+        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (responseText) {
+            responseText = responseText.replace(/\`\`\`html/g, '').replace(/\`\`\`/g, '').trim();
+
+            contentArea.innerHTML = responseText;
+            currentTbtContentEn = responseText;
+            currentTbtContentId = ""; 
+
+        } else {
+            throw new Error("Empty response output");
+        }
+    } catch (error) {
+        console.error('TBT generation error:', error);
+        contentArea.innerHTML = '<p class="text-danger">Gagal membuat Draft TBT. Periksa API key atau koneksi internet Anda.</p>';
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function translateTBTDocument() {
+    if (!currentTbtContentEn) return;
+
+    const contentArea = document.getElementById('tbt-content');
+    const translateBtn = document.getElementById('translate-tbt-btn');
+
+    if (currentTbtContentId && translateBtn.innerHTML.includes('🇬🇧')) {
+        contentArea.innerHTML = currentTbtContentEn;
+        translateBtn.innerHTML = '🇮🇩 Terjemahkan';
+        return;
+    }
+
+    if (currentTbtContentId) {
+        contentArea.innerHTML = currentTbtContentId;
+        translateBtn.innerHTML = '🇬🇧 Show English';
+        return;
+    }
+
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+    if (!apiKey) return;
+
+    const originalHtml = contentArea.innerHTML;
+    contentArea.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div><p class="text-center text-muted">Translating TBT Briefing to Indonesian...</p>';
+    translateBtn.disabled = true;
+
+    const prompt = \`Translate the following Toolbox Talk (TBT) HTML script into conversational yet formal Indonesian (Bahasa Indonesia campuran lapangan Migas, terdengar natural untuk diucapkan saat briefing pagi).
+Keep ALL the HTML tags and structure exactly the same. ONLY translate the text content inside the tags.
+Do not wrap it in markdown block.
+Here is the HTML:
+\${currentTbtContentEn}\`;
+
+    try {
+        const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } })
+        });
+
+        if (!response.ok) throw new Error('API Error');
+
+        const data = await response.json();
+        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (responseText) {
+            responseText = responseText.replace(/\`\`\`html/g, '').replace(/\`\`\`/g, '').trim();
+            currentTbtContentId = responseText;
+            contentArea.innerHTML = currentTbtContentId;
+            translateBtn.innerHTML = '🇬🇧 Show English';
+        } else {
+            throw new Error("Empty response output");
+        }
+    } catch (error) {
+        console.error('TBT translation error:', error);
+        alert('Gagal menerjemahkan naskah TBT.');
+        contentArea.innerHTML = originalHtml; 
+    } finally {
+        translateBtn.disabled = false;
+    }
+}
+
+function copyTbtText() {
+    const contentArea = document.getElementById('tbt-content');
+    if (!contentArea || !contentArea.innerText) return;
+
+    const textToCopy = contentArea.innerText;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        const copyBtn = document.getElementById('copy-tbt-btn');
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '✅ Copied!';
+        setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        alert('Gagal menyalin teks.');
+    });
+}
+
+// ==========================================
+// AI HSE Regulation Expert (Chatbot) LOGIC
+// ==========================================
+
+let hseChatRecognition = null;
+let isHseChatRecording = false;
+
+function initHseSpeechRecognition() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Browser Anda tidak mendukung fitur Voice-to-Text. Gunakan Chrome.");
+        return null;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true; 
+    recognition.interimResults = true;
+    recognition.lang = 'id-ID'; 
+
+    return recognition;
+}
+
+function toggleHseChatVoiceInput() {
+    const micBtn = document.getElementById('hse-chat-mic-btn');
+    const indicator = document.getElementById('hse-chat-recording-indicator');
+    const inputArea = document.getElementById('hse-chat-input');
+
+    if (isHseChatRecording) {
+        if (hseChatRecognition) {
+            hseChatRecognition.stop();
+        }
+        isHseChatRecording = false;
+        micBtn.innerHTML = '🎙️';
+        micBtn.style.color = 'var(--text-muted)';
+        indicator.classList.add('hidden');
+    } else {
+        if (!hseChatRecognition) {
+            hseChatRecognition = initHseSpeechRecognition();
+        }
+
+        if (!hseChatRecognition) return;
+
+        hseChatRecognition.onresult = (event) => {
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript + ' ';
+                }
+            }
+
+            if (finalTranscript !== '') {
+               const currentVal = inputArea.value;
+               inputArea.value = currentVal + (currentVal && !currentVal.endsWith(' ') ? ' ' : '') + finalTranscript;
+            }
+        };
+
+        hseChatRecognition.onerror = (event) => {
+            console.error("HSE Chat Speech recognition error", event.error);
+            isHseChatRecording = false;
+            micBtn.innerHTML = '🎙️';
+            micBtn.style.color = 'var(--text-muted)';
+            indicator.classList.add('hidden');
+        };
+
+        hseChatRecognition.onend = () => {
+             if (isHseChatRecording) {
+                 isHseChatRecording = false;
+                 micBtn.innerHTML = '🎙️';
+                 micBtn.style.color = 'var(--text-muted)';
+                 indicator.classList.add('hidden');
+             }
+        };
+
+        hseChatRecognition.start();
+        isHseChatRecording = true;
+        micBtn.innerHTML = '🔴';
+        micBtn.style.color = '#38b2ac';
+        indicator.classList.remove('hidden');
+    }
+}
+
+function _parseMarkdownToHtml(text) {
+    if (!text) return '';
+    let html = text.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
+    html = html.replace(/\\*(.*?)\\*/g, '<em>$1</em>');
+    html = html.replace(/\\n/g, '<br>');
+    return html;
+}
+
+async function sendHseChatMessage() {
+    const inputField = document.getElementById('hse-chat-input');
+    const userText = inputField.value.trim();
+    const btn = document.getElementById('send-hse-chat-btn');
+    const chatContainer = document.getElementById('hse-chat-history');
+
+    if (!userText) return;
+
+    // Auto stop recording
+    if (isHseChatRecording) {
+         toggleHseChatVoiceInput();
+    }
+
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+    if (!apiKey) {
+        alert('⚠️ API Key Gemini belum diatur di Settings.');
+        return;
+    }
+
+    // Print User Bubble
+    const userBubble = document.createElement('div');
+    userBubble.style.cssText = 'align-self: flex-end; background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); color: white; padding: 10px 14px; border-radius: 12px; border-bottom-right-radius: 2px; max-width: 85%; line-height: 1.5; font-size: 0.9rem; margin-top: 5px;';
+    userBubble.innerHTML = \`<strong>👩‍🔧 Anda:</strong><br>\${userText}\`;
+    chatContainer.appendChild(userBubble);
+    
+    inputField.value = '';
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    // Append to memory array
+    hseChatHistory.push({
+        role: "user",
+        parts: [{ text: userText }]
+    });
+
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Menganalisis Regulasi... <div class="loading-spinner" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-left: 5px;"></div>';
+    btn.disabled = true;
+
+    // Print loading bubble
+    const loadingBubble = document.createElement('div');
+    loadingBubble.id = 'hse-chat-loading-bubble';
+    loadingBubble.style.cssText = 'align-self: flex-start; background: var(--surface-hover); color: var(--text-color); padding: 10px 14px; border-radius: 12px; border-bottom-left-radius: 2px; max-width: 85%; font-size: 0.9rem; margin-top: 5px; display: flex; align-items: center; gap: 10px;';
+    loadingBubble.innerHTML = \`<div class="loading-spinner" style="width: 15px; height: 15px;"></div> Mencari referensi regulasi...\`;
+    chatContainer.appendChild(loadingBubble);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    try {
+        const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                contents: hseChatHistory, 
+                generationConfig: { temperature: 0.3 } // Low temp for regulatory accuracy
+            })
+        });
+
+        if (!response.ok) throw new Error('API Error');
+
+        const data = await response.json();
+        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        loadingBubble.remove();
+
+        if (responseText) {
+            // Append AI response to memory
+            hseChatHistory.push({
+                role: "model",
+                parts: [{ text: responseText }]
+            });
+
+            // Print AI Bubble
+            const cleanHtml = _parseMarkdownToHtml(responseText);
+            const aiBubble = document.createElement('div');
+            aiBubble.style.cssText = 'align-self: flex-start; background: var(--surface-hover); color: var(--text-color); border: 1px solid var(--border); padding: 10px 14px; border-radius: 12px; border-bottom-left-radius: 2px; max-width: 85%; line-height: 1.5; font-size: 0.9rem; margin-top: 5px;';
+            aiBubble.innerHTML = \`<strong>🤖 System:</strong><br>\${cleanHtml}\`;
+            chatContainer.appendChild(aiBubble);
+
+        } else {
+            throw new Error("Empty response output");
+        }
+    } catch (error) {
+        console.error('HSE Chatbot error:', error);
+        if (document.getElementById('hse-chat-loading-bubble')) {
+            document.getElementById('hse-chat-loading-bubble').remove();
+        }
+        const errorBubble = document.createElement('div');
+        errorBubble.style.cssText = 'align-self: center; background: rgba(229, 62, 62, 0.1); color: #e53e3e; padding: 5px 10px; border-radius: 8px; font-size: 0.8rem; margin-top: 5px; border: 1px solid #e53e3e;';
+        errorBubble.innerText = '⚠️ Gagal terhubung dengan server regulasi.';
+        chatContainer.appendChild(errorBubble);
+        
+        // Remove the failed user prompt from memory so it doesn't break future requests
+        hseChatHistory.pop();
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
 }
