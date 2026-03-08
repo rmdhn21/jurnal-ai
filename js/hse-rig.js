@@ -102,6 +102,115 @@ const hseRigData = {
             icon: "🚨",
             image: "img/hse-rig/sys_routine_drill.png"
         }
+    ],
+    clsr: [
+        {
+            title: "01. TOOLS & EQUIPMENT",
+            desc: "Gunakan alat dan peralatan kerja secara aman.",
+            icon: "🛠️",
+            image: "img/hse-rig/clsr_1_tools.png"
+        },
+        {
+            title: "02. LINE OF FIRE",
+            desc: "Berada di posisi atau kondisi berbahaya. Posisikan diri agar tidak berada di Line of Fire (posisi/kondisi berbahaya).",
+            icon: "🚷",
+            image: "img/hse-rig/clsr_2_line_of_fire.png"
+        },
+        {
+            title: "03. HOT WORK",
+            desc: "Kendalikan sumber api dan bahan mudah terbakar pada pelaksanaan Pekerjaan Panas (Hot Work) di Hazardous Area.",
+            icon: "🔥",
+            image: "img/hse-rig/clsr_3_hot_work.png"
+        },
+        {
+            title: "04. CONFINED SPACE",
+            desc: "Hanya Personel berwenang yang diizinkan masuk ke dalam ruang terbatas (Confined Space).",
+            icon: "🕳️",
+            image: "img/hse-rig/clsr_4_confined_space.png"
+        },
+        {
+            title: "05. POWERED SYSTEM",
+            desc: "Amankan pemasangan, perbaikan dan pembongkaran peralatan listrik, mekanis & hydraulic dari sumber energi berbahaya.",
+            icon: "⚡",
+            image: "img/hse-rig/clsr_5_powered_system.png"
+        },
+        {
+            title: "06. LIFTING OPERATION",
+            desc: "Patuhi persyaratan dan instruksi lifting plan pada kegiatan pengangkatan.",
+            icon: "🏗️",
+            image: "img/hse-rig/clsr_6_lifting.png"
+        },
+        {
+            title: "07. WORKING AT HEIGHT",
+            desc: "Gunakan peralatan pelindung jatuh saat bekerja di lokasi dengan beda tinggi.",
+            icon: "🧗",
+            image: "img/hse-rig/clsr_7_height.png"
+        },
+        {
+            title: "08. GROUND-DISTURBANCE WORK",
+            desc: "Lindungi stabilitas tanah & infrastruktur yang ada di bawah tanah dari bahaya pekerjaan gangguan tanah (penggalian, pemasangan pipa/kabel dalam tanah, dsb.).",
+            icon: "🚜",
+            image: "img/hse-rig/clsr_8_ground.png"
+        },
+        {
+            title: "09. WATER-BASED WORK ACTIVITIES",
+            desc: "Lindungi diri dari risiko tenggelam pada pekerjaan di permukaan/atas air dan kekurangan supply oksigen pada pekerjaan di dalam air.",
+            icon: "🦺",
+            image: "img/hse-rig/clsr_9_water.png"
+        },
+        {
+            title: "10. LAND TRANSPORTATION",
+            desc: "Patuhi peraturan keselamatan ketika berkendara.",
+            icon: "🚗",
+            image: "img/hse-rig/clsr_10_transport.png"
+        }
+    ],
+    perilaku: [
+        {
+            title: "01",
+            desc: "Saya menerapkan HSSE Golden Rules (Patuh-Intervensi-Peduli).",
+            icon: "🥇"
+        },
+        {
+            title: "02",
+            desc: "Saya kompeten dan berwenang untuk melaksanakan pekerjaan.",
+            icon: "🎓"
+        },
+        {
+            title: "03",
+            desc: "Saya dalam kondisi sehat untuk bekerja (Fit to Work berdasarkan hasil MCU & DCU yang berlaku) dan sehat secara mental.",
+            icon: "🩺"
+        },
+        {
+            title: "04",
+            desc: "Saya menggunakan APD (Alat Pelindung Diri) yang sesuai.",
+            icon: "👷"
+        },
+        {
+            title: "05",
+            desc: "Saya telah mengidentifikasi bahaya dan risiko sebelum pekerjaan dilaksanakan (Last Minute Risk Assessment).",
+            icon: "🔍"
+        },
+        {
+            title: "06",
+            desc: "Saya melaporkan setiap kondisi abnormal/anomali yang berbahaya kepada atasan untuk ditanggulangi.",
+            icon: "⚠️"
+        },
+        {
+            title: "07",
+            desc: "Saya memastikan Permit to Work yang sesuai telah tersedia dan dilaksanakan.",
+            icon: "📝"
+        },
+        {
+            title: "08",
+            desc: "Saya menjaga kebersihan dan kerapihan lokasi kerja.",
+            icon: "🧹"
+        },
+        {
+            title: "09",
+            desc: "Saya melaksanakan perilaku kunci yang disyaratkan dalam 10 elemen CLSR.",
+            icon: "🔑"
+        }
     ]
 };
 
@@ -110,6 +219,8 @@ function initHseRig() {
     renderRigModules('rig-hazards-modules', hseRigData.hazards, true);
     renderRigModules('rig-ppe-modules', hseRigData.ppe);
     renderRigModules('rig-routine-modules', hseRigData.routine);
+    renderInteractiveFlashcards('rig-clsr-modules', hseRigData.clsr);
+    renderInteractiveFlashcards('rig-perilaku-modules', hseRigData.perilaku);
 }
 
 function renderRigModules(containerId, dataArray, isHazard = false) {
@@ -141,3 +252,53 @@ document.addEventListener('DOMContentLoaded', () => {
     // atau inisialisasi di awal agar siap
     initHseRig();
 });
+
+function renderInteractiveFlashcards(containerId, dataArray) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Tambahkan style flipcard sekali saja
+    if (!document.getElementById('flashcard-style')) {
+        const style = document.createElement('style');
+        style.id = 'flashcard-style';
+        style.innerHTML = `
+            .flashcard-container { perspective: 1000px; cursor: pointer; display: block; }
+            .flashcard { width: 100%; position: relative; transition: transform 0.6s; transform-style: preserve-3d; min-height: 220px; }
+            .flashcard.flipped { transform: rotateY(180deg); }
+            .flashcard-front, .flashcard-back { width: 100%; height: 100%; position: absolute; top: 0; left: 0; backface-visibility: hidden; border-radius: 12px; padding: 20px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .flashcard-front { background: var(--bg-color); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 2px solid var(--border); }
+            .flashcard-back { background: var(--primary, #3b82f6); color: white; transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow-y: auto; }
+            .flashcard-front img { width: 100%; max-height: 120px; object-fit: contain; border-radius: 8px; margin-bottom: 15px; }
+            .flashcard-front h4 { margin: 0; color: var(--text-primary); font-size: 1.1rem; }
+            .flashcard-back h4 { margin: 0 0 10px 0; font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 10px; width: 100%; }
+            .flashcard-back p { font-size: 0.95rem; margin: 0; line-height: 1.5; color: rgba(255,255,255,0.95); }
+            
+            /* Responsive Grid Override */
+            @media(max-width: 600px) {
+                .flashcard { min-height: 200px; }
+                .flashcard-front img { max-height: 100px; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
+    container.style.gap = '20px';
+
+    container.innerHTML = dataArray.map((item, index) => `
+        <div class="flashcard-container" onclick="this.querySelector('.flashcard').classList.toggle('flipped')">
+            <div class="flashcard">
+                <div class="flashcard-front">
+                    ${item.image ? `<img src="${item.image}" alt="${item.title}">` : `<div style="font-size: 3rem; margin-bottom: 10px;">${item.icon}</div>`}
+                    <h4>${item.title}</h4>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">(Tap untuk membalik 🔄)</span>
+                </div>
+                <div class="flashcard-back">
+                    <h4>${item.title}</h4>
+                    <p>${item.desc}</p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}

@@ -1668,9 +1668,9 @@ function toggleHseChatVoiceInput() {
 
 function _parseMarkdownToHtml(text) {
     if (!text) return '';
-    let html = text.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
-    html = html.replace(/\\*(.*?)\\*/g, '<em>$1</em>');
-    html = html.replace(/\\n/g, '<br>');
+    let html = text.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>');
+    html = html.replace(/\n/g, '<br>');
     return html;
 }
 
