@@ -1396,39 +1396,61 @@ ${currentRcaContentEn}`;
         console.error('RCA translation error:', error);
         alert('Gagal menerjemahkan dokumen RCA.');
         contentArea.innerHTML = originalHtml;
+    } finally {
+        translateBtn.disabled = false;
+    }
+}
+
+function copyRcaText() {
+    const contentArea = document.getElementById('rca-content');
+    if (!contentArea || !contentArea.innerText) return;
+
+    const textToCopy = contentArea.innerText;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        const copyBtn = document.getElementById('copy-rca-btn');
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '✅ Copied!';
+        setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        alert('Gagal menyalin teks.');
+    });
+}
+
+// ==========================================
+// AI Daily TBT & P5M Briefing Generator LOGIC
+// ==========================================
+
+async function generateTBTDocument() {
+    const operationDesc = document.getElementById('tbt-operation-desc').value.trim();
+    const btn = document.getElementById('generate-tbt-btn');
+    const resultArea = document.getElementById('tbt-result-area');
+    const contentArea = document.getElementById('tbt-content');
+
+    if (!operationDesc) {
+        alert("Mohon ketik ringkasan operasi hari ini terlebih dahulu.");
+        return;
     }
 
-    // ==========================================
-    // AI Daily TBT & P5M Briefing Generator LOGIC
-    // ==========================================
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+    if (!apiKey) {
+        alert('⚠️ API Key Gemini belum diatur di Settings.');
+        return;
+    }
 
-    async function generateTBTDocument() {
-        const operationDesc = document.getElementById('tbt-operation-desc').value.trim();
-        const btn = document.getElementById('generate-tbt-btn');
-        const resultArea = document.getElementById('tbt-result-area');
-        const contentArea = document.getElementById('tbt-content');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Drafting TBT Briefing Script... <div class="loading-spinner" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-left: 5px;"></div>';
+    btn.disabled = true;
 
-        if (!operationDesc) {
-            alert("Mohon ketik ringkasan operasi hari ini terlebih dahulu.");
-            return;
-        }
+    resultArea.classList.remove('hidden');
+    contentArea.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div><p class="text-center text-muted">AI is preparing the morning safety briefing...</p>';
 
-        const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
-        if (!apiKey) {
-            alert('⚠️ API Key Gemini belum diatur di Settings.');
-            return;
-        }
+    document.getElementById('translate-tbt-btn').innerHTML = '🇮🇩 Terjemahkan';
 
-        const originalText = btn.innerHTML;
-        btn.innerHTML = 'Drafting TBT Briefing Script... <div class="loading-spinner" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-left: 5px;"></div>';
-        btn.disabled = true;
-
-        resultArea.classList.remove('hidden');
-        contentArea.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div><p class="text-center text-muted">AI is preparing the morning safety briefing...</p>';
-
-        document.getElementById('translate-tbt-btn').innerHTML = '🇮🇩 Terjemahkan';
-
-        let prompt = `Act as a Senior Rig Superintendent and HSE Coordinator with Pertamina Hulu Energi (PHE).
+    let prompt = `Act as a Senior Rig Superintendent and HSE Coordinator with Pertamina Hulu Energi (PHE).
 Draft a highly engaging, professional, and practical Daily Toolbox Talk (TBT) / P5M Briefing Script in ENGLISH based on today's planned operations:
 "${operationDesc}"
 
@@ -1452,8 +1474,8 @@ CRITICAL UI/CSS RULES: The output will be displayed on a dark-themed app. You MU
 - Bullet points must have some spacing (e.g., 'margin-bottom: 8px;').
 DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code starting directly with the heading.`;
 
-        try {
-            const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6 } }) // Slightly higher temp for more natural speaking tone
@@ -1465,11 +1487,11 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code s
         let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (responseText) {
-            responseText = responseText.replace(/\`\`\`html/g, '').replace(/\`\`\`/g, '').trim();
+            responseText = responseText.replace(/```html/g, '').replace(/```/g, '').trim();
 
             contentArea.innerHTML = responseText;
             currentTbtContentEn = responseText;
-            currentTbtContentId = ""; 
+            currentTbtContentId = "";
 
         } else {
             throw new Error("Empty response output");
@@ -1508,14 +1530,14 @@ async function translateTBTDocument() {
     contentArea.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div><p class="text-center text-muted">Translating TBT Briefing to Indonesian...</p>';
     translateBtn.disabled = true;
 
-    const prompt = \`Translate the following Toolbox Talk (TBT) HTML script into conversational yet formal Indonesian (Bahasa Indonesia campuran lapangan Migas, terdengar natural untuk diucapkan saat briefing pagi).
+    const prompt = `Translate the following Toolbox Talk (TBT) HTML script into conversational yet formal Indonesian (Bahasa Indonesia campuran lapangan Migas, terdengar natural untuk diucapkan saat briefing pagi).
 Keep ALL the HTML tags and structure exactly the same. ONLY translate the text content inside the tags.
 Do not wrap it in markdown block.
 Here is the HTML:
-\${currentTbtContentEn}\`;
+${currentTbtContentEn}`;
 
     try {
-        const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } })
@@ -1527,7 +1549,7 @@ Here is the HTML:
         let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (responseText) {
-            responseText = responseText.replace(/\`\`\`html/g, '').replace(/\`\`\`/g, '').trim();
+            responseText = responseText.replace(/```html/g, '').replace(/```/g, '').trim();
             currentTbtContentId = responseText;
             contentArea.innerHTML = currentTbtContentId;
             translateBtn.innerHTML = '🇬🇧 Show English';
@@ -1537,7 +1559,7 @@ Here is the HTML:
     } catch (error) {
         console.error('TBT translation error:', error);
         alert('Gagal menerjemahkan naskah TBT.');
-        contentArea.innerHTML = originalHtml; 
+        contentArea.innerHTML = originalHtml;
     } finally {
         translateBtn.disabled = false;
     }
@@ -1577,9 +1599,9 @@ function initHseSpeechRecognition() {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.continuous = true; 
+    recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'id-ID'; 
+    recognition.lang = 'id-ID';
 
     return recognition;
 }
@@ -1614,8 +1636,8 @@ function toggleHseChatVoiceInput() {
             }
 
             if (finalTranscript !== '') {
-               const currentVal = inputArea.value;
-               inputArea.value = currentVal + (currentVal && !currentVal.endsWith(' ') ? ' ' : '') + finalTranscript;
+                const currentVal = inputArea.value;
+                inputArea.value = currentVal + (currentVal && !currentVal.endsWith(' ') ? ' ' : '') + finalTranscript;
             }
         };
 
@@ -1628,12 +1650,12 @@ function toggleHseChatVoiceInput() {
         };
 
         hseChatRecognition.onend = () => {
-             if (isHseChatRecording) {
-                 isHseChatRecording = false;
-                 micBtn.innerHTML = '🎙️';
-                 micBtn.style.color = 'var(--text-muted)';
-                 indicator.classList.add('hidden');
-             }
+            if (isHseChatRecording) {
+                isHseChatRecording = false;
+                micBtn.innerHTML = '🎙️';
+                micBtn.style.color = 'var(--text-muted)';
+                indicator.classList.add('hidden');
+            }
         };
 
         hseChatRecognition.start();
@@ -1662,7 +1684,7 @@ async function sendHseChatMessage() {
 
     // Auto stop recording
     if (isHseChatRecording) {
-         toggleHseChatVoiceInput();
+        toggleHseChatVoiceInput();
     }
 
     const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
@@ -1674,9 +1696,9 @@ async function sendHseChatMessage() {
     // Print User Bubble
     const userBubble = document.createElement('div');
     userBubble.style.cssText = 'align-self: flex-end; background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); color: white; padding: 10px 14px; border-radius: 12px; border-bottom-right-radius: 2px; max-width: 85%; line-height: 1.5; font-size: 0.9rem; margin-top: 5px;';
-    userBubble.innerHTML = \`<strong>👩‍🔧 Anda:</strong><br>\${userText}\`;
+    userBubble.innerHTML = `<strong>👩‍🔧 Anda:</strong><br>${userText}`;
     chatContainer.appendChild(userBubble);
-    
+
     inputField.value = '';
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
@@ -1694,16 +1716,16 @@ async function sendHseChatMessage() {
     const loadingBubble = document.createElement('div');
     loadingBubble.id = 'hse-chat-loading-bubble';
     loadingBubble.style.cssText = 'align-self: flex-start; background: var(--surface-hover); color: var(--text-color); padding: 10px 14px; border-radius: 12px; border-bottom-left-radius: 2px; max-width: 85%; font-size: 0.9rem; margin-top: 5px; display: flex; align-items: center; gap: 10px;';
-    loadingBubble.innerHTML = \`<div class="loading-spinner" style="width: 15px; height: 15px;"></div> Mencari referensi regulasi...\`;
+    loadingBubble.innerHTML = `<div class="loading-spinner" style="width: 15px; height: 15px;"></div> Mencari referensi regulasi...`;
     chatContainer.appendChild(loadingBubble);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     try {
-        const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                contents: hseChatHistory, 
+            body: JSON.stringify({
+                contents: hseChatHistory,
                 generationConfig: { temperature: 0.3 } // Low temp for regulatory accuracy
             })
         });
@@ -1726,7 +1748,7 @@ async function sendHseChatMessage() {
             const cleanHtml = _parseMarkdownToHtml(responseText);
             const aiBubble = document.createElement('div');
             aiBubble.style.cssText = 'align-self: flex-start; background: var(--surface-hover); color: var(--text-color); border: 1px solid var(--border); padding: 10px 14px; border-radius: 12px; border-bottom-left-radius: 2px; max-width: 85%; line-height: 1.5; font-size: 0.9rem; margin-top: 5px;';
-            aiBubble.innerHTML = \`<strong>🤖 System:</strong><br>\${cleanHtml}\`;
+            aiBubble.innerHTML = `<strong>🤖 System:</strong><br>${cleanHtml}`;
             chatContainer.appendChild(aiBubble);
 
         } else {
@@ -1741,7 +1763,7 @@ async function sendHseChatMessage() {
         errorBubble.style.cssText = 'align-self: center; background: rgba(229, 62, 62, 0.1); color: #e53e3e; padding: 5px 10px; border-radius: 8px; font-size: 0.8rem; margin-top: 5px; border: 1px solid #e53e3e;';
         errorBubble.innerText = '⚠️ Gagal terhubung dengan server regulasi.';
         chatContainer.appendChild(errorBubble);
-        
+
         // Remove the failed user prompt from memory so it doesn't break future requests
         hseChatHistory.pop();
     } finally {
