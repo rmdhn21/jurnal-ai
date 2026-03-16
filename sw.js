@@ -1,5 +1,5 @@
 // Service Worker for Jurnal AI PWA
-const CACHE_NAME = 'jurnal-ai-v7';
+const CACHE_NAME = 'jurnal-ai-v8';
 const urlsToCache = [
     './',
     './index.html',
@@ -16,9 +16,9 @@ const urlsToCache = [
     './js/auth.js',
     './js/charts.js',
     // UI Modules
+    './js/backup-tags.js',
     './js/journal-ui.js',
     './js/planner-ui.js',
-    './js/pomodoro.js',
     './js/finance-ui.js',
     './js/habits-goals-ui.js',
     './js/navigation-settings.js',
@@ -27,8 +27,19 @@ const urlsToCache = [
     // Feature Modules
     './js/features.js',
     './js/extras.js',
-    './js/backup-tags.js',
+    './js/edit-modal.js',
+    './js/onboarding.js',
+    './js/insight.js',
+    './js/gamification.js',
+    './js/hadith.js',
+    './js/brain-boost.js',
+    './js/journal-templates.js',
+    './js/motivation.js',
+    './js/islam-tracker.js',
+    './js/ai-tutors.js',
+    './js/todo-today.js',
     './js/english-hse.js',
+    './js/hse-rig.js',
     // App Initialization
     './js/app-init.js'
 ];

@@ -253,6 +253,30 @@ document.addEventListener('DOMContentLoaded', () => {
     initHseRig();
 });
 
+function switchRigChapter(chapterId, buttonElement) {
+    // 1. Hide all chapters
+    const chapters = document.querySelectorAll('.rig-chapter');
+    chapters.forEach(ch => {
+        ch.classList.add('hidden');
+    });
+
+    // 2. Show the selected chapter
+    const activeChapter = document.getElementById(`rig-chapter-${chapterId}`);
+    if (activeChapter) {
+        activeChapter.classList.remove('hidden');
+    }
+
+    // 3. Update tab active state
+    if (buttonElement) {
+        const tabs = document.querySelectorAll('.rig-tab');
+        tabs.forEach(t => t.classList.remove('active'));
+        buttonElement.classList.add('active');
+        
+        // Scroll horizontal tab container to make button visible if it's overflowing
+        buttonElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+}
+
 function renderInteractiveFlashcards(containerId, dataArray) {
     const container = document.getElementById(containerId);
     if (!container) return;

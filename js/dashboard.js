@@ -1,8 +1,7 @@
 // ===== DASHBOARD MODULE =====
 function initDashboard() {
     updateDashboardStats();
-    updateUpcomingSchedules();
-    updateTodayReminders();
+    updateDashboardReminders();
     initMoodChart();
 
     updateDashboardPrayerCard(); // Initial render
@@ -127,75 +126,152 @@ function updateDashboardStats() {
     const journals = getJournals();
     document.getElementById('stat-journals').textContent = journals.length;
 
+    // Aggregate Pending Items (Belum Dilakukan)
+    let totalPending = 0;
+    const now = new Date();
+    const todayStr = getTodayString();
+
+    // 1. Kanban Pending
     const tasks = getTasks();
-    const completedTasks = tasks.filter(t => t.done).length;
-    document.getElementById('stat-tasks').textContent = `${completedTasks}/${tasks.length}`;
+    totalPending += tasks.filter(t => !t.done && t.status !== 'done').length;
+
+    // 2. Habits Pending Today
+    const habits = getHabits();
+    totalPending += habits.filter(h => {
+        if (h.completions && h.completions[todayStr]) return false;
+        if (h.completedDates && h.completedDates.includes(todayStr)) return false;
+        return true;
+    }).length;
+
+    // 3. To-Do List Hari Ini Pending
+    const savedDailyData = localStorage.getItem('jurnal_ai_todo_today_data');
+    if (savedDailyData) {
+        try {
+            const dailyTodos = JSON.parse(savedDailyData);
+            totalPending += dailyTodos.filter(t => !t.completed).length;
+        } catch (e) { }
+    }
+
+    // 4. Upcoming Schedules (Planner)
+    const schedules = getSchedules();
+    totalPending += schedules.filter(s => new Date(s.datetime) > now).length;
+
+    document.getElementById('stat-tasks').textContent = totalPending;
 
     const transactions = getTransactions();
     const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     document.getElementById('stat-balance').textContent = formatCurrency(income - expense);
 
-    const habits = getHabits();
     const bestStreak = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
     document.getElementById('current-streak').textContent = bestStreak;
 }
 
-function updateUpcomingSchedules() {
-    const schedules = getSchedules();
+function updateDashboardReminders() {
+    const container = document.getElementById('dashboard-reminders');
+    if (!container) return;
+
+    let allReminders = [];
     const now = new Date();
-    const upcoming = schedules
+    const todayStr = getTodayString();
+
+    // Helper to extract time value for sorting
+    const getSortWeight = (timeLabel) => {
+        if (timeLabel === 'Mendesak') return now.getTime() - 10000;
+        if (timeLabel === 'Hari Ini') return now.getTime() - 5000;
+        return now.getTime();
+    };
+
+    // 1. Schedules (Upcoming)
+    const schedules = getSchedules();
+    const upcomingSchedules = schedules
         .filter(s => new Date(s.datetime) > now)
         .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))
         .slice(0, 5);
 
-    const container = document.getElementById('upcoming-schedules');
-
-    if (upcoming.length === 0) {
-        container.innerHTML = '<p class="text-muted">Tidak ada jadwal mendatang</p>';
-        return;
-    }
-
-    container.innerHTML = upcoming.map(s => {
+    upcomingSchedules.forEach(s => {
         const date = new Date(s.datetime);
         const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-        return `
-            <div class="reminder-item schedule">
-                <span class="reminder-time">${timeStr}</span>
-                <span class="reminder-text">${s.title} - ${dateStr}</span>
-            </div>
-        `;
-    }).join('');
-}
+        allReminders.push({
+            type: 'schedule',
+            icon: '📅',
+            title: s.title,
+            timeLabel: `${timeStr} - ${dateStr}`,
+            sortWeight: date.getTime()
+        });
+    });
 
-function updateTodayReminders() {
-    const habits = getHabits();
-    const today = getTodayString();
+    // 2. To-Do List Hari Ini
+    const savedDailyData = localStorage.getItem('jurnal_ai_todo_today_data');
+    if (savedDailyData) {
+        try {
+            const dailyTodos = JSON.parse(savedDailyData);
+            const pendingTodos = dailyTodos.filter(t => !t.completed);
+            pendingTodos.forEach(t => {
+                let priorityLabel = 'Hari Ini';
+                let extraWeight = 500;
+                if (t.priority === 'p1') { priorityLabel = 'Mendesak'; extraWeight = 0; }
+                else if (t.priority === 'p2') priorityLabel = 'Penting';
 
-    const container = document.getElementById('today-reminders');
-    if (!container) return;
-
-    if (habits.length === 0) {
-        container.innerHTML = '<p class="text-muted">Tidak ada habits ditambahkan</p>';
-        return;
+                allReminders.push({
+                    type: 'todo-today',
+                    icon: '✅',
+                    title: t.text,
+                    timeLabel: `To-Do: ${priorityLabel}`,
+                    sortWeight: now.getTime() + extraWeight
+                });
+            });
+        } catch (e) { }
     }
 
+    // 3. Kanban
+    const tasks = getTasks();
+    const pendingTasks = tasks.filter(t => !t.done && t.status !== 'done');
+    pendingTasks.forEach(t => {
+        allReminders.push({
+            type: 'kanban',
+            icon: '📋',
+            title: t.title,
+            timeLabel: 'Kanban',
+            sortWeight: now.getTime() + 1000
+        });
+    });
+
+    // 4. Habits
+    const habits = getHabits();
     const undoneHabits = habits.filter(h => {
-        if (h.completions && h.completions[today]) return false;
-        if (h.completedDates && h.completedDates.includes(today)) return false;
+        if (h.completions && h.completions[todayStr]) return false;
+        if (h.completedDates && h.completedDates.includes(todayStr)) return false;
         return true;
     });
 
-    if (undoneHabits.length === 0) {
-        container.innerHTML = '<p class="text-muted">✅ Semua habits sudah selesai hari ini!</p>';
+    undoneHabits.forEach(h => {
+        allReminders.push({
+            type: 'habit',
+            icon: '🌱',
+            title: h.name,
+            timeLabel: 'Habit',
+            sortWeight: now.getTime() + 2000
+        });
+    });
+
+    if (allReminders.length === 0) {
+        container.innerHTML = '<p class="text-muted" style="text-align:center; padding: 15px;">🎉 Semua beres! Tidak ada reminder.</p>';
         return;
     }
 
-    container.innerHTML = undoneHabits.map(h => `
-        <div class="reminder-item">
-            <span class="reminder-time">⏰</span>
-            <span class="reminder-text">${h.name}</span>
+    // Sort Reminders
+    allReminders.sort((a, b) => a.sortWeight - b.sortWeight);
+
+    // Limit to 10 max
+    container.innerHTML = allReminders.slice(0, 10).map(r => `
+        <div class="reminder-item" style="display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+            <div style="font-size: 1.5rem; background: var(--bg-color); padding: 8px; border-radius: 8px; border: 1px solid var(--border);">${r.icon}</div>
+            <div style="display: flex; flex-direction: column;">
+                <span class="reminder-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-color);">${r.title}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${r.timeLabel}</span>
+            </div>
         </div>
     `).join('');
 }

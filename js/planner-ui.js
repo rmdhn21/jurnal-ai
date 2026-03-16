@@ -105,12 +105,25 @@ function renderKanbanBoard() {
         done: []
     };
 
+    const now = new Date();
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
     // Migration & Sorting
     tasks.forEach(task => {
         if (!task.status) {
             task.status = task.done ? 'done' : 'todo';
             saveTask(task); // Persist migration
         }
+
+        // Auto-delete done tasks after 24 hours
+        if (task.status === 'done') {
+            const doneTime = task.updatedAt ? new Date(task.updatedAt) : new Date(task.createdAt);
+            if (now - doneTime > ONE_DAY_MS) {
+                deleteTask(task.id);
+                return; // Skip adding to columns, it's deleted
+            }
+        }
+
         if (columns[task.status]) {
             columns[task.status].push(task);
         } else {
@@ -293,11 +306,11 @@ function renderScheduleList() {
     });
     schedules = Array.from(uniqueSchedules.values());
 
-    // Sort by time (Robust Date Comparison)
+    // Sort by creation time (Newest tasks newly added appear at the top)
     schedules.sort((a, b) => {
-        const dateA = new Date(a.datetime);
-        const dateB = new Date(b.datetime);
-        return dateA - dateB;
+        const dateA = new Date(a.createdAt || a.datetime);
+        const dateB = new Date(b.createdAt || b.datetime);
+        return dateB - dateA;
     });
 
     if (schedules.length === 0) {
@@ -381,112 +394,126 @@ let currentCalendarDate = new Date();
 let selectedDate = null;
 
 function renderCalendar() {
-    const grid = document.getElementById('calendar-grid');
-    const monthYearLabel = document.getElementById('calendar-month-year');
-
-    // Safety check for elements
-    if (!grid || !monthYearLabel) {
-        console.warn('Calendar elements not found');
-        return;
-    }
-
-    try {
-        grid.innerHTML = '';
-
-        const year = currentCalendarDate.getFullYear();
-        const month = currentCalendarDate.getMonth();
-
-        // Set Header
-        const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'July', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        monthYearLabel.textContent = `${monthNames[month]} ${year}`;
-
-        // Day Headers
-        const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-        days.forEach(day => {
-            const el = document.createElement('div');
-            el.className = 'calendar-day-header';
-            el.textContent = day;
-            grid.appendChild(el);
-        });
-
-        // Calendar Days
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const today = new Date();
-
-        // Empty cells for previous month
-        for (let i = 0; i < firstDay; i++) {
-            const el = document.createElement('div');
-            el.className = 'calendar-day empty';
-            grid.appendChild(el);
+    const calendarTargets = [
+        {
+            gridId: 'calendar-grid',
+            monthYearId: 'calendar-month-year',
+            prevBtnId: 'prev-month',
+            nextBtnId: 'next-month'
+        },
+        {
+            gridId: 'dashboard-calendar-grid',
+            monthYearId: 'dashboard-calendar-month-year',
+            prevBtnId: 'dashboard-prev-month',
+            nextBtnId: 'dashboard-next-month'
         }
+    ];
 
-        // Days
-        for (let i = 1; i <= daysInMonth; i++) {
-            const date = new Date(year, month, i);
-            // Fix: Use local date string construction to avoid UTC shift
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    calendarTargets.forEach(target => {
+        const grid = document.getElementById(target.gridId);
+        const monthYearLabel = document.getElementById(target.monthYearId);
 
-            const el = document.createElement('div');
-            el.className = 'calendar-day';
-            el.textContent = i;
-            el.dataset.date = dateStr;
+        // Safety check for elements
+        if (!grid || !monthYearLabel) return; // Skip if not on this screen
 
-            // Highlight Today
-            if (date.toDateString() === today.toDateString()) {
-                el.classList.add('today');
-            }
+        try {
+            grid.innerHTML = '';
 
-            // Highlight Selected
-            if (selectedDate === dateStr) {
-                el.classList.add('selected');
-            }
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
 
-            // Add Event Indicators
-            const events = getEventsForDate(dateStr);
-            // FILTER: Don't show dots for prayer times (too cluttered)
-            const visibleEvents = events.filter(e => !e.isPrayer);
+            // Set Header
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'July', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            monthYearLabel.textContent = `${monthNames[month]} ${year}`;
 
-            if (visibleEvents.length > 0) {
-                const indicatorContainer = document.createElement('div');
-                indicatorContainer.className = 'event-indicator';
-
-                // Limit dots to 3
-                visibleEvents.slice(0, 3).forEach(event => {
-                    const dot = document.createElement('div');
-                    dot.className = `event-dot priority-${event.priority || 'default'}`;
-                    indicatorContainer.appendChild(dot);
-                });
-                el.appendChild(indicatorContainer);
-            }
-
-            // Interaction
-            el.addEventListener('click', () => {
-                selectedDate = dateStr;
-                renderCalendar(); // Re-render to update highlights
-                showSelectedDateEvents(dateStr);
+            // Day Headers
+            const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            days.forEach(day => {
+                const el = document.createElement('div');
+                el.className = 'calendar-day-header';
+                el.textContent = day;
+                grid.appendChild(el);
             });
 
-            grid.appendChild(el);
+            // Calendar Days
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+
+            // Empty cells for previous month
+            for (let i = 0; i < firstDay; i++) {
+                const el = document.createElement('div');
+                el.className = 'calendar-day empty';
+                grid.appendChild(el);
+            }
+
+            // Days
+            for (let i = 1; i <= daysInMonth; i++) {
+                const date = new Date(year, month, i);
+                // Fix: Use local date string construction to avoid UTC shift
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+
+                const el = document.createElement('div');
+                el.className = 'calendar-day';
+                el.textContent = i;
+                el.dataset.date = dateStr;
+
+                // Highlight Today
+                if (date.toDateString() === today.toDateString()) {
+                    el.classList.add('today');
+                }
+
+                // Highlight Selected
+                if (selectedDate === dateStr) {
+                    el.classList.add('selected');
+                }
+
+                // Add Event Indicators
+                const events = getEventsForDate(dateStr);
+                // FILTER: Don't show dots for prayer times (too cluttered)
+                const visibleEvents = events.filter(e => !e.isPrayer);
+
+                if (visibleEvents.length > 0) {
+                    const indicatorContainer = document.createElement('div');
+                    indicatorContainer.className = 'event-indicator';
+
+                    // Limit dots to 3
+                    visibleEvents.slice(0, 3).forEach(event => {
+                        const dot = document.createElement('div');
+                        dot.className = `event-dot priority-${event.priority || 'default'}`;
+                        indicatorContainer.appendChild(dot);
+                    });
+                    el.appendChild(indicatorContainer);
+                }
+
+                // Interaction
+                el.addEventListener('click', () => {
+                    selectedDate = dateStr;
+                    renderCalendar(); // Re-render to update highlights
+                    showSelectedDateEvents(dateStr);
+                });
+
+                grid.appendChild(el);
+            }
+
+            // Navigation Listeners (Attached once or re-attached safely)
+            const prevBtn = document.getElementById(target.prevBtnId);
+            const nextBtn = document.getElementById(target.nextBtnId);
+
+            // Remove old listeners to prevent clones (simple approach: clone node replacement or just overwrite onclick)
+            if (prevBtn) prevBtn.onclick = () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                renderCalendar();
+            };
+            if (nextBtn) nextBtn.onclick = () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                renderCalendar();
+            };
+        } catch (e) {
+            console.error('Error rendering calendar for ' + target.gridId + ':', e);
+            grid.innerHTML = '<p class="error-text">Gagal memuat kalender</p>';
         }
-
-        // Navigation Listeners (Attached once or re-attached safely)
-        const prevBtn = document.getElementById('prev-month');
-        const nextBtn = document.getElementById('next-month');
-
-        // Remove old listeners to prevent clones (simple approach: clone node replacement or just overwrite onclick)
-        if (prevBtn) prevBtn.onclick = () => {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
-            renderCalendar();
-        };
-        if (nextBtn) nextBtn.onclick = () => {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
-            renderCalendar();
-        };
-    } catch (e) {
-        console.error('Error rendering calendar:', e);
-        grid.innerHTML = '<p class="error-text">Gagal memuat kalender</p>';
-    }
+    });
 }
 
 function getEventsForDate(dateStr) {
@@ -538,30 +565,47 @@ function getEventsForDate(dateStr) {
 }
 
 function showSelectedDateEvents(dateStr) {
-    const container = document.getElementById('selected-date-events');
-    const list = document.getElementById('selected-date-list');
-    const label = document.getElementById('selected-date-label');
+    const eventTargets = [
+        {
+            containerId: 'selected-date-events',
+            listId: 'selected-date-list',
+            labelId: 'selected-date-label'
+        },
+        {
+            containerId: 'dashboard-selected-date-events',
+            listId: 'dashboard-selected-date-list',
+            labelId: 'dashboard-selected-date-label'
+        }
+    ];
 
     const events = getEventsForDate(dateStr);
 
-    if (events.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
+    eventTargets.forEach(target => {
+        const container = document.getElementById(target.containerId);
+        const list = document.getElementById(target.listId);
+        const label = document.getElementById(target.labelId);
 
-    container.style.display = 'block';
-    if (label) label.textContent = formatShortDate(dateStr);
+        if (!container || !list) return; // Skip if returning to a non-active screen
 
-    list.innerHTML = events.map(schedule => {
-        const isPrayer = schedule.isPrayer;
-        const priorityClass = isPrayer ? 'allah' : (schedule.priority || 'default');
-        const timePart = schedule.datetime.split('T')[1].substring(0, 5);
-        const titleClass = isPrayer ? 'prayer-title' : '';
+        if (events.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
 
-        return `
-        <li class="schedule-item-mini">
-            <span class="badge badge-priority-${priorityClass}">●</span>
-            <span class="${titleClass}">${timePart} - ${schedule.title}</span>
-        </li>
-    `}).join('');
+        container.style.display = 'block';
+        if (label) label.textContent = formatShortDate(dateStr);
+
+        list.innerHTML = events.map(schedule => {
+            const isPrayer = schedule.isPrayer;
+            const priorityClass = isPrayer ? 'allah' : (schedule.priority || 'default');
+            const timePart = schedule.datetime.split('T')[1].substring(0, 5);
+            const titleClass = isPrayer ? 'prayer-title' : '';
+
+            return `
+            <li class="schedule-item-mini">
+                <span class="badge badge-priority-${priorityClass}">●</span>
+                <span class="${titleClass}">${timePart} - ${schedule.title}</span>
+            </li>
+        `}).join('');
+    });
 }

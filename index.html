@@ -98,7 +98,10 @@
     <div class="app hidden" id="main-app">
         <!-- Header -->
         <header class="header">
-            <h1 class="logo">✨ Jurnal AI</h1>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="header-back-btn" class="icon-btn" style="display: none; background: var(--surface-hover); border-radius: 50%; width: 32px; height: 32px; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 5px;">←</button>
+                <h1 class="logo">✨ Jurnal AI</h1>
+            </div>
 
             <!-- Global Search -->
             <div class="global-search">
@@ -120,23 +123,108 @@
             </div>
         </header>
 
-        <!-- Navigation (6 Tabs) -->
-        <nav class="nav">
-            <button class="nav-btn active" data-screen="dashboard">📊 Dashboard</button>
-            <button class="nav-btn" data-screen="journal">📝 Jurnal</button>
-            <button class="nav-btn" data-screen="planner">📋 Planner</button>
-            <button class="nav-btn" data-screen="goals">🎯 Goals</button>
-            <button class="nav-btn" data-screen="finance">💰 Keuangan</button>
-            <button class="nav-btn" data-screen="habits">✅ Habits</button>
-            <button class="nav-btn" data-screen="islam">☪️ Ibadah</button>
-            <button class="nav-btn" data-screen="interview-prep">🎓 Interview</button>
-            <button class="nav-btn" data-screen="english-hse">🇬🇧 English O&G</button>
-            <button class="nav-btn" data-screen="hse-rig">🛢️ HSE Rig</button>
-            <button class="nav-btn" data-screen="news">📰 Berita</button>
+        <!-- Main Navigation (Bottom Bar - 4 Hubs) -->
+        <nav class="nav bottom-nav">
+            <button class="nav-btn active" data-screen="dashboard">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Dashboard</span>
+            </button>
+            <button class="nav-btn" data-screen="activity-hub">
+                <span class="nav-icon">⚡</span>
+                <span class="nav-label">Activity</span>
+            </button>
+            <button class="nav-btn" data-screen="learning-hub">
+                <span class="nav-icon">📚</span>
+                <span class="nav-label">Learning</span>
+            </button>
+            <button class="nav-btn" data-screen="finance">
+                <span class="nav-icon">💰</span>
+                <span class="nav-label">Keuangan</span>
+            </button>
         </nav>
 
-        <!-- Main Content -->
-        <main class="main">
+        <!-- Main Content (Added bottom padding for the new fixed nav) -->
+        <main class="main" style="padding-bottom: 80px;">
+            <!-- Activity Hub Screen -->
+            <section id="activity-hub-screen" class="screen">
+                <div class="card">
+                    <h2>⚡ Activity Hub</h2>
+                    <p class="text-muted">Kelola rutinitas dan tugas harian Anda.</p>
+                </div>
+                <div class="hub-grid mt-md">
+                    <button class="hub-btn" onclick="navigateToSubscreen('todo-today')">
+                        <div class="hub-icon" style="background: #e6fffa; color: #319795;">✅</div>
+                        <span class="hub-label">To Do List</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('islam')">
+                        <div class="hub-icon" style="background: #f0fff4; color: #38a169;">☪️</div>
+                        <span class="hub-label">Ibadah</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('habits')">
+                        <div class="hub-icon" style="background: #ebf8ff; color: #3182ce;">🌱</div>
+                        <span class="hub-label">Habits</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('planner')">
+                        <div class="hub-icon" style="background: #faf5ff; color: #805ad5;">📋</div>
+                        <span class="hub-label">Planner</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('kanban')">
+                        <div class="hub-icon" style="background: #fff5f5; color: #e53e3e;">📊</div>
+                        <span class="hub-label">Kanban</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('journal')">
+                        <div class="hub-icon" style="background: #fffaf0; color: #dd6b20;">📝</div>
+                        <span class="hub-label">Jurnal</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('goals')">
+                        <div class="hub-icon" style="background: #fff5f7; color: #d53f8c;">🎯</div>
+                        <span class="hub-label">Goals</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Learning Hub Screen -->
+            <section id="learning-hub-screen" class="screen">
+                <div class="card">
+                    <h2>📚 Learning Hub</h2>
+                    <p class="text-muted">Tingkatkan karir dan karisma diri Anda dengan belajar.</p>
+                </div>
+                <!-- Moving the AI Tutors card from the dashboard to here -->
+                <div class="card mt-md" id="ai-tutor-card" style="border-left: 4px solid var(--secondary);">
+                    <div class="brain-header-row">
+                        <h3>🎓 Guru Privat AI</h3>
+                        <span class="badge-ai" id="tutor-status-badge">Tersedia</span>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-top: 5px; margin-bottom: 12px;">Pilih topik
+                        mikro untuk dipelajari hari ini. Beri AI beberapa detik untuk menyusun modul pendek.</p>
+
+                    <div class="tutor-actions" id="tutor-action-btn-group"
+                        style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <button class="btn btn-primary" onclick="requestTutor('AI')" style="flex:1;"><span
+                                class="btn-icon">🧠</span> Belajar AI</button>
+                        <button class="btn btn-secondary" onclick="requestTutor('Fisika')" style="flex:1;"><span
+                                class="btn-icon">⚛️</span> Belajar Fisika</button>
+                    </div>
+
+                    <div id="tutor-content-area" class="hidden"
+                        style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <div class="hub-grid mt-md">
+                    <button class="hub-btn" onclick="navigateToSubscreen('english-hse')">
+                        <div class="hub-icon" style="background: #eef2ff; color: #4338ca;">🇬🇧</div>
+                        <span class="hub-label">English O&G</span>
+                        <p class="hub-desc">Latihan kosakata & percakapan Migas.</p>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('hse-rig')">
+                        <div class="hub-icon" style="background: #fffbeb; color: #b45309;">🛢️</div>
+                        <span class="hub-label">HSE Rig Basics</span>
+                        <p class="hub-desc">Panduan K3 dasar di area pengeboran.</p>
+                    </button>
+                </div>
+            </section>
+
             <!-- Screen 0: Dashboard -->
             <section id="dashboard-screen" class="screen active">
                 <!-- Gamification Profile Card -->
@@ -152,9 +240,9 @@
                         <div class="dashboard-label">Total Jurnal</div>
                     </div>
                     <div class="dashboard-card">
-                        <div class="dashboard-icon">✅</div>
-                        <div class="dashboard-stat" id="stat-tasks">0/0</div>
-                        <div class="dashboard-label">Task Selesai</div>
+                        <div class="dashboard-icon">⏳</div>
+                        <div class="dashboard-stat" id="stat-tasks">0</div>
+                        <div class="dashboard-label">Belum Dilakukan</div>
                     </div>
                     <div class="dashboard-card">
                         <div class="dashboard-icon">💰</div>
@@ -201,30 +289,6 @@
                     <p class="text-muted">Memuat motivasi...</p>
                 </div>
 
-                <!-- Daily AI Tutors -->
-                <div class="card mt-md" id="ai-tutor-card" style="border-left: 4px solid var(--secondary);">
-                    <div class="brain-header-row">
-                        <h3>🎓 Guru Privat AI</h3>
-                        <span class="badge-ai" id="tutor-status-badge">Tersedia</span>
-                    </div>
-                    <p class="text-muted" style="font-size: 0.9rem; margin-top: 5px; margin-bottom: 12px;">Pilih 1 topik
-                        mikro untuk dipelajari hari ini. Beri AI beberapa detik untuk menyusun modul pendek khusus
-                        untukmu.</p>
-
-                    <div class="tutor-actions" id="tutor-action-btn-group"
-                        style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <button class="btn btn-primary" onclick="requestTutor('AI')" style="flex:1;"><span
-                                class="btn-icon">🧠</span> Belajar AI</button>
-                        <button class="btn btn-secondary" onclick="requestTutor('Fisika')" style="flex:1;"><span
-                                class="btn-icon">⚛️</span> Belajar Fisika</button>
-                    </div>
-
-                    <div id="tutor-content-area" class="hidden"
-                        style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
-                        <!-- Loading or Content goes here -->
-                    </div>
-                </div>
-
                 <!-- Daily Brain Boost -->
                 <div class="card mt-md" id="brain-boost-card">
                     <div class="brain-header-row">
@@ -269,19 +333,11 @@
                     </small>
                 </div>
 
-                <!-- Today's Reminder -->
+                <!-- Dashboard Reminders -->
                 <div class="card">
-                    <h3>🔔 Reminder Hari Ini</h3>
-                    <div id="today-reminders" class="reminder-list">
-                        <p class="text-muted">Tidak ada reminder hari ini</p>
-                    </div>
-                </div>
-
-                <!-- Upcoming Schedule -->
-                <div class="card">
-                    <h3>📅 Jadwal Mendatang</h3>
-                    <div id="upcoming-schedules" class="reminder-list">
-                        <p class="text-muted">Tidak ada jadwal</p>
+                    <h3>🔔 Reminder & Jadwal</h3>
+                    <div id="dashboard-reminders" class="reminder-list" style="max-height: 300px; overflow-y: auto;">
+                        <p class="text-muted">Tidak ada reminder</p>
                     </div>
                 </div>
 
@@ -293,20 +349,25 @@
                     </div>
                 </div>
 
-                <!-- Mood Calendar Section -->
+                <!-- Dashboard Calendar Section (Synced with Planner) -->
                 <div class="card calendar-card">
-                    <div class="calendar-header">
-                        <button id="prev-month-btn" class="icon-btn">◀</button>
-                        <h3 id="calendar-month-year"></h3>
-                        <button id="next-month-btn" class="icon-btn">▶</button>
-                        <button id="year-view-btn" class="btn btn-small btn-secondary" style="margin-left: auto;">📅
-                            Year</button>
-                    </div>
-                    <div class="calendar-days-header">
-                        <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
-                    </div>
-                    <div id="mood-calendar-grid" class="calendar-grid">
-                        <!-- Days generated by JS -->
+                    <div class="calendar-view" style="padding:0; margin:0; border:none; box-shadow:none;">
+                        <div class="calendar-header">
+                            <h3 id="dashboard-calendar-month-year">...</h3>
+                            <div class="calendar-nav">
+                                <button id="dashboard-prev-month">◀</button>
+                                <button id="dashboard-next-month">▶</button>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="dashboard-calendar-grid">
+                            <!-- Injected by JS -->
+                        </div>
+                        <div id="dashboard-selected-date-events" class="selected-date-events" style="display: none; margin-top: 15px;">
+                            <h4 id="dashboard-selected-date-label">Events</h4>
+                            <ul id="dashboard-selected-date-list" class="date-events-list">
+                                <!-- Injected by JS -->
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
@@ -454,43 +515,37 @@
                 </div>
             </section>
 
-            <!-- Screen 2: Planner -->
-            <section id="planner-screen" class="screen">
-                <!-- Pomodoro Timer -->
-                <div class="card pomodoro-card">
-                    <div class="pomodoro-header">
-                        <h2>⏱️ Pomodoro Timer</h2>
-                        <span id="pomodoro-session" class="session-badge">Session 1</span>
+            <!-- Screen 2: To Do List Hari Ini -->
+            <section id="todo-today-screen" class="screen">
+                <!-- Daily To-Do List -->
+                <div class="card">
+                    <h2>✅ To Do List Hari Ini</h2>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-top: -10px; margin-bottom: 15px;">Daftar
+                        tugas ini akan otomatis terhapus setiap ganti hari. Fokus pada hari ini saja!</p>
+
+                    <div class="add-form">
+                        <input type="text" id="new-daily-todo-input" placeholder="Tugas baru hari ini..." class="input">
+                        <div class="form-row">
+                            <select id="daily-todo-priority" class="input">
+                                <option value="p1">🔴 Penting & Mendesak (Lakukan Segera!)</option>
+                                <option value="p2">🟡 Penting Tapi Tidak Mendesak (Jadwalkan)</option>
+                                <option value="p3">🔵 Tidak Penting Tapi Mendesak (Delegasikan)</option>
+                                <option value="p4">⚪ Tidak Penting & Tidak Mendesak (Tinggalkan)</option>
+                            </select>
+                        </div>
+                        <button id="add-daily-todo-btn" class="btn btn-primary">+ Tambah Tugas</button>
                     </div>
 
-                    <!-- Mode Selector -->
-                    <div class="pomodoro-modes">
-                        <button class="btn btn-small btn-primary mode-btn" data-mode="focus"
-                            data-time="25">Fokus</button>
-                        <button class="btn btn-small btn-secondary mode-btn" data-mode="barakah" data-time="90">🌅
-                            Barakah</button>
-                        <button class="btn btn-small btn-secondary mode-btn" data-mode="qailulah" data-time="20">💤
-                            Qailulah</button>
-                    </div>
-                    <div class="pomodoro-display">
-                        <div class="timer-circle">
-                            <span id="timer-minutes">25</span>
-                            <span class="timer-separator">:</span>
-                            <span id="timer-seconds">00</span>
-                        </div>
-                        <div id="timer-label" class="timer-label">Fokus</div>
-                    </div>
-                    <div class="pomodoro-controls">
-                        <button id="timer-start" class="btn btn-primary">▶️ Mulai</button>
-                        <button id="timer-pause" class="btn btn-secondary" disabled>⏸️ Pause</button>
-                        <button id="timer-reset" class="btn btn-secondary">🔄 Reset</button>
-                    </div>
-                    <div class="pomodoro-stats">
-                        <span>🍅 <span id="pomodoro-count">0</span> pomodoro hari ini</span>
+                    <div id="daily-todo-list" class="daily-todo-list"
+                        style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Tasks Injected by JS -->
                     </div>
                 </div>
+            </section>
 
-                <div class="card kanban-container-card">
+            <!-- Screen 2.5: Planner (Jadwal) -->
+            <section id="planner-screen" class="screen">
+                <div class="card mt-md">
                     <!-- Calendar View -->
                     <div class="calendar-view">
                         <div class="calendar-header">
@@ -511,6 +566,31 @@
                         </div>
                     </div>
 
+                    <hr style="margin: 20px 0; border: 1px solid var(--border);">
+
+                    <h2>📅 Tambah Jadwal</h2>
+                    <div class="add-form">
+                        <input type="text" id="new-schedule-title" placeholder="Nama kegiatan..." class="input">
+                        <div class="form-row">
+                            <input type="datetime-local" id="new-schedule-datetime" class="input">
+                            <select id="new-schedule-priority" class="input">
+                                <option value="allah">🔴 Allah (Ibadah)</option>
+                                <option value="self">🟢 Diri (Istirahat/Belajar)</option>
+                                <option value="others">🔵 Umat (Kerja/Sosial)</option>
+                            </select>
+                        </div>
+                        <button id="add-schedule-btn" class="btn btn-primary">+ Tambah</button>
+                    </div>
+                    <div id="schedule-list" class="schedule-list"></div>
+                </div>
+
+                <!-- AI Analysis Button -->
+                <button id="analyze-planner-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Produktivitas</button>
+            </section>
+
+            <!-- Screen 5: Kanban -->
+            <section id="kanban-screen" class="screen">
+                <div class="card kanban-container-card">
                     <div class="kanban-header">
                         <h2>📋 Kanban Board</h2>
                         <div class="add-form-inline">
@@ -551,26 +631,6 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="card">
-                    <h2>📅 Jadwal</h2>
-                    <div class="add-form">
-                        <input type="text" id="new-schedule-title" placeholder="Nama kegiatan..." class="input">
-                        <div class="form-row">
-                            <input type="datetime-local" id="new-schedule-datetime" class="input">
-                            <select id="new-schedule-priority" class="input">
-                                <option value="allah">🔴 Allah (Ibadah)</option>
-                                <option value="self">🟢 Diri (Istirahat/Belajar)</option>
-                                <option value="others">🔵 Umat (Kerja/Sosial)</option>
-                            </select>
-                        </div>
-                        <button id="add-schedule-btn" class="btn btn-primary">+ Tambah</button>
-                    </div>
-                    <div id="schedule-list" class="schedule-list"></div>
-                </div>
-
-                <!-- AI Analysis Button -->
-                <button id="analyze-planner-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Produktivitas</button>
             </section>
 
             <!-- Screen 3.5: Goals -->
@@ -785,12 +845,6 @@
                 <!-- AI Analysis Button -->
                 <button id="analyze-habits-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Kebiasaan</button>
             </section>
-            <!-- Screen 5: Interview Prep -->
-            <section id="interview-prep-screen" class="screen">
-                <div class="card" id="interview-content">
-                    <!-- Content injected by interview-prep.js -->
-                </div>
-            </section>
 
             <!-- Screen 6: Islam Tracker -->
             <section id="islam-screen" class="screen">
@@ -944,34 +998,6 @@
                 </div>
             </section>
 
-            <!-- Screen 7: Realtime News / Berita (Added) -->
-            <section id="news-screen" class="screen">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📰 Berita Pasar & Kripto</h3>
-                        <span id="news-last-updated" class="text-muted">Memuat...</span>
-                    </div>
-
-                    <!-- Category Tabs -->
-                    <div class="news-category-tabs"
-                        style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 20px;">
-                        <button id="btn-news-crypto" class="btn btn-primary" style="flex: 1;">🪙 Kripto</button>
-                        <button id="btn-news-etf" class="btn btn-secondary" style="flex: 1;">📈 Saham</button>
-                        <button id="btn-news-ai" class="btn btn-secondary" style="flex: 1;">🤖 AI</button>
-                    </div>
-
-                    <!-- Loading Spinner -->
-                    <div id="news-loading-spinner" style="text-align: center; padding: 20px; display: none;">
-                        <div class="loading-spinner" style="display: inline-block; margin-bottom: 10px;"></div>
-                        <p class="text-muted" style="margin: 0; font-size: 0.9em;">Mengambil artikel terbaru...</p>
-                    </div>
-
-                    <!-- News List Container -->
-                    <div id="news-content-list" style="display: flex; flex-direction: column; gap: 15px;">
-                        <!-- News cards injected by JS -->
-                    </div>
-                </div>
-            </section>
         </main>
 
         <!-- AI Analysis Modal -->
@@ -1195,55 +1221,6 @@
             </div>
         </div>
 
-        <!-- Year in Pixels Modal -->
-        <div id="year-in-pixels-modal" class="modal hidden">
-            <div class="modal-content card wide-modal">
-                <div class="modal-header">
-                    <h3>📅 Year in Pixels</h3>
-                    <button id="close-year-pixels" class="icon-btn">✕</button>
-                </div>
-                <!-- Calendar View -->
-                <div class="calendar-container card">
-                    <div class="calendar-header">
-                        <h3 id="calendar-month-year">Februari 2026</h3>
-                        <div class="calendar-nav">
-                            <button id="prev-month" class="btn-icon">❮</button>
-                            <button id="next-month" class="btn-icon">❯</button>
-                        </div>
-                    </div>
-                    <div class="calendar-grid" id="calendar-grid">
-                        <!-- Calendar days will be generated here -->
-                    </div>
-                    <div id="selected-date-events" class="selected-date-events" style="display: none;">
-                        <h4>Kegiatan pada <span id="selected-date-label"></span></h4>
-                        <ul id="selected-date-list" class="date-events-list"></ul>
-                    </div>
-                </div>
-
-                <div class="section-header">
-                    <h3>Jadwal & Deadline</h3>
-                    <button class="btn btn-primary btn-sm" id="add-schedule-btn">+ Jadwal</button>
-                </div>
-                <div class="year-pixels-controls">
-                    <button id="prev-year-btn" class="icon-btn">◀</button>
-                    <span id="year-pixels-title">2026</span>
-                    <button id="next-year-btn" class="icon-btn">▶</button>
-                </div>
-                <div class="year-pixels-container">
-                    <div id="year-pixels-matrix" class="year-pixels-matrix">
-                        <!-- Grid generated by JS -->
-                    </div>
-                </div>
-                <div class="year-pixels-legend">
-                    <div class="legend-item"><span class="dot mood-great"></span> Great</div>
-                    <div class="legend-item"><span class="dot mood-good"></span> Good</div>
-                    <div class="legend-item"><span class="dot mood-neutral"></span> Neutral</div>
-                    <div class="legend-item"><span class="dot mood-bad"></span> Bad</div>
-                    <div class="legend-item"><span class="dot mood-terrible"></span> Terrible</div>
-                </div>
-            </div>
-        </div>
-
         <!-- Edit Modal -->
         <div id="edit-modal" class="modal hidden">
             <div class="modal-content card">
@@ -1322,6 +1299,7 @@
                 </div>
             </div>
         </div>
+
         <!-- Screen 7: English HSE -->
         <section id="english-hse-screen" class="screen">
             <div class="card">
@@ -1602,117 +1580,140 @@
             <div class="card">
                 <h2>🛢️ HSE Rig Learning</h2>
                 <p class="text-muted">Panduan dasar keselamatan dan operasi di Oil Rig untuk pemula dan HSE Officer.</p>
-            </div>
-
-            <!-- Introduction -->
-            <div class="card mt-md" style="border-left: 4px solid var(--primary);">
-                <h3>🏗️ Pengenalan Rig</h3>
-                <img src="img/hse-rig/intro.png" alt="Rig Introduction"
-                    style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
-                <p class="text-muted" style="font-size: 0.9rem;">Pahami komponen utama dari onshore rig (rig darat),
-                    seperti
-                    derrick, drill floor, dan mud pit.</p>
-                <div id="rig-intro-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    <!-- Cards will be injected by JS -->
+                
+                <!-- Chapter Navigation -->
+                <div class="brain-tabs mt-sm" style="overflow-x: auto; white-space: nowrap; padding-bottom: 5px; -webkit-overflow-scrolling: touch;">
+                    <button class="brain-tab active rig-tab" onclick="switchRigChapter('intro', this)">🏗️ Intro</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('hazards', this)">⚠️ Hazards</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('ppe', this)">👷 PPE</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('routine', this)">📋 Rutinitas</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('clsr', this)">🛡️ CLSR</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('perilaku', this)">📜 Perilaku</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('poster', this)">🖼️ Poster</button>
                 </div>
             </div>
 
-            <!-- Main Hazards -->
-            <div class="card mt-md" style="border-left: 4px solid #f56565;">
-                <h3>⚠️ Bahaya Utama (Major Hazards)</h3>
-                <img src="img/hse-rig/hazards.png" alt="Rig Hazards"
-                    style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
-                <p class="text-muted" style="font-size: 0.9rem;">Ketahui risiko tetinggi di area rig seperti H2S,
-                    Blowout, dan Dropped Objects.</p>
-                <div id="rig-hazards-modules"
-                    style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
-            </div>
-
-            <!-- PPE requirements -->
-            <div class="card mt-md" style="border-left: 4px solid #ed8936;">
-                <h3>👷 Standar APD (PPE)</h3>
-                <img src="img/hse-rig/ppe.png" alt="Rig PPE"
-                    style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
-                <p class="text-muted" style="font-size: 0.9rem;">Alat Pelindung Diri wajib di rig: Coverall, Hard Hat,
-                    Safety Glasses, Boots, dll.</p>
-                <div id="rig-ppe-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+            <!-- Chapter 1: Introduction -->
+            <div id="rig-chapter-intro" class="rig-chapter">
+                <div class="card mt-md" style="border-left: 4px solid var(--primary);">
+                    <h3>🏗️ Pengenalan Rig</h3>
+                    <img src="img/hse-rig/intro.png" alt="Rig Introduction"
+                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Pahami komponen utama dari onshore rig (rig darat),
+                        seperti
+                        derrick, drill floor, dan mud pit.</p>
+                    <div id="rig-intro-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                        <!-- Cards will be injected by JS -->
+                    </div>
                 </div>
             </div>
 
-            <!-- Daily Routine -->
-            <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
-                <h3>📋 Rutinitas HSE Officer</h3>
-                <img src="img/hse-rig/routine.png" alt="HSE Routine"
-                    style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
-                <p class="text-muted" style="font-size: 0.9rem;">Agenda harian seorang HSE Officer: Toolbox Talk,
-                    Inspection, dan Permit Control.</p>
-                <div id="rig-routine-modules"
-                    style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
-            </div>
-
-            <!-- 10 Elemen CLSR -->
-            <div class="card mt-md" style="border-left: 4px solid #8b5cf6;">
-                <h3>🛡️ 10 Elemen CLSR</h3>
-                <p class="text-muted" style="font-size: 0.9rem;">Corporate Life Saving Rules (Aturan Penyelamat Nyawa
-                    Perusahaan) yang wajib ditaati tanpa toleransi di area operasi.</p>
-                <div id="rig-clsr-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+            <!-- Chapter 2: Main Hazards -->
+            <div id="rig-chapter-hazards" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #f56565;">
+                    <h3>⚠️ Bahaya Utama (Major Hazards)</h3>
+                    <img src="img/hse-rig/hazards.png" alt="Rig Hazards"
+                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Ketahui risiko tetinggi di area rig seperti H2S,
+                        Blowout, dan Dropped Objects.</p>
+                    <div id="rig-hazards-modules"
+                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
                 </div>
             </div>
 
-            <!-- 9 Perilaku Wajib -->
-            <div class="card mt-md" style="border-left: 4px solid #f59e0b;">
-                <h3>📜 9 Perilaku Wajib</h3>
-                <p class="text-muted" style="font-size: 0.9rem;">Sembilan perilaku dasar wajib (Life Saving Rules) untuk
-                    menjamin keselamatan selama bekerja.</p>
-                <div id="rig-perilaku-modules"
-                    style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
-            </div>
-
-            <!-- Poster Print Area -->
-            <div class="card mt-lg" style="text-align: center; background: var(--surface-hover);">
-                <h3>🖼️ Peta Jalan Keselamatan (Safety Roadmap)</h3>
-                <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 20px;">Rangkuman visual terpadu untuk
-                    memudahkan Anda menghafal 9 Perilaku Wajib dan 10 Elemen CLSR.</p>
-                <img src="img/hse-rig/clsr_roadmap_poster.png" alt="Peta Jalan Keselamatan Pertamina"
-                    style="width:100%; border-radius:8px; border:1px solid var(--border); margin-bottom: 20px;">
-
-                <div
-                    style="text-align: left; padding: 15px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary); border-radius: 8px;">
-                    <h4 style="margin-top: 0; color: var(--primary);">💡 Cara Menggunakan Peta Ini untuk Menghafal:</h4>
-                    <p style="font-size: 0.9rem; margin-bottom: 15px;">Gambar ini dirancang sebagai "Peta Jalan
-                        Keselamatan Pertamina" yang kohesif. Ikuti panduan visual ini:</p>
-
-                    <h5 style="color: #10b981; margin-bottom: 5px;">Sisi Kiri (Hijau): Alur 9 Perilaku Wajib</h5>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0;">Ikuti pil bernomor (1-9)
-                        yang mengalir seperti jalur.</p>
-                    <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-color);">
-                        <li><strong>P-I-P (1):</strong> Terapkan Patuh-Intervensi-Peduli.</li>
-                        <li><strong>Kompeten (2):</strong> Punya kemampuan dan wewenang.</li>
-                        <li><strong>Sehat & Fit (3):</strong> Sehat secara fisik dan mental.</li>
-                        <li><strong>APD (4):</strong> Gunakan APD yang sesuai.</li>
-                        <li><strong>LMRA (5):</strong> Lakukan Last Minute Risk Assessment.</li>
-                        <li><strong>Lapor (6):</strong> Laporkan kondisi abnormal/berbahaya.</li>
-                        <li><strong>Permit SIKA (7):</strong> Pastikan SIKA tersedia.</li>
-                        <li><strong>Housekeeping (8):</strong> Jaga kebersihan dan kerapihan.</li>
-                        <li><strong>Laksanakan 10 CLSR (9):</strong> Terapkan perilaku kunci pada 10 Elemen CLSR. Garis
-                            besar dari poin 9 ini secara visual menunjuk ke arah 10 Elemen CLSR di kanan.</li>
-                    </ul>
-
-                    <h5 style="color: #3b82f6; margin-top: 15px; margin-bottom: 5px;">Sisi Kanan (Warna): Grid 10 Elemen
-                        CLSR</h5>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0;">Ini adalah 10 kategori
-                        risiko yang harus Anda waspadai.</p>
-                    <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-color);">
-                        <li><strong>Baris Atas (01-05):</strong> Tools & Equipment, Line of Fire, Hot Work, Confined
-                            Space, Isolation of Energy (LOTO).</li>
-                        <li><strong>Baris Bawah (06-10):</strong> Lifting Operation, Working at Height, Ground
-                            Disturbance, Water-Based Work, Land Transportation.</li>
-                    </ul>
+            <!-- Chapter 3: PPE requirements -->
+            <div id="rig-chapter-ppe" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #ed8936;">
+                    <h3>👷 Standar APD (PPE)</h3>
+                    <img src="img/hse-rig/ppe.png" alt="Rig PPE"
+                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Alat Pelindung Diri wajib di rig: Coverall, Hard Hat,
+                        Safety Glasses, Boots, dll.</p>
+                    <div id="rig-ppe-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    </div>
                 </div>
             </div>
 
+            <!-- Chapter 4: Daily Routine -->
+            <div id="rig-chapter-routine" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
+                    <h3>📋 Rutinitas HSE Officer</h3>
+                    <img src="img/hse-rig/routine.png" alt="HSE Routine"
+                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Agenda harian seorang HSE Officer: Toolbox Talk,
+                        Inspection, dan Permit Control.</p>
+                    <div id="rig-routine-modules"
+                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+                </div>
+            </div>
 
-            <div id="rig-poster-container" class="poster-hide-on-screen" style="margin-top: 20px;"></div>
+            <!-- Chapter 5: 10 Elemen CLSR -->
+            <div id="rig-chapter-clsr" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #8b5cf6;">
+                    <h3>🛡️ 10 Elemen CLSR</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Corporate Life Saving Rules (Aturan Penyelamat Nyawa
+                        Perusahaan) yang wajib ditaati tanpa toleransi di area operasi.</p>
+                    <div id="rig-clsr-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 6: 9 Perilaku Wajib -->
+            <div id="rig-chapter-perilaku" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #f59e0b;">
+                    <h3>📜 9 Perilaku Wajib</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Sembilan perilaku dasar wajib (Life Saving Rules) untuk
+                        menjamin keselamatan selama bekerja.</p>
+                    <div id="rig-perilaku-modules"
+                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- Chapter 7: Poster Print Area -->
+            <div id="rig-chapter-poster" class="rig-chapter hidden">
+                <div class="card mt-lg" style="text-align: center; background: var(--surface-hover);">
+                    <h3>🖼️ Peta Jalan Keselamatan (Safety Roadmap)</h3>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 20px;">Rangkuman visual terpadu untuk
+                        memudahkan Anda menghafal 9 Perilaku Wajib dan 10 Elemen CLSR.</p>
+                    <img src="img/hse-rig/clsr_roadmap_poster.png" alt="Peta Jalan Keselamatan Pertamina"
+                        style="width:100%; border-radius:8px; border:1px solid var(--border); margin-bottom: 20px;">
+    
+                    <div
+                        style="text-align: left; padding: 15px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary); border-radius: 8px;">
+                        <h4 style="margin-top: 0; color: var(--primary);">💡 Cara Menggunakan Peta Ini untuk Menghafal:</h4>
+                        <p style="font-size: 0.9rem; margin-bottom: 15px;">Gambar ini dirancang sebagai "Peta Jalan
+                            Keselamatan Pertamina" yang kohesif. Ikuti panduan visual ini:</p>
+    
+                        <h5 style="color: #10b981; margin-bottom: 5px;">Sisi Kiri (Hijau): Alur 9 Perilaku Wajib</h5>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0;">Ikuti pil bernomor (1-9)
+                            yang mengalir seperti jalur.</p>
+                        <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-color);">
+                            <li><strong>P-I-P (1):</strong> Terapkan Patuh-Intervensi-Peduli.</li>
+                            <li><strong>Kompeten (2):</strong> Punya kemampuan dan wewenang.</li>
+                            <li><strong>Sehat & Fit (3):</strong> Sehat secara fisik dan mental.</li>
+                            <li><strong>APD (4):</strong> Gunakan APD yang sesuai.</li>
+                            <li><strong>LMRA (5):</strong> Lakukan Last Minute Risk Assessment.</li>
+                            <li><strong>Lapor (6):</strong> Laporkan kondisi abnormal/berbahaya.</li>
+                            <li><strong>Permit SIKA (7):</strong> Pastikan SIKA tersedia.</li>
+                            <li><strong>Housekeeping (8):</strong> Jaga kebersihan dan kerapihan.</li>
+                            <li><strong>Laksanakan 10 CLSR (9):</strong> Terapkan perilaku kunci pada 10 Elemen CLSR. Garis
+                                besar dari poin 9 ini secara visual menunjuk ke arah 10 Elemen CLSR di kanan.</li>
+                        </ul>
+    
+                        <h5 style="color: #3b82f6; margin-top: 15px; margin-bottom: 5px;">Sisi Kanan (Warna): Grid 10 Elemen
+                            CLSR</h5>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0;">Ini adalah 10 kategori
+                            risiko yang harus Anda waspadai.</p>
+                        <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-color);">
+                            <li><strong>Baris Atas (01-05):</strong> Tools & Equipment, Line of Fire, Hot Work, Confined
+                                Space, Isolation of Energy (LOTO).</li>
+                            <li><strong>Baris Bawah (06-10):</strong> Lifting Operation, Working at Height, Ground
+                                Disturbance, Water-Based Work, Land Transportation.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div id="rig-poster-container" class="poster-hide-on-screen" style="margin-top: 20px;"></div>
+            </div>
         </section>
     </div>
 
@@ -1730,7 +1731,6 @@
     <script src="js/backup-tags.js"></script>
     <script src="js/journal-ui.js"></script>
     <script src="js/planner-ui.js"></script>
-    <script src="js/pomodoro.js"></script>
     <script src="js/finance-ui.js"></script>
     <script src="js/habits-goals-ui.js"></script>
     <script src="js/navigation-settings.js"></script>
@@ -1748,10 +1748,9 @@
     <script src="js/brain-boost.js"></script>
     <script src="js/journal-templates.js"></script>
     <script src="js/motivation.js"></script>
-    <script src="js/interview-prep.js"></script>
     <script src="js/islam-tracker.js"></script>
-    <script src="js/news-api.js"></script>
     <script src="js/ai-tutors.js"></script>
+    <script src="js/todo-today.js"></script>
     <script src="js/english-hse.js"></script>
     <script src="js/hse-rig.js"></script>
 

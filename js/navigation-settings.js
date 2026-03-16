@@ -1,51 +1,92 @@
 // ===== NAVIGATION =====
+let currentHub = 'dashboard';
+
 function initNavigation() {
     const navButtons = document.querySelectorAll('.nav-btn');
-    const screens = document.querySelectorAll('.screen');
+    const backBtn = document.getElementById('header-back-btn');
 
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const targetScreen = btn.dataset.screen;
+            currentHub = targetScreen; // Remember the hub
 
             navButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            screens.forEach(screen => {
-                screen.classList.remove('active');
-                if (screen.id === `${targetScreen}-screen`) {
-                    screen.classList.add('active');
-                }
-            });
+            showScreen(targetScreen);
 
-            // Refresh data when switching screens
-            if (targetScreen === 'dashboard') {
-                updateDashboardStats();
-                updateUpcomingSchedules();
-                updateTodayReminders();
-                initMoodChart();
-            } else if (targetScreen === 'planner') {
-                if (typeof renderKanbanBoard === 'function') renderKanbanBoard();
-                renderScheduleList();
-            } else if (targetScreen === 'journal') {
-                renderJournalHistory();
-            } else if (targetScreen === 'finance') {
-                renderTransactionList();
-                updateFinanceSummary();
-                initFinanceChart();
-            } else if (targetScreen === 'habits') {
-                renderHabitsTodayList();
-                renderAllHabitsList();
-                initHabitsChart();
-            } else if (targetScreen === 'goals') {
-                renderGoalsList();
-                updateGoalsStats();
-            } else if (targetScreen === 'interview-prep') {
-                if (typeof initInterviewPrep === 'function') initInterviewPrep();
-            } else if (targetScreen === 'news') {
-                if (typeof initNewsUI === 'function') initNewsUI();
+            // Hide back button when clicking bottom nav
+            if (backBtn) {
+                backBtn.classList.add('hidden');
+                backBtn.style.display = 'none'; // Ensure CSS hide
             }
         });
     });
+
+    if (backBtn) {
+        backBtn.addEventListener('click', handleBackButton);
+    }
+}
+
+function showScreen(targetScreen) {
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(screen => {
+        screen.classList.remove('active');
+        if (screen.id === `${targetScreen}-screen`) {
+            screen.classList.add('active');
+        }
+    });
+
+    // Sub-screen initializers
+    if (targetScreen === 'dashboard') {
+        updateDashboardStats();
+        updateDashboardReminders();
+        initMoodChart();
+    } else if (targetScreen === 'todo-today') {
+        if (typeof initTodoToday === 'function') initTodoToday();
+    } else if (targetScreen === 'planner') {
+        renderScheduleList();
+        if (typeof renderCalendar === 'function') renderCalendar();
+    } else if (targetScreen === 'kanban') {
+        if (typeof renderKanbanBoard === 'function') renderKanbanBoard();
+    } else if (targetScreen === 'journal') {
+        renderJournalHistory();
+    } else if (targetScreen === 'finance') {
+        renderTransactionList();
+        updateFinanceSummary();
+        initFinanceChart();
+    } else if (targetScreen === 'habits') {
+        renderHabitsTodayList();
+        renderAllHabitsList();
+        initHabitsChart();
+    } else if (targetScreen === 'goals') {
+        renderGoalsList();
+        updateGoalsStats();
+    }
+}
+
+// Called from HTML onclick in Hub grids
+function navigateToSubscreen(targetScreen) {
+    showScreen(targetScreen);
+
+    // Show back button
+    const backBtn = document.getElementById('header-back-btn');
+    if (backBtn) {
+        backBtn.classList.remove('hidden');
+        backBtn.style.display = 'flex';
+    }
+}
+
+function handleBackButton() {
+    // Return to the last clicked Hub
+    showScreen(currentHub);
+
+    // Hide back button
+    const backBtn = document.getElementById('header-back-btn');
+    if (backBtn) {
+        backBtn.classList.add('hidden');
+        backBtn.style.display = 'none';
+    }
 }
 
 // ===== SETTINGS =====

@@ -16,7 +16,6 @@ function showMainApp() {
     initDashboard();
     initJournalUI();
     initPlannerUI();
-    initPomodoroTimer();
     initGoalsUI();
 
     try {
@@ -30,7 +29,6 @@ function showMainApp() {
     initFinanceUI();
     initHabitsUI();
     initGlobalSearch();
-    initAIAnalysis();
     initAIAnalysis();
     initReminder();
     if (typeof initBrainBoost === 'function') initBrainBoost();
@@ -110,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof initVoiceInput === 'function') initVoiceInput();
         if (typeof initSecurity === 'function') initSecurity();
         if (typeof initExportCSV === 'function') initExportCSV();
-        if (typeof initMoodCalendar === 'function') initMoodCalendar();
+        if (typeof renderCalendar === 'function') renderCalendar();
         if (typeof initFinanceUpgrades === 'function') initFinanceUpgrades();
         if (typeof initWalletUI === 'function') initWalletUI();
         if (typeof initBudgetUI === 'function') initBudgetUI();
