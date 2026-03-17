@@ -326,3 +326,219 @@ function renderInteractiveFlashcards(containerId, dataArray) {
         </div>
     `).join('');
 }
+
+// ===== PJSM (PRE-JOB SAFETY MEETING) GENERATOR =====
+
+const PJSM_SYSTEM_PROMPT = `Kamu adalah Senior HSSE Officer di Rig Pengeboran Pertamina yang tegas, asik, dan berpengalaman lapangan. Tugasmu adalah merespons setiap "Daftar Pekerjaan Hari Ini" yang diberikan dengan menyusun naskah lisan Pre-Job Safety Meeting (PJSM) atau Toolbox Talk.
+
+GAYA BAHASA WAJIB:
+Gunakan bahasa lisan lapangan yang natural, santai tapi berwibawa, dan tidak kaku. Ikuti persis gaya bincang-bincang lisan (oral) seperti contoh naskah yang diberikan. Fokus pada kejelasan informasi tanpa perlu bertele-tele.
+
+===== DATABASE KESELAMATAN PERTAMINA (WAJIB DIJADIKAN REFERENSI UTAMA) =====
+
+[10 POTENSI BAHAYA] - Identifikasi SEMUA yang relevan dari daftar pekerjaan:
+1. GERAKAN - Tergelincir, tersandung, terjatuh (Slips/Trips/Falls).
+2. ELEKTRIKAL - Sengatan/tegangan listrik.
+3. BIOLOGI - Paparan organisme berbahaya.
+4. RADIASI - Paparan radiasi ionisasi/non-ionisasi.
+5. SUARA (KEBISINGAN) - Paparan bising >85 dB.
+6. TEMPERATUR - Panas/dingin ekstrem.
+7. ZAT KIMIA - Paparan bahan kimia berbahaya.
+8. MEKANIKAL - Terjepit, terpukul, tergilas mesin bergerak.
+9. TEKANAN - Hubungan dengan sistem bertekanan tinggi.
+10. GAYA BERAT (GRAVITY) - Benda jatuh dari ketinggian atau pekerja jatuh.
+
+[10 ELEMEN CLSR] - Referensi: Buku Saku CLSR Pertamina.
+01. TOOLS & EQUIPMENT, 02. LINE OF FIRE, 03. HOT WORK, 04. CONFINED SPACE, 05. POWERED SYSTEM / LOTO, 06. LIFTING OPERATION, 07. WORKING AT HEIGHT, 08. GROUND-DISTURBANCE WORK, 09. WATER-BASED WORK, 10. LAND TRANSPORTATION.
+
+[9 PERILAKU WAJIB]:
+1. Terapkan HSSE Golden Rules, 2. Kompeten, 3. Kondisi sehat Fit to Work (MCU/DCU), 4. Gunakan APD sesuai, 5. Identifikasi bahaya via LMRA, 6. Laporkan kondisi abnormal, 7. Pastikan Permit to Work (PTW/SIKA) tersedia, 8. Jaga kebersihan lokasi (Housekeeping), 9. Laksanakan perilaku kunci 10 CLSR.
+
+STRUKTUR NASKAH WAJIB (IKUTI TEMPLATE INI):
+
+assalamualaikum warahmatullahi wabarakatuh dan selamat pagi rekan rekan semua Izin menyita waktunya sebentar sebelum kita mulai pekerjaan. Seperti biasa, saya mau pastikan semua yang ada di sini sudah lolos DCU. rekan rekan, kalau pagi ini ada yang badannya kurang fit, atau merasa kurang sehat, tolong lapor ke medis.
+
+Fokus perkerjaan kita hari ini yaitu [sebutkan daftar pekerjaan dengan lisan yang mengalir]
+
+bahaya utama kita hari ini berdasarkan 10 bahaya di area kerja yaitu pertama [bahaya 1], kedua [bahaya 2], dst. dan ini bersinggungan dengan 10 pedoman clsr nomor [nomor clsr] yaitu [nama clsr], nomor [nomor clsr] yaitu [nama clsr], dst. [Jelaskan kaitannya secara singkat].
+
+Zero Tolerance hari ini, Pak: Mohon pengertiannya, jika [tentukan 1 hal kritis yang tidak ditoleransi hari ini terkait pekerjaan tersebut]
+
+dan jangan lupa terapkan 3T (Tahu Pekerjaan, Bahaya, Mitigasi) dan 3M (Mulai dari diri sendiri, hal kecil, saat ini). Serta satu hal yang mau saya garis bawahi dari 9 Perilaku Wajib adalah [pilih 1 poin dari 9 Perilaku Wajib yang paling relevan dan jelaskan singkat].
+
+mungkin itu saja dari saya, waktu dan tempat saya kembalikan kepada mandor.
+
+baiklah rekan rekan sekalian sebelum kita memulai pekerjaan hari ini ada baiknya kita berdoa menurut agama dan kepercayaan masing masing, berdoa dipersilahkan.
+
+ATURAN OUTPUT:
+- Berikan naskah LANGSUNG dalam format teks mengalir (plain text).
+- JANGAN gunakan numbering 1-6 atau formatting markdown seperti bold/italic/heading.
+- Pastikan naskah terasa seperti naskah lisan yang siap dibacakan tanpa terpotong.
+- Isi bagian [ ] dengan analisis yang cerdas berdasarkan database keselamatan di atas.`;
+
+let pjsmSpeechUtterance = null;
+
+async function generatePJSM() {
+    const input = document.getElementById('pjsm-work-input');
+    const loading = document.getElementById('pjsm-loading');
+    const resultArea = document.getElementById('pjsm-result-area');
+    const content = document.getElementById('pjsm-content');
+    const btn = document.getElementById('generate-pjsm-btn');
+
+    const workList = input?.value?.trim();
+    if (!workList) {
+        alert('Masukkan daftar pekerjaan hari ini terlebih dahulu!');
+        return;
+    }
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        alert('API Key Gemini belum diatur! Buka Settings dan masukkan API Key.');
+        return;
+    }
+
+    // Show loading
+    loading.classList.remove('hidden');
+    resultArea.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating...';
+
+    try {
+        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    role: "user",
+                    parts: [{
+                        text: `${PJSM_SYSTEM_PROMPT}\n\n--- DAFTAR PEKERJAAN HARI INI ---\n${workList}\n\nBuatkan naskah PJSM lengkap sesuai struktur 6 bagian di atas.`
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.8,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 10240
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Gemini API Error details:', errorData);
+            throw new Error(errorData.error?.message || `Gagal menghubungi Gemini (Status: ${response.status})`);
+        }
+
+        const data = await response.json();
+        const candidate = data.candidates?.[0];
+        let text = candidate?.content?.parts?.[0]?.text;
+
+        if (candidate?.finishReason === 'MAX_TOKENS') {
+            console.warn('PJSM Truncated: Reached max tokens limit.');
+            text += '\n\n... (Terpotong karena naskah terlalu panjang, silakan generate ulang atau hubungi admin) ...';
+        }
+
+        if (!text) throw new Error('Respon AI kosong');
+
+        // Markdown Cleanup
+        text = text.replace(/```[a-z]*\n/g, '').replace(/```/g, '');
+
+        console.log('PJSM Result length:', text.length);
+        content.textContent = text;
+        // Ensure scroll to bottom with some padding
+        content.style.paddingBottom = "100px";
+        resultArea.classList.remove('hidden');
+
+    } catch (error) {
+        console.error('PJSM Error:', error);
+        alert('Gagal generate PJSM: ' + error.message);
+    } finally {
+        loading.classList.add('hidden');
+        btn.disabled = false;
+        btn.textContent = '📢 Generate Naskah PJSM ⚡';
+    }
+}
+
+function copyPJSM() {
+    const content = document.getElementById('pjsm-content');
+    if (!content || !content.textContent) return;
+
+    navigator.clipboard.writeText(content.textContent).then(() => {
+        const btn = document.getElementById('copy-pjsm-btn');
+        const original = btn.textContent;
+        btn.textContent = '✅ Tersalin!';
+        setTimeout(() => btn.textContent = original, 2000);
+    }).catch(() => {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = content.textContent;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('Naskah PJSM berhasil dicopy!');
+    });
+}
+
+function speakPJSM() {
+    const content = document.getElementById('pjsm-content');
+    if (!content || !content.textContent) return;
+
+    // Stop any ongoing speech
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+
+    pjsmSpeechUtterance = new SpeechSynthesisUtterance(content.textContent);
+    pjsmSpeechUtterance.lang = 'id-ID';
+    pjsmSpeechUtterance.rate = 0.95;
+    pjsmSpeechUtterance.pitch = 1.0;
+
+    // Try to find Indonesian voice
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find(v => v.lang.startsWith('id')) || voices.find(v => v.lang.startsWith('ms'));
+    if (idVoice) pjsmSpeechUtterance.voice = idVoice;
+
+    // Show/hide buttons
+    document.getElementById('speak-pjsm-btn').classList.add('hidden');
+    document.getElementById('stop-speak-pjsm-btn').classList.remove('hidden');
+
+    pjsmSpeechUtterance.onend = () => {
+        document.getElementById('speak-pjsm-btn').classList.remove('hidden');
+        document.getElementById('stop-speak-pjsm-btn').classList.add('hidden');
+    };
+
+    pjsmSpeechUtterance.onerror = () => {
+        document.getElementById('speak-pjsm-btn').classList.remove('hidden');
+        document.getElementById('stop-speak-pjsm-btn').classList.add('hidden');
+    };
+
+    window.speechSynthesis.speak(pjsmSpeechUtterance);
+}
+
+function stopSpeakPJSM() {
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+    document.getElementById('speak-pjsm-btn').classList.remove('hidden');
+    document.getElementById('stop-speak-pjsm-btn').classList.add('hidden');
+}
+
+// Initialize PJSM event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const generateBtn = document.getElementById('generate-pjsm-btn');
+    const copyBtn = document.getElementById('copy-pjsm-btn');
+    const speakBtn = document.getElementById('speak-pjsm-btn');
+    const stopBtn = document.getElementById('stop-speak-pjsm-btn');
+
+    if (generateBtn) generateBtn.addEventListener('click', generatePJSM);
+    if (copyBtn) copyBtn.addEventListener('click', copyPJSM);
+    if (speakBtn) speakBtn.addEventListener('click', speakPJSM);
+    if (stopBtn) stopBtn.addEventListener('click', stopSpeakPJSM);
+
+    // Preload voices for TTS
+    if (window.speechSynthesis) {
+        window.speechSynthesis.getVoices();
+    }
+});
+

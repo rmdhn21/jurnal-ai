@@ -1590,6 +1590,7 @@
                     <button class="brain-tab rig-tab" onclick="switchRigChapter('clsr', this)">🛡️ CLSR</button>
                     <button class="brain-tab rig-tab" onclick="switchRigChapter('perilaku', this)">📜 Perilaku</button>
                     <button class="brain-tab rig-tab" onclick="switchRigChapter('poster', this)">🖼️ Poster</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('pjsm', this)">📢 PJSM</button>
                 </div>
             </div>
 
@@ -1714,6 +1715,42 @@
                 </div>
                 <div id="rig-poster-container" class="poster-hide-on-screen" style="margin-top: 20px;"></div>
             </div>
+            <!-- Chapter 8: PJSM Generator -->
+            <div id="rig-chapter-pjsm" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #e53e3e;">
+                    <h3>📢 AI PJSM Generator</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Masukkan daftar pekerjaan hari ini, dan AI akan menyusun naskah <b>Pre-Job Safety Meeting (PJSM) / Toolbox Talk</b> gaya lisan lapangan, lengkap dengan bahaya, CLSR, mitigasi, dan yel-yel!</p>
+
+                    <div class="form-group mt-sm">
+                        <label style="font-size: 0.9rem; font-weight: 600;">📋 Daftar Pekerjaan Hari Ini</label>
+                        <textarea id="pjsm-work-input" class="form-control"
+                            placeholder="Contoh:&#10;1. Tripping in Drill Pipe 5 inch&#10;2. Maintenance pompa lumpur #2&#10;3. Pengelasan pipa di area terbatas&#10;4. Inspeksi scaffolding derrick"
+                            style="width: 100%; height: 120px; padding: 10px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
+                    </div>
+
+                    <button id="generate-pjsm-btn" class="btn btn-primary btn-full mt-sm"
+                        style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); border: none; font-size: 1rem;">
+                        📢 Generate Naskah PJSM ⚡
+                    </button>
+
+                    <div id="pjsm-loading" class="hidden mt-md" style="text-align: center; padding: 20px;">
+                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+                        <p class="text-muted">Senior HSSE Officer sedang menyusun naskah briefing...</p>
+                    </div>
+
+                    <div id="pjsm-result-area" class="mt-md hidden">
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <button id="copy-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Naskah</button>
+                            <button id="speak-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">🔊 Baca (TTS)</button>
+                            <button id="stop-speak-pjsm-btn" class="btn btn-secondary hidden" style="flex: 1; font-size: 0.85rem; padding: 8px; background: #e53e3e; color: white;">⏹️ Stop</button>
+                        </div>
+                        <div id="pjsm-content"
+                            style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; overflow-x: auto;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </section>
     </div>
 
