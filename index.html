@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Jurnal AI - Life Organizer</title>
+    <meta name="description" content="Aplikasi journaling dengan AI yang membantu Anda berpikir lebih jernih">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#f59e0b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Jurnal AI">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons for iOS -->
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- html2pdf.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- iOS Safe Area Styling -->
+    <style>
+        /* iOS Safe Area Support */
+        body {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        /* iOS Standalone Mode Status Bar Padding */
+        @media all and (display-mode: standalone) {
+            .header {
+                padding-top: calc(var(--spacing-md) + env(safe-area-inset-top));
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-container">
+            <div class="login-logo">✨</div>
+            <h1>Jurnal AI</h1>
+            <p class="login-subtitle">Life Organizer</p>
+
+            <div id="login-form" class="login-form">
+                <input type="text" id="login-username" class="input" placeholder="Username">
+                <input type="password" id="login-password" class="input" placeholder="Password">
+                <button id="login-btn" class="btn btn-primary btn-full">🔐 Login Lokal</button>
+                <button id="show-register-btn" class="btn btn-secondary btn-full">📝 Buat Akun Baru</button>
+
+                <div class="divider">
+                    <span>atau</span>
+                </div>
+
+                <button id="cloud-login-btn" class="btn btn-cloud btn-full">☁️ Login Cloud (Sync)</button>
+            </div>
+
+            <div id="register-form" class="login-form hidden">
+                <input type="text" id="register-username" class="input" placeholder="Username baru">
+                <input type="password" id="register-password" class="input" placeholder="Password">
+                <input type="password" id="register-password-confirm" class="input" placeholder="Konfirmasi Password">
+                <button id="register-btn" class="btn btn-primary btn-full">✅ Daftar</button>
+                <button id="show-login-btn" class="btn btn-secondary btn-full">← Kembali ke Login</button>
+            </div>
+
+            <!-- Cloud Login Form -->
+            <div id="cloud-login-form" class="login-form hidden">
+                <p class="cloud-login-text">
+                    Login dengan email untuk sync data antar device
+                </p>
+                <input type="email" id="cloud-email" class="input" placeholder="Email">
+                <input type="password" id="cloud-password" class="input" placeholder="Password">
+                <button id="cloud-signin-btn" class="btn btn-cloud btn-full">☁️ Sign In</button>
+                <button id="cloud-signup-btn" class="btn btn-secondary btn-full">📝 Sign Up</button>
+                <button id="back-to-local-btn" class="btn btn-secondary btn-full">← Login Lokal</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app hidden" id="main-app">
+        <!-- Header -->
+        <header class="header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="header-back-btn" class="icon-btn" style="display: none; background: var(--surface-hover); border-radius: 50%; width: 32px; height: 32px; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 5px;">←</button>
+                <h1 class="logo">✨ Jurnal AI</h1>
+            </div>
+
+            <!-- Global Search -->
+            <div class="global-search">
+                <input type="text" id="global-search-input" placeholder="🔍 Cari jurnal, task, goals..."
+                    class="search-input">
+                <div id="search-results" class="search-results hidden"></div>
+            </div>
+
+            <!-- Sync Status Indicator -->
+            <div id="sync-status-indicator" class="sync-indicator" title="Status Sync">
+                <span id="sync-icon">⚫</span>
+                <span id="sync-text">Offline</span>
+            </div>
+
+            <div class="header-actions">
+                <button id="theme-toggle-btn" class="icon-btn" title="Ganti Tema">🌙</button>
+                <button id="logout-btn" class="icon-btn" title="Logout">🚪</button>
+                <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+            </div>
+        </header>
+
+        <!-- Main Navigation (Bottom Bar - 4 Hubs) -->
+        <nav class="nav bottom-nav">
+            <button class="nav-btn active" data-screen="dashboard">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Dashboard</span>
+            </button>
+            <button class="nav-btn" data-screen="activity-hub">
+                <span class="nav-icon">⚡</span>
+                <span class="nav-label">Activity</span>
+            </button>
+            <button class="nav-btn" data-screen="learning-hub">
+                <span class="nav-icon">📚</span>
+                <span class="nav-label">Learning</span>
+            </button>
+            <button class="nav-btn" data-screen="finance">
+                <span class="nav-icon">💰</span>
+                <span class="nav-label">Keuangan</span>
+            </button>
+        </nav>
+
+        <!-- Main Content (Added bottom padding for the new fixed nav) -->
+        <main class="main" style="padding-bottom: 80px;">
+            <!-- Activity Hub Screen -->
+            <section id="activity-hub-screen" class="screen">
+                <div class="card">
+                    <h2>⚡ Activity Hub</h2>
+                    <p class="text-muted">Kelola rutinitas dan tugas harian Anda.</p>
+                </div>
+                <div class="hub-grid mt-md">
+                    <button class="hub-btn" onclick="navigateToSubscreen('todo-today')">
+                        <div class="hub-icon" style="background: #e6fffa; color: #319795;">✅</div>
+                        <span class="hub-label">To Do List</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('islam')">
+                        <div class="hub-icon" style="background: #f0fff4; color: #38a169;">☪️</div>
+                        <span class="hub-label">Ibadah</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('habits')">
+                        <div class="hub-icon" style="background: #ebf8ff; color: #3182ce;">🌱</div>
+                        <span class="hub-label">Habits</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('planner')">
+                        <div class="hub-icon" style="background: #faf5ff; color: #805ad5;">📋</div>
+                        <span class="hub-label">Planner</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('kanban')">
+                        <div class="hub-icon" style="background: #fff5f5; color: #e53e3e;">📊</div>
+                        <span class="hub-label">Kanban</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('journal')">
+                        <div class="hub-icon" style="background: #fffaf0; color: #dd6b20;">📝</div>
+                        <span class="hub-label">Jurnal</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('goals')">
+                        <div class="hub-icon" style="background: #fff5f7; color: #d53f8c;">🎯</div>
+                        <span class="hub-label">Goals</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Learning Hub Screen -->
+            <section id="learning-hub-screen" class="screen">
+                <div class="card">
+                    <h2>📚 Learning Hub</h2>
+                    <p class="text-muted">Tingkatkan karir dan karisma diri Anda dengan belajar.</p>
+                </div>
+                <!-- Moving the AI Tutors card from the dashboard to here -->
+                <div class="card mt-md" id="ai-tutor-card" style="border-left: 4px solid var(--secondary);">
+                    <div class="brain-header-row">
+                        <h3>🎓 Guru Privat AI</h3>
+                        <span class="badge-ai" id="tutor-status-badge">Tersedia</span>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-top: 5px; margin-bottom: 12px;">Pilih topik
+                        mikro untuk dipelajari hari ini. Beri AI beberapa detik untuk menyusun modul pendek.</p>
+
+                    <div class="tutor-actions" id="tutor-action-btn-group"
+                        style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <button class="btn btn-primary" onclick="requestTutor('AI')" style="flex:1;"><span
+                                class="btn-icon">🧠</span> Belajar AI</button>
+                        <button class="btn btn-secondary" onclick="requestTutor('Fisika')" style="flex:1;"><span
+                                class="btn-icon">⚛️</span> Belajar Fisika</button>
+                    </div>
+
+                    <div id="tutor-content-area" class="hidden"
+                        style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <div class="hub-grid mt-md">
+                    <button class="hub-btn" onclick="navigateToSubscreen('english-fluency')">
+                        <div class="hub-icon" style="background: #f0fdf4; color: #16a34a;">🌟</div>
+                        <span class="hub-label">English Fluency</span>
+                        <p class="hub-desc">Latihan dasar untuk pemula (Basic English).</p>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('english-hse')">
+                        <div class="hub-icon" style="background: #eef2ff; color: #4338ca;">🇬🇧</div>
+                        <span class="hub-label">English O&G</span>
+                        <p class="hub-desc">Latihan kosakata & percakapan Migas.</p>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('hse-rig')">
+                        <div class="hub-icon" style="background: #fffbeb; color: #b45309;">🛢️</div>
+                        <span class="hub-label">HSE Rig Basics</span>
+                        <p class="hub-desc">Panduan K3 dasar di area pengeboran.</p>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToRigTab('inspection')">
+                        <div class="hub-icon" style="background: #f0fff4; color: #276749;">✅</div>
+                        <span class="hub-label">Inspeksi Rig</span>
+                        <p class="hub-desc">Checklist inspeksi fasilitas rig & export PDF.</p>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToRigTab('pjsm')">
+                        <div class="hub-icon" style="background: #fffff0; color: #975a16;">📢</div>
+                        <span class="hub-label">PJSM Generator</span>
+                        <p class="hub-desc">Generate Pre-Job Safety Meeting otomatis.</p>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToJSAGenerator()">
+                        <div class="hub-icon" style="background: #ebf8ff; color: #2b6cb0;">📑</div>
+                        <span class="hub-label">AI JSA & PTW</span>
+                        <p class="hub-desc">Buat dokumen JSA / Risk Assessment via AI.</p>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Screen 0: Dashboard -->
+            <section id="dashboard-screen" class="screen active">
+                <!-- Gamification Profile Card -->
+                <div id="user-profile-card">
+                    <!-- Injected by gamification.js -->
+                </div>
+
+                <!-- Overview Cards -->
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">📝</div>
+                        <div class="dashboard-stat" id="stat-journals">0</div>
+                        <div class="dashboard-label">Total Jurnal</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">⏳</div>
+                        <div class="dashboard-stat" id="stat-tasks">0</div>
+                        <div class="dashboard-label">Belum Dilakukan</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">💰</div>
+                        <div class="dashboard-stat" id="stat-balance">Rp 0</div>
+                        <div class="dashboard-label">Saldo</div>
+                    </div>
+                    <div class="dashboard-card" id="streak-card">
+                        <div class="dashboard-icon">🔥</div>
+                        <div class="dashboard-stat" id="current-streak">0</div>
+                        <div class="dashboard-label">Best Streak</div>
+                    </div>
+
+                    <div class="dashboard-card" id="prayer-card">
+                        <div class="prayer-card-header">
+                            <div class="prayer-card-left">
+                                <span class="prayer-card-icon">🕌</span>
+                                <div>
+                                    <div class="prayer-card-location" id="prayer-location">Jakarta</div>
+                                    <div class="prayer-card-name" id="next-prayer-name">Subuh</div>
+                                </div>
+                            </div>
+                            <div class="prayer-card-right">
+                                <div class="prayer-card-time" id="next-prayer-time">--:--</div>
+                                <div class="prayer-card-countdown" id="next-prayer-countdown">-00:00:00</div>
+                            </div>
+                        </div>
+                        <div class="prayer-list-mini" id="prayer-list-mini">
+                            <!-- Injected by JS -->
+                            <div>Subuh<br>04:30</div>
+                            <div>Dzuhur<br>12:00</div>
+                            <div>Ashar<br>15:15</div>
+                            <div>Maghrib<br>18:00</div>
+                            <div>Isya<br>19:15</div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+                <!-- Daily Discipline Motivation -->
+                <div class="card mt-md" id="motivation-card">
+                    <!-- Injected by JS -->
+                    <p class="text-muted">Memuat motivasi...</p>
+                </div>
+
+                <!-- Daily Brain Boost -->
+                <div class="card mt-md" id="brain-boost-card">
+                    <div class="brain-header-row">
+                        <h3>🧠 Brain Boost</h3>
+                        <span class="badge-ai">Daily XP</span>
+                    </div>
+
+                    <div class="brain-tabs">
+                        <button class="brain-tab active" id="tab-fact" onclick="switchTab('fact')">💡 Fakta</button>
+                        <button class="brain-tab" id="tab-vocab" onclick="switchTab('vocab')">🇬🇧 Vocab</button>
+                        <button class="brain-tab" id="tab-math" onclick="switchTab('math')">🧮 Math</button>
+                        <button class="brain-tab" id="tab-logic" onclick="switchTab('logic')">🧩 Logic</button>
+                        <button class="brain-tab" id="tab-myth" onclick="switchTab('myth')">🕵️ Mitos</button>
+                    </div>
+
+                    <div id="brain-content" class="brain-content mt-sm">
+                        <!-- Injected by JS -->
+                        <p class="text-muted">Memuat data...</p>
+                    </div>
+                </div>
+
+                <!-- Daily Hadith -->
+                <div class="card mt-md hadith-card-container">
+                    <h3>✨ Hadits Harian</h3>
+                    <div id="hadith-content" class="hadith-content">
+                        <p class="text-muted">Memuat hadits...</p>
+                    </div>
+                </div>
+
+
+                <!-- Global Daily Budget -->
+                <div class="card mt-md" id="global-budget-card">
+                    <div class="budget-card-header">
+                        <h3>📉 Budget Harian</h3>
+                        <span id="global-budget-text" class="text-muted">Rp 0 / Rp 0</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="global-budget-progress" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted budget-card-hint">
+                        Pengeluaran hari ini dari semua wallet.
+                    </small>
+                </div>
+
+                <!-- Dashboard Reminders -->
+                <div class="card">
+                    <h3>🔔 Reminder & Jadwal</h3>
+                    <div id="dashboard-reminders" class="reminder-list" style="max-height: 300px; overflow-y: auto;">
+                        <p class="text-muted">Tidak ada reminder</p>
+                    </div>
+                </div>
+
+                <!-- Mood History Chart -->
+                <div class="card">
+                    <h3>🎭 Mood Minggu Ini</h3>
+                    <div class="mood-chart-container">
+                        <canvas id="mood-chart" height="150"></canvas>
+                    </div>
+                </div>
+
+                <!-- Dashboard Calendar Section (Synced with Planner) -->
+                <div class="card calendar-card">
+                    <div class="calendar-view" style="padding:0; margin:0; border:none; box-shadow:none;">
+                        <div class="calendar-header">
+                            <h3 id="dashboard-calendar-month-year">...</h3>
+                            <div class="calendar-nav">
+                                <button id="dashboard-prev-month">◀</button>
+                                <button id="dashboard-next-month">▶</button>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="dashboard-calendar-grid">
+                            <!-- Injected by JS -->
+                        </div>
+                        <div id="dashboard-selected-date-events" class="selected-date-events" style="display: none; margin-top: 15px;">
+                            <h4 id="dashboard-selected-date-label">Events</h4>
+                            <ul id="dashboard-selected-date-list" class="date-events-list">
+                                <!-- Injected by JS -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick AI Insight -->
+                <div class="card">
+                    <h3>🧠 Quick AI Insight</h3>
+                    <div id="quick-insight" class="insight-box">
+                        <p class="text-muted">Klik tombol di bawah untuk insight harian</p>
+                    </div>
+                    <button id="get-daily-insight-btn" class="btn btn-ai btn-full">✨ Dapatkan Insight Harian</button>
+                </div>
+            </section>
+
+            <!-- Screen 1: Journal Write -->
+            <section id="journal-screen" class="screen">
+                <!-- On This Day Widget -->
+                <div class="card" id="on-this-day-card"
+                    style="display: none; background: linear-gradient(135deg, var(--surface), var(--surface-hover)); border-left: 4px solid var(--primary);">
+                    <div class="on-this-day-header"
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600; font-size: 0.9rem; color: var(--primary);">
+                            ⏳ Pada Hari Ini <span id="otd-year" style="opacity:0.8;">...</span>
+                        </span>
+                    </div>
+                    <div id="otd-loading" class="loading-spinner" style="margin: 10px 0; width: 20px; height: 20px;">
+                    </div>
+                    <p id="otd-text" class="text-muted"
+                        style="font-size: 0.9rem; margin-bottom: 5px; line-height: 1.4; display: none;"></p>
+                    <a id="otd-link" href="#" target="_blank"
+                        style="font-size: 0.8rem; color: var(--primary); text-decoration: none; display: none;">Baca
+                        selengkapnya &rarr;</a>
+                </div>
+
+                <div class="card journal-card">
+                    <h2>Apa yang ada di pikiranmu?</h2>
+
+                    <!-- Mood Selector -->
+                    <div class="mood-selector">
+                        <label class="mood-label">Bagaimana perasaanmu hari ini?</label>
+                        <div class="mood-options" id="mood-options">
+                            <button type="button" class="mood-btn" data-mood="great" title="Sangat Baik">😄</button>
+                            <button type="button" class="mood-btn" data-mood="good" title="Baik">🙂</button>
+                            <button type="button" class="mood-btn" data-mood="neutral" title="Biasa">😐</button>
+                            <button type="button" class="mood-btn" data-mood="bad" title="Kurang Baik">😔</button>
+                            <button type="button" class="mood-btn" data-mood="terrible" title="Buruk">😢</button>
+                        </div>
+                        <input type="hidden" id="journal-mood" value="">
+                    </div>
+
+                    <!-- Journal Templates -->
+                    <div class="journal-templates-section mt-sm">
+                        <label class="form-label">Gunakan Template:</label>
+                        <div id="journal-templates-container" class="templates-scroll-container">
+                            <!-- Template chips injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Tag Input -->
+                    <div class="tag-input-container">
+                        <div id="journal-tags" class="tag-list"></div>
+                        <input type="text" id="tag-input" class="tag-input" placeholder="+ Tag (Tekan Enter)">
+                    </div>
+
+                    <textarea id="journal-input" class="journal-textarea"
+                        placeholder="Tulis apa saja yang kamu pikirkan atau rasakan hari ini..."></textarea>
+                    <div class="journal-actions">
+                        <button id="mic-btn" class="icon-btn" title="Rekam Suara">🎤</button>
+                        <span id="recording-status" class="text-muted hidden recording-status">Mendengarkan...</span>
+                        <button id="template-btn" class="icon-btn template-btn-space"
+                            title="Template Muhasabah">📋</button>
+                        <span id="char-count" class="char-count">0 karakter</span>
+                        <button id="ask-ai-btn" class="btn btn-primary">
+                            <span class="btn-icon">🤖</span>
+                            Minta Respon AI
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Response Section (hidden by default) -->
+                <div id="ai-response-section" class="ai-response-section hidden">
+                    <div class="card response-card">
+                        <div class="response-header">
+                            <h3>💬 Respon AI</h3>
+                            <button id="close-response" class="icon-btn">✕</button>
+                        </div>
+
+                        <!-- Validation -->
+                        <div class="response-block validation">
+                            <div class="response-label">💝 Validasi</div>
+                            <p id="ai-validation"></p>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="response-block summary">
+                            <div class="response-label">📌 Ringkasan</div>
+                            <ul id="ai-summary"></ul>
+                        </div>
+
+                        <!-- Suggestions -->
+                        <div class="response-block suggestions">
+                            <div class="response-label">💡 Saran</div>
+                            <div id="ai-suggestions"></div>
+                        </div>
+
+                        <!-- Closing Question -->
+                        <div class="response-block closing">
+                            <div class="response-label">❓ Pertanyaan</div>
+                            <p id="ai-closing"></p>
+                        </div>
+
+                        <!-- Save Journal Button -->
+                        <div class="response-actions">
+                            <button id="save-journal-btn" class="btn btn-secondary">
+                                💾 Simpan Jurnal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="ai-loading" class="loading-overlay hidden">
+                    <div class="loading-spinner"></div>
+                    <p>AI sedang berpikir...</p>
+                </div>
+
+                <!-- Journal History -->
+                <div class="card history-card">
+                    <h3>📚 Jurnal Terbaru</h3>
+                    <div class="journal-filter-bar">
+                        <div class="filter-label">Filter:</div>
+                        <div id="active-filters" class="active-filters"></div>
+                        <select id="mood-filter" class="filter-select">
+                            <option value="all">Semua Mood</option>
+                            <option value="great">😄 Sangat Baik</option>
+                            <option value="good">🙂 Baik</option>
+                            <option value="neutral">😐 Biasa</option>
+                            <option value="bad">😔 Kurang Baik</option>
+                            <option value="terrible">😢 Buruk</option>
+                        </select>
+                        <select id="tag-filter" class="filter-select">
+                            <option value="all">Semua Tags</option>
+                        </select>
+                    </div>
+                    <div id="journal-history"></div>
+                </div>
+            </section>
+
+            <!-- Screen 2: To Do List Hari Ini -->
+            <section id="todo-today-screen" class="screen">
+                <!-- Daily To-Do List -->
+                <div class="card">
+                    <h2>✅ To Do List Hari Ini</h2>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-top: -10px; margin-bottom: 15px;">Daftar
+                        tugas ini akan otomatis terhapus setiap ganti hari. Fokus pada hari ini saja!</p>
+
+                    <div class="add-form">
+                        <input type="text" id="new-daily-todo-input" placeholder="Tugas baru hari ini..." class="input">
+                        <div class="form-row">
+                            <select id="daily-todo-priority" class="input">
+                                <option value="p1">🔴 Penting & Mendesak (Lakukan Segera!)</option>
+                                <option value="p2">🟡 Penting Tapi Tidak Mendesak (Jadwalkan)</option>
+                                <option value="p3">🔵 Tidak Penting Tapi Mendesak (Delegasikan)</option>
+                                <option value="p4">⚪ Tidak Penting & Tidak Mendesak (Tinggalkan)</option>
+                            </select>
+                        </div>
+                        <button id="add-daily-todo-btn" class="btn btn-primary">+ Tambah Tugas</button>
+                    </div>
+
+                    <div id="daily-todo-list" class="daily-todo-list"
+                        style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Tasks Injected by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen 2.5: Planner (Jadwal) -->
+            <section id="planner-screen" class="screen">
+                <div class="card mt-md">
+                    <!-- Calendar View -->
+                    <div class="calendar-view">
+                        <div class="calendar-header">
+                            <h3 id="calendar-month-year">Februari 2026</h3>
+                            <div class="calendar-nav">
+                                <button id="prev-month">◀</button>
+                                <button id="next-month">▶</button>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="calendar-grid">
+                            <!-- Injected by JS -->
+                        </div>
+                        <div id="selected-date-events" class="selected-date-events" style="display: none;">
+                            <h4 id="selected-date-label">Events</h4>
+                            <ul id="selected-date-list" class="date-events-list">
+                                <!-- Injected by JS -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <hr style="margin: 20px 0; border: 1px solid var(--border);">
+
+                    <h2>📅 Tambah Jadwal</h2>
+                    <div class="add-form">
+                        <input type="text" id="new-schedule-title" placeholder="Nama kegiatan..." class="input">
+                        <div class="form-row">
+                            <input type="datetime-local" id="new-schedule-datetime" class="input">
+                            <select id="new-schedule-priority" class="input">
+                                <option value="allah">🔴 Allah (Ibadah)</option>
+                                <option value="self">🟢 Diri (Istirahat/Belajar)</option>
+                                <option value="others">🔵 Umat (Kerja/Sosial)</option>
+                            </select>
+                        </div>
+                        <button id="add-schedule-btn" class="btn btn-primary">+ Tambah</button>
+                    </div>
+                    <div id="schedule-list" class="schedule-list"></div>
+                </div>
+
+                <!-- AI Analysis Button -->
+                <button id="analyze-planner-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Produktivitas</button>
+            </section>
+
+            <!-- Screen 5: Kanban -->
+            <section id="kanban-screen" class="screen">
+                <div class="card kanban-container-card">
+                    <div class="kanban-header">
+                        <h2>📋 Kanban Board</h2>
+                        <div class="add-form-inline">
+                            <input type="text" id="new-todo-input" placeholder="Tambah tugas..." class="input">
+                            <button id="add-todo-btn" class="btn btn-primary">+</button>
+                        </div>
+                    </div>
+
+                    <div id="kanban-board" class="kanban-board-grid">
+                        <!-- To Do Column -->
+                        <div class="kanban-column" data-status="todo">
+                            <div class="kanban-column-header header-todo">
+                                <h3>📝 Rencana</h3>
+                            </div>
+                            <div class="kanban-column-list" id="kanban-col-todo">
+                                <!-- Injected by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Doing Column -->
+                        <div class="kanban-column" data-status="doing">
+                            <div class="kanban-column-header header-doing">
+                                <h3>🚧 Proses</h3>
+                            </div>
+                            <div class="kanban-column-list" id="kanban-col-doing">
+                                <!-- Injected by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Done Column -->
+                        <div class="kanban-column" data-status="done">
+                            <div class="kanban-column-header header-done">
+                                <h3>✅ Selesai</h3>
+                            </div>
+                            <div class="kanban-column-list" id="kanban-col-done">
+                                <!-- Injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen 3.5: Goals -->
+            <section id="goals-screen" class="screen">
+                <!-- Goal Stats -->
+                <div class="dashboard-grid goals-grid">
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">🎯</div>
+                        <div class="dashboard-stat" id="stat-goals-active">0</div>
+                        <div class="dashboard-label">Goals Aktif</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">✅</div>
+                        <div class="dashboard-stat" id="stat-goals-completed">0</div>
+                        <div class="dashboard-label">Tercapai</div>
+                    </div>
+                </div>
+
+                <!-- Add New Goal -->
+                <div class="card">
+                    <h2>🎯 Tambah Goal Baru</h2>
+                    <div class="goal-form">
+                        <input type="text" id="goal-title" placeholder="Judul goal (misal: Lari 5km)" class="input">
+                        <div class="form-row">
+                            <select id="goal-type" class="input">
+                                <option value="habit">🔄 Berbasis Habit</option>
+                                <option value="count">🔢 Target Angka</option>
+                                <option value="deadline">📅 Target Deadline</option>
+                            </select>
+                        </div>
+                        <div class="form-row" id="goal-target-row">
+                            <input type="number" id="goal-target" placeholder="Target (misal: 30)" class="input">
+                            <input type="text" id="goal-unit" placeholder="Satuan (misal: hari, km)" class="input">
+                        </div>
+                        <input type="date" id="goal-deadline" class="input">
+                        <textarea id="goal-notes" class="input" placeholder="Catatan (opsional)" rows="2"></textarea>
+                        <button id="add-goal-btn" class="btn btn-primary">+ Tambah Goal</button>
+                    </div>
+                </div>
+
+                <!-- Active Goals -->
+                <div class="card">
+                    <h3>🚀 Goals Aktif</h3>
+                    <div id="active-goals-list" class="goals-list"></div>
+                </div>
+
+                <!-- Completed Goals -->
+                <div class="card">
+                    <h3>🏆 Goals Tercapai</h3>
+                    <div id="completed-goals-list" class="goals-list"></div>
+                </div>
+            </section>
+
+            <!-- Screen 4: Finance -->
+            <section id="finance-screen" class="screen">
+                <!-- Wallet Summary -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>💳 Dompet Saya</h3>
+                        <button id="manage-wallets-btn" class="btn btn-small btn-secondary">⚙️ Kelola</button>
+                    </div>
+                    <div id="wallet-list-summary" class="wallet-list-summary">
+                        <!-- Wallets injected here -->
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-row">
+                    <div class="summary-card income">
+                        <span class="summary-label">Pemasukan</span>
+                        <span id="total-income" class="summary-value">Rp 0</span>
+                    </div>
+                    <div class="summary-card expense">
+                        <span class="summary-label">Pengeluaran</span>
+                        <span id="total-expense" class="summary-value">Rp 0</span>
+                    </div>
+                    <div class="summary-card balance">
+                        <span class="summary-label">Saldo Total</span>
+                        <span id="total-balance" class="summary-value">Rp 0</span>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="card">
+                    <h3>📊 Grafik Bulanan</h3>
+                    <div class="chart-container">
+                        <canvas id="finance-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Global Budget Card -->
+                <div id="global-budget-card" class="card hidden">
+                    <div class="card-header">
+                        <h3>📉 Budget Harian Global</h3>
+                        <span id="global-budget-text" class="summary-value budget-font-sm">Rp 0 / Rp 0</span>
+                    </div>
+                    <div class="budget-progress-container budget-progress-mt">
+                        <div id="global-budget-progress" class="budget-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Budget Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📉 Budgeting</h3>
+                        <button id="manage-budget-btn" class="btn btn-small btn-secondary">⚙️ Atur</button>
+                    </div>
+                    <div id="budget-list-summary" class="budget-list">
+                        <!-- Budgets injected here -->
+                    </div>
+                </div>
+
+                <!-- Add Transaction -->
+                <div class="card">
+                    <h2>💰 Tambah Transaksi</h2>
+                    <div class="transaction-form">
+                        <div class="form-row">
+                            <select id="transaction-type" class="input">
+                                <option value="income">💵 Pemasukan</option>
+                                <option value="expense">💸 Pengeluaran</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Wallet</label>
+                            <select id="transaction-wallet" class="input">
+                                <!-- Options injected by JS -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="is-recurring-transaction">
+                                <span>🔄 Transaksi Rutin Bulanan?</span>
+                            </label>
+                        </div>
+                        <div id="recurring-date-group" class="form-group hidden">
+                            <label>Tanggal Rutin (Setiap Bulan)</label>
+                            <input type="number" id="recurring-date" class="input" min="1" max="31"
+                                placeholder="Tanggal 1-31">
+                        </div>
+                        <div class="form-row">
+                            <input type="number" id="transaction-amount" placeholder="Jumlah" class="input">
+                            <input type="date" id="transaction-date" class="input">
+                        </div>
+                        <input type="text" id="transaction-category" placeholder="Kategori (misal: Gaji, Makan)"
+                            class="input">
+
+                        <input type="text" id="transaction-desc" placeholder="Deskripsi (opsional)" class="input">
+                        <button id="add-transaction-btn" class="btn btn-primary">+ Tambah Transaksi</button>
+                    </div>
+                </div>
+
+                <!-- Transaction List -->
+                <div class="card">
+                    <h3>📜 Riwayat Transaksi</h3>
+                    <div id="transaction-list" class="transaction-list"></div>
+                </div>
+
+                <!-- AI Analysis Button -->
+                <button id="analyze-finance-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Keuangan</button>
+            </section>
+
+            <!-- Screen 4: Habits -->
+            <section id="habits-screen" class="screen">
+                <!-- Habit Progress Chart -->
+                <div class="card">
+                    <h3>📈 Progress Mingguan</h3>
+                    <div class="chart-container">
+                        <canvas id="habits-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Add Habit -->
+                <div class="card">
+                    <h2>✅ Tambah Habit</h2>
+                    <div class="add-form">
+                        <input type="text" id="new-habit-input" placeholder="Nama habit baru..." class="input">
+                        <select id="habit-frequency" class="input">
+                            <option value="daily">📅 Harian</option>
+                            <option value="weekly">📆 Mingguan</option>
+                            <option value="custom">🔄 Custom</option>
+                        </select>
+                        <div id="habit-freq-days" class="habit-freq-days hidden">
+                            <label><input type="checkbox" value="1"> Sen</label>
+                            <label><input type="checkbox" value="2"> Sel</label>
+                            <label><input type="checkbox" value="3"> Rab</label>
+                            <label><input type="checkbox" value="4"> Kam</label>
+                            <label><input type="checkbox" value="5"> Jum</label>
+                            <label><input type="checkbox" value="6"> Sab</label>
+                            <label><input type="checkbox" value="0"> Min</label>
+                        </div>
+                        <div id="habit-freq-interval" class="hidden">
+                            <label class="settings-hint">Setiap berapa hari?</label>
+                            <input type="number" id="habit-interval-days" class="input" placeholder="3" min="2" max="30"
+                                value="3">
+                        </div>
+                        <button id="add-habit-btn" class="btn btn-primary">+ Tambah</button>
+                    </div>
+                </div>
+
+                <!-- Today's Habits -->
+                <div class="card">
+                    <h3>📅 Hari Ini (<span id="today-date"></span>)</h3>
+                    <div id="habits-today" class="habits-list"></div>
+                </div>
+
+                <!-- All Habits -->
+                <div class="card">
+                    <h3>🎯 Semua Habit</h3>
+                    <div id="habits-list" class="habits-list"></div>
+                </div>
+
+                <!-- AI Analysis Button -->
+                <button id="analyze-habits-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Kebiasaan</button>
+            </section>
+
+            <!-- Screen 6: Islam Tracker -->
+            <section id="islam-screen" class="screen">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🕌 Ibadah Hari Ini</h3>
+                        <span id="islam-date-display" class="text-muted"></span>
+                    </div>
+
+                    <!-- Islamic Progress Chart & Motivation (Added) -->
+                    <div class="mt-sm" style="margin-bottom: 20px;">
+
+                        <!-- Calendar Controls -->
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 10px;">
+                            <button id="islam-prev-month" class="btn"
+                                style="padding: 4px 12px; min-width: auto; background: var(--bg-secondary); border: 1px solid var(--border);">&larr;</button>
+                            <h4 id="islam-current-month-label"
+                                style="margin: 0; font-size: 1.1rem; color: var(--text-primary); font-weight: 600;">
+                                Bulan</h4>
+                            <button id="islam-next-month" class="btn"
+                                style="padding: 4px 12px; min-width: auto; background: var(--bg-secondary); border: 1px solid var(--border);">&rarr;</button>
+                        </div>
+
+                        <div class="yearly-grid-container" style="padding: 10px;">
+                            <div class="yearly-grid" id="islam-yearly-grid">
+                                <!-- Grid will be injected here by JS -->
+                            </div>
+                            <div
+                                style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 15px; font-size: 0.8em; color: var(--text-muted);">
+                                <span>Kurang</span>
+                                <div class="grid-cell level-0" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <div class="grid-cell level-1" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <div class="grid-cell level-2" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <div class="grid-cell level-3" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <div class="grid-cell level-4" style="width: 12px; height: 12px; border-radius: 2px;">
+                                </div>
+                                <span>Sempurna</span>
+                            </div>
+                        </div>
+                        <div class="islam-motivation-box mt-sm"
+                            style="background: rgba(var(--primary-rgb), 0.1); border-left: 4px solid var(--primary); padding: 12px; border-radius: 4px;">
+                            <p id="islam-motivation-text"
+                                style="font-size: 0.95em; color: var(--text-color); margin: 0; line-height: 1.4;">
+                                <em>"Maka nikmat Tuhanmu yang manakah yang kamu dustakan?" - Memuat inspirasi...</em>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Wajib: Sholat 5 Waktu -->
+                    <div class="mt-sm">
+                        <label class="form-label" style="font-weight: 600;">Sholat Wajib</label>
+                        <div class="prayer-checkbox-row"
+                            style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-subuh" class="islam-checkbox"> <span>Subuh</span></label>
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-dzuhur" class="islam-checkbox">
+                                <span>Dzuhur</span></label>
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-ashar" class="islam-checkbox"> <span>Ashar</span></label>
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-maghrib" class="islam-checkbox">
+                                <span>Maghrib</span></label>
+                            <label class="btn btn-secondary btn-small"
+                                style="display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 20px;"><input
+                                    type="checkbox" id="prayer-isya" class="islam-checkbox"> <span>Isya</span></label>
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider" style="margin: 16px 0;">
+
+                    <!-- Sunnah Pagi -->
+                    <div>
+                        <label class="form-label" style="font-weight: 600;">Rutinitas Subuh & Istimewa</label>
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-qobliyah" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Sholat Sunnah Qobliyah Subuh</span>
+                            </label>
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-sedekah" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Sedekah Subuh</span>
+                            </label>
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-waqiah" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Membaca / Mendengar Surah Al-Waqi'ah</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider" style="margin: 16px 0;">
+
+                    <!-- Qur'an & Puasa -->
+                    <div>
+                        <label class="form-label" style="font-weight: 600;">Amalan Lainnya</label>
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-fasting" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Puasa (Sunnah / Wajib) Hari Ini</span>
+                            </label>
+                        </div>
+                        <div class="form-group mt-sm">
+                            <label class="form-label" style="font-size: 0.9em;">Bacaan Al-Quran Biasa
+                                (Target/Capaian)</label>
+                            <input type="text" id="islam-quran-text" class="input" placeholder="Misal: Al-Baqarah 1-10">
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider" style="margin: 16px 0;">
+
+                    <!-- Dhikr Counter -->
+                    <div class="mt-md" style="text-align: center;">
+                        <label class="form-label" style="font-weight: 600;">Tasbih Digital</label>
+                        <div style="display: flex; flex-direction: column; align-items: center; margin-top: 10px;">
+                            <div
+                                style="font-size: 4rem; font-weight: bold; color: var(--primary); background: var(--bg-color); border-radius: 20px; width: 150px; height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0px 4px 6px rgba(0,0,0,0.1);">
+                                <span id="dhikr-count">0</span>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                <button id="dhikr-reset-btn" class="btn btn-secondary"
+                                    style="border-radius: 50%; width: 50px; height: 50px; padding: 0;"
+                                    title="Reset">🔄</button>
+                                <button id="dhikr-add-btn" class="btn btn-primary"
+                                    style="border-radius: 50%; width: 100px; height: 100px; font-size: 2rem;">+1</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Analysis Button -->
+                <button id="analyze-islam-btn" class="btn btn-ai btn-full mt-md">🧠 Analisis AI - Ibadah</button>
+                <div id="islam-ai-result" class="hidden mt-md"
+                    style="background: var(--surface-hover); border-radius: 10px; padding: 15px; border-left: 4px solid var(--primary);">
+                </div>
+            </section>
+
+        </main>
+
+        <!-- AI Analysis Modal -->
+        <div id="analysis-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3 id="analysis-title">🧠 Analisis AI</h3>
+                    <button id="close-analysis" class="icon-btn">✕</button>
+                </div>
+                <div id="analysis-loading" class="loading-section hidden">
+                    <div class="loading-spinner"></div>
+                    <p>AI sedang menganalisis...</p>
+                </div>
+                <div id="analysis-content" class="analysis-content"></div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3>⚙️ Pengaturan</h3>
+                    <button id="close-settings" class="icon-btn">✕</button>
+                </div>
+
+                <!-- City Setting -->
+                <div class="form-group">
+                    <label>📍 Lokasi / Kota</label>
+                    <small class="settings-hint">Untuk jadwal salat yang akurat.</small>
+                    <div class="flex-row">
+                        <input type="text" id="city-input" placeholder="Contoh: Jakarta, Bandung..."
+                            class="input flex-1">
+                        <button id="save-city-btn" class="btn btn-secondary">💾</button>
+                    </div>
+                </div>
+
+                <hr class="settings-divider">
+
+                <!-- API Key Section -->
+                <div class="form-group">
+                    <label for="api-key-input">🔑 Gemini API Key</label>
+                    <input type="password" id="api-key-input" class="input" placeholder="Masukkan API key...">
+                    <small>Dapatkan gratis di <a href="https://aistudio.google.com/" target="_blank">Google AI
+                            Studio</a></small>
+                    <div class="api-key-warning">
+                        <span class="warn-icon">⚠️</span>
+                        <span>API key disimpan di browser (localStorage). Jangan gunakan di perangkat publik. Untuk
+                            keamanan maksimal, gunakan server proxy.</span>
+                    </div>
+                </div>
+                <button id="save-settings-btn" class="btn btn-primary">💾 Simpan API Key</button>
+
+                <!-- App Lock Section -->
+                <div class="form-group">
+                    <label>🛡️ App Lock (PIN)</label>
+                    <small class="settings-hint">Kunci aplikasi saat dibuka.</small>
+                    <div class="reminder-settings">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="pin-lock-toggle">
+                            <span>Aktifkan PIN Lock</span>
+                        </label>
+                    </div>
+                    <div id="pin-setup-section" class="hidden pin-setup-mt">
+                        <button id="change-pin-btn" class="btn btn-secondary btn-full">Ubah PIN</button>
+                    </div>
+                </div>
+
+                <hr class="settings-divider">
+
+
+
+                <!-- Color Theme Section -->
+                <div class="form-group">
+                    <label>🎨 Tema Warna</label>
+                    <small class="settings-hint">Pilih warna aksen aplikasi favoritmu.</small>
+                    <div class="color-picker">
+                        <button class="color-option" data-color="gold" style="background: #f59e0b;"
+                            title="Emas (Default)"></button>
+                        <button class="color-option" data-color="blue" style="background: #3b82f6;"
+                            title="Biru Langit"></button>
+                        <button class="color-option" data-color="green" style="background: #10b981;"
+                            title="Hijau Segar"></button>
+                        <button class="color-option" data-color="purple" style="background: #8b5cf6;"
+                            title="Ungu Misterius"></button>
+                        <button class="color-option" data-color="rose" style="background: #f43f5e;"
+                            title="Merah Rose"></button>
+                    </div>
+                </div>
+                <hr class="settings-divider">
+
+                <!-- Security Section -->
+                <div class="form-group">
+                    <label>🔒 Enkripsi Data</label>
+                    <small class="settings-hint">Enkripsi semua data dengan password. Data
+                        tidak bisa dibaca tanpa password.</small>
+                    <input type="password" id="encryption-password" class="input" placeholder="Password enkripsi...">
+                    <div class="flex-row-sm mt-sm">
+                        <button id="encrypt-data-btn" class="btn btn-secondary flex-1">🔐 Enkripsi</button>
+                        <button id="decrypt-data-btn" class="btn btn-secondary flex-1">🔓 Dekripsi</button>
+                    </div>
+                    <div id="encryption-status" class="encryption-status"></div>
+                </div>
+
+                <!-- Global Finance Settings -->
+                <div class="form-group">
+                    <label>💰 Pengaturan Keuangan</label>
+                    <small class="settings-hint">Atur batas pengeluaran harian global.</small>
+                    <div class="flex-row">
+                        <input type="number" id="global-daily-budget-input" placeholder="Batas Harian (Rp)"
+                            class="input flex-1">
+                        <button id="save-global-budget-btn" class="btn btn-secondary">💾</button>
+                    </div>
+                </div>
+
+                <hr class="settings-divider">
+
+                <hr class="settings-divider">
+
+                <!-- Export Data (CSV) Section -->
+                <div class="form-group">
+                    <label>📊 Export Data (Excel/CSV)</label>
+                    <small class="settings-hint">Download data dalam format CSV untuk dibuka di
+                        Excel.</small>
+                    <div class="flex-row-wrap">
+                        <button id="export-finance-csv-btn" class="btn btn-secondary flex-btn">💰 Keuangan</button>
+                        <button id="export-journal-csv-btn" class="btn btn-secondary flex-btn">📝 Jurnal</button>
+                        <button id="export-habits-csv-btn" class="btn btn-secondary flex-btn">🎯 Habits</button>
+                    </div>
+                </div>
+
+                <!-- Backup Section -->
+                <div class="form-group">
+                    <label>💾 Backup & Restore</label>
+                    <small class="settings-hint">Export data ke file JSON atau import dari
+                        backup.</small>
+                    <div class="flex-row-sm">
+                        <button id="export-data-btn" class="btn btn-secondary flex-1">📤 Export Data</button>
+                        <button id="import-data-btn" class="btn btn-secondary flex-1">📥 Import Data</button>
+                    </div>
+                    <input type="file" id="import-file-input" accept=".json" class="file-input-hidden">
+                </div>
+                <hr class="settings-divider">
+
+                <!-- Reminder Settings -->
+                <div class="form-group">
+                    <label>🔔 Pengaturan Reminder</label>
+                    <small class="settings-hint">Aktifkan notifikasi untuk habits dan
+                        jadwal.</small>
+                    <div class="reminder-settings">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="reminder-habits-toggle">
+                            <span>Reminder Habits Harian</span>
+                        </label>
+                        <div id="habits-time-setting" class="sub-setting hidden">
+                            <label>Jam reminder:</label>
+                            <input type="time" id="habits-reminder-time" class="input" value="08:00">
+                        </div>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="reminder-schedule-toggle">
+                            <span>Reminder Jadwal (15 menit sebelum)</span>
+                        </label>
+                    </div>
+                    <button id="save-reminder-btn" class="btn btn-secondary btn-full mt-sm">💾
+                        Simpan Reminder Settings</button>
+                </div>
+
+                <hr class="settings-divider">
+
+                <!-- Danger Zone -->
+                <div class="form-group">
+                    <label class="danger-label">⚠️ Zona Bahaya</label>
+                    <button id="clear-all-data-btn" class="btn btn-danger">🗑️
+                        Hapus Semua Data</button>
+                    <button id="delete-account-btn" class="btn btn-danger-strong">❌
+                        Hapus Akun Cloud</button>
+                    <small class="danger-hint">Hapus Akun akan menghapus akun
+                        Supabase dan semua data cloud Anda.</small>
+                </div>
+            </div>
+        </div>
+        <!-- Wallet Management Modal -->
+        <div id="wallet-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3>💳 Kelola Dompet</h3>
+                    <button id="close-wallet-modal" class="icon-btn">✕</button>
+                </div>
+
+                <div class="add-form">
+                    <input type="text" id="new-wallet-name" placeholder="Nama Dompet (misal: Bank Jago)" class="input">
+                    <input type="number" id="new-wallet-balance" placeholder="Saldo Awal" class="input" value="0">
+                    <button id="add-wallet-btn" class="btn btn-primary">+ Tambah</button>
+                </div>
+
+                <div id="wallet-management-list" class="wallet-list">
+                    <!-- List of wallets with delete buttons -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Management Modal -->
+        <div id="budget-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3>📉 Atur Budget Bulanan</h3>
+                    <button id="close-budget-modal" class="icon-btn">✕</button>
+                </div>
+
+                <div class="add-form">
+                    <select id="new-budget-category" class="input">
+                        <!-- Categories injected here -->
+                    </select>
+                    <input type="number" id="new-budget-limit" placeholder="Batas Budget Bulanan (Rp)" class="input">
+                    <button id="add-budget-btn" class="btn btn-primary mt-sm">+ Set
+                        Budget</button>
+                </div>
+
+                <div id="budget-management-list" class="budget-list mt-md">
+                    <!-- List of budgets with delete buttons -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div id="edit-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3 id="edit-modal-title">Edit Item</h3>
+                    <button id="close-edit-modal" class="icon-btn">✕</button>
+                </div>
+                <div id="edit-form-container" class="edit-form-container">
+                    <!-- Form injected by JS -->
+                </div>
+                <div class="modal-actions mt-md">
+                    <button id="save-edit-btn" class="btn btn-primary btn-full">💾 Simpan Perubahan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Year in Pixels Modal -->
+        <div id="year-in-pixels-modal" class="year-pixels-modal hidden">
+            <div class="year-pixels-content">
+                <div class="year-pixels-header">
+                    <div class="btn-group">
+                        <button id="prev-year-btn" class="icon-btn">◀</button>
+                        <h2 id="year-pixels-title">2026</h2>
+                        <button id="next-year-btn" class="icon-btn">▶</button>
+                    </div>
+                    <button id="close-year-pixels" class="icon-btn">✕</button>
+                </div>
+
+                <div id="year-pixels-matrix" class="year-pixels-grid">
+                    <!-- Injected by JS -->
+                </div>
+
+                <div class="year-pixels-legend">
+                    <div class="legend-item">
+                        <div class="legend-color mood-amazing"></div> Amazing
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color mood-good"></div> Good
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color mood-neutral"></div> Neutral
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color mood-bad"></div> Bad
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color mood-awful"></div> Awful
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Lock Screen Overlay -->
+        <div id="app-lock-screen" class="lock-screen hidden">
+            <div class="lock-content">
+                <div class="lock-icon">🔒</div>
+                <h2 id="lock-title">Masukkan PIN</h2>
+                <div class="pin-display">
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                </div>
+                <div class="pin-keypad">
+                    <button class="pin-btn" data-value="1">1</button>
+                    <button class="pin-btn" data-value="2">2</button>
+                    <button class="pin-btn" data-value="3">3</button>
+                    <button class="pin-btn" data-value="4">4</button>
+                    <button class="pin-btn" data-value="5">5</button>
+                    <button class="pin-btn" data-value="6">6</button>
+                    <button class="pin-btn" data-value="7">7</button>
+                    <button class="pin-btn" data-value="8">8</button>
+                    <button class="pin-btn" data-value="9">9</button>
+                    <button class="pin-btn btn-clear" data-value="clear">C</button>
+                    <button class="pin-btn" data-value="0">0</button>
+                    <button class="pin-btn btn-back" data-value="back">⌫</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen 7: English HSE -->
+        <section id="english-hse-screen" class="screen">
+            <div class="card">
+                <h2>🇬🇧 English for Migas & HSE</h2>
+                <p class="text-muted">Tingkatkan kefasihan Bahasa Inggris dan kosakata safety Anda.</p>
+            </div>
+
+            <!-- AI HSE Regulation Expert (Chatbot) -->
+            <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
+                <h3>🤖 AI HSE Regulation Expert</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Asisten pinter untuk menanyakan standar K3 (PTK 005,
+                    OSHA, API, dll). Anda bisa mengetik atau ngomong langsung.</p>
+
+                <div id="hse-chat-history"
+                    style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 15px; height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Initial AI Greeting -->
+                    <div
+                        style="align-self: flex-start; background: var(--surface-hover); color: var(--text-color); padding: 10px 14px; border-radius: 12px; border-bottom-left-radius: 2px; max-width: 85%; line-height: 1.5; font-size: 0.9rem;">
+                        <strong>🤖 System:</strong><br>
+                        Halo! Saya adalah Penasihat Regulasi K3 tersertifikasi internasional (OSHA/NEBOSH) yang memahami
+                        standar Pertamina Hulu Energi (PHE) & SKK Migas. Ada standar operasi, jarak aman, atau
+                        <em>permit</em> yang ingin Anda tanyakan hari ini?
+                    </div>
+                </div>
+
+                <div class="form-group mt-sm" style="position: relative; margin-top: 15px;">
+                    <textarea id="hse-chat-input" class="form-control"
+                        placeholder="Ketik pertanyaan atau tekan mic... (Contoh: Apa standar confined space?)"
+                        style="width: 100%; height: 60px; padding: 10px; padding-right: 45px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: none;"></textarea>
+
+                    <button id="hse-chat-mic-btn"
+                        style="position: absolute; right: 8px; top: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        🎙️
+                    </button>
+
+                    <div id="hse-chat-recording-indicator" class="hidden"
+                        style="position: absolute; right: 10px; bottom: -20px; color: #38b2ac; font-size: 0.8rem; display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                        <div class="recording-dot" style="background-color: #38b2ac;"></div> Mendengarkan...
+                    </div>
+                </div>
+
+                <button id="send-hse-chat-btn" class="btn btn-primary btn-full mt-sm"
+                    style="background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); border: none;">Kirim
+                    Pertanyaan 💬</button>
+            </div>
+
+            <!-- Daily Listening Case -->
+            <div class="card mt-md" style="border-left: 4px solid var(--primary);">
+                <h3>🎧 Daily Listening Case</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Dengarkan cerita insiden K3 pendek dan jawab
+                    pertanyaannya. Latih pendengaran Anda!</p>
+                <button id="generate-listening-btn" class="btn btn-ai btn-full mt-sm">🔄 Generate New Case</button>
+
+                <div id="listening-case-area" class="mt-md hidden"
+                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
+                    <button id="play-listening-btn" class="btn btn-secondary"
+                        style="display: block; width: 100%; font-size: 1.1rem; margin-bottom: 15px;">🔊 PLAY
+                        AUDIO</button>
+
+                    <button id="show-transcript-btn" class="btn btn-small"
+                        style="background: transparent; color: var(--text-muted); text-decoration: underline; border: none; cursor: pointer; display: block; margin: 0 auto 15px;">Tampilkan
+                        Teks (Transcript)</button>
+                    <div id="listening-transcript" class="hidden"
+                        style="font-style: italic; color: var(--text-color); margin-bottom: 20px; padding: 10px; background: var(--bg-color); border-radius: 4px; border-left: 3px solid var(--secondary); font-size: 0.9rem;">
+                        <!-- Transcript injected here -->
+                    </div>
+
+                    <div id="listening-questions-area">
+                        <!-- Questions injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily TBT & P5M Briefing Generator -->
+            <div class="card mt-md" style="border-left: 4px solid #ed8936;">
+                <h3>📢 Daily TBT & P5M Briefing Generator</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Ketik ringkasan operasi hari ini, dan AI akan meracik
+                    naskah Briefing K3 (Toolbox Talk) yang terstruktur, lengkap dengan bahaya kritikal dan zona
+                    merahnya.</p>
+
+                <div class="form-group mt-sm">
+                    <label style="font-size: 0.9rem; font-weight: 500;">Target Operasi Hari Ini</label>
+                    <textarea id="tbt-operation-desc" class="form-control"
+                        placeholder="Contoh: Tripping in Drill Pipe 5 inch dan maintenance pompa lumpur #2."
+                        style="width: 100%; height: 80px; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
+                </div>
+
+                <button id="generate-tbt-btn" class="btn btn-primary btn-full mt-sm"
+                    style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border: none;">Generate
+                    Toolbox Talk ⚡</button>
+
+                <div id="tbt-result-area" class="mt-md hidden">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="copy-tbt-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
+                        <button id="translate-tbt-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                    </div>
+                    <div id="tbt-content"
+                        style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.6; overflow-x: auto;">
+                        <!-- TBT Content Injected Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI JSA & PTW Generator -->
+            <div class="card mt-md" style="border-left: 4px solid var(--secondary);">
+                <h3>📑 AI JSA & PTW Generator</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Deskripsikan pekerjaan Anda, dan AI akan membuat draf
+                    Job Safety Analysis / Permit to Work standar internasional dalam bahasa Inggris.</p>
+
+                <div class="form-group mt-sm">
+                    <label style="font-size: 0.9rem; font-weight: 500;">Tipe Dokumen</label>
+                    <select id="jsa-doc-type" class="form-control"
+                        style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color);">
+                        <option value="JSA">Job Safety Analysis (JSA) - Tabel Spesifik</option>
+                        <option value="RA">Risk Assessment (RA) - General Form PHE (5 Lembar)</option>
+                    </select>
+                </div>
+
+                <div class="form-group mt-sm">
+                    <label style="font-size: 0.9rem; font-weight: 500;">Deskripsi Pekerjaan Singkat</label>
+                    <textarea id="jsa-job-desc" class="form-control"
+                        placeholder="Contoh: Pengelasan pipa di area terbatas (confined space), durasi 4 jam."
+                        style="width: 100%; height: 80px; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
+                </div>
+
+                <button id="generate-jsa-btn" class="btn btn-primary btn-full mt-sm">Mulai Generate Dokumen ⚡</button>
+
+                <div id="jsa-result-area" class="mt-md hidden">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="copy-jsa-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
+                        <button id="translate-jsa-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                    </div>
+                    <div id="jsa-content"
+                        style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
+                        <!-- AI Table Content Injected Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Incident Investigator (RCA) -->
+            <div class="card mt-md" style="border-left: 4px solid #f56565;">
+                <h3>🚨 AI Incident Investigator (RCA)</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Ceritakan kronologi insiden (bisa via suara), dan AI
+                    akan menyusun Laporan Investigasi lengkap dengan analisis "5-Whys".</p>
+
+                <div class="form-group mt-sm" style="position: relative;">
+                    <label style="font-size: 0.9rem; font-weight: 500;">Kronologi Insiden Singkat</label>
+                    <textarea id="rca-incident-desc" class="form-control"
+                        placeholder="Tekan mic dan ceritakan: 'Pekerja jatuh jam 2 siang karena ceceran oli...'"
+                        style="width: 100%; height: 100px; padding: 10px; padding-right: 40px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
+
+                    <button id="rca-mic-btn"
+                        style="position: absolute; right: 10px; top: 40px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        🎙️
+                    </button>
+                </div>
+
+                <div id="rca-recording-indicator" class="hidden"
+                    style="color: #e53e3e; font-size: 0.85rem; margin-top: 5px; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                    <div class="recording-dot"></div> Merekam suara...
+                </div>
+
+                <button id="generate-rca-btn" class="btn btn-primary btn-full mt-sm"
+                    style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); border: none;">Analyze
+                    Incident (5-Whys) 🔍</button>
+
+                <div id="rca-result-area" class="mt-md hidden">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="copy-rca-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
+                        <button id="translate-rca-btn" class="btn btn-secondary"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                    </div>
+                    <div id="rca-content"
+                        style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
+                        <!-- RCA Content Injected Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Vocab -->
+            <div class="card mt-md" style="border-left: 4px solid var(--primary);">
+                <h3>📚 Daily HSE Vocabulary</h3>
+                <div id="hse-vocab-content">
+                    <p class="text-muted">Loading vocabulary...</p>
+                </div>
+                <div class="flex-row mt-sm">
+                    <button id="generate-vocab-btn" class="btn btn-secondary flex-1">🔄 Kosakata Lain</button>
+                    <button id="save-vocab-btn" class="btn btn-primary flex-1 hidden">💾 Simpan ke Flashcard</button>
+                </div>
+            </div>
+
+            <!-- Vocab Bank (Flashcards) -->
+            <div class="card mt-md">
+                <div class="card-header">
+                    <h3>🗃️ Vocab Bank (Flashcards)</h3>
+                    <span id="vocab-bank-count" class="badge-ai">0 Kata</span>
+                </div>
+                <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 12px;">Koleksi kosakata yang Anda simpan
+                    untuk dipelajari kembali.</p>
+                <div id="vocab-bank-list"
+                    style="display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+                    <!-- Flashcard items injected by JS -->
+                </div>
+                <!-- Mini Quiz Button -->
+                <button id="start-vocab-quiz-btn" class="btn btn-secondary mt-md hidden" style="width: 100%;">🧠 Mulai
+                    Review Kuis</button>
+            </div>
+
+            <!-- Quiz Modal Area -->
+            <div id="vocab-quiz-area" class="mt-md hidden"
+                style="background: var(--surface-hover); padding: 15px; border-radius: 8px; border: 1px solid var(--primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="margin: 0; color: var(--primary);">Quick Review</h4>
+                    <span id="quiz-progress" style="font-size: 0.85rem; color: var(--text-muted);">1/5</span>
+                </div>
+                <div id="quiz-question"
+                    style="font-size: 1.1rem; text-align: center; margin-bottom: 20px; font-weight: 500;">Apa bahasa
+                    Inggris dari 'Sabuk Pengaman'?</div>
+                <div id="quiz-options" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Options injected by JS -->
+                </div>
+                <button id="close-quiz-btn" class="btn btn-danger mt-md" style="width: 100%;">Tutup Kuis</button>
+            </div>
+
+            <!-- Roleplay -->
+            <div class="card mt-md">
+                <h3>🗣️ AI Roleplay Practice</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Berlatih percakapan dengan peran Supervisor/Rekan
+                    Kerja.</p>
+                <div class="form-row mt-sm">
+                    <select id="roleplay-scenario" class="input">
+                        <option value="toolbox_talk">Toolbox Talk Briefing</option>
+                        <option value="incident_report">Reporting an Incident</option>
+                        <option value="ptw">Permit to Work (PTW) Request</option>
+                        <option value="stop_work">Stop Work Authority Intervention</option>
+                    </select>
+                </div>
+                <button id="start-roleplay-btn" class="btn btn-primary mt-sm">▶️ Mulai Skenario</button>
+                <button id="stop-roleplay-btn" class="btn btn-danger mt-sm hidden">🛑 Hentikan</button>
+
+                <div id="roleplay-chat-area" class="mt-md hidden"
+                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
+                    <div id="roleplay-chat-history"
+                        style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Chat bubbles -->
+                    </div>
+                    <div class="flex-row">
+                        <input type="text" id="roleplay-input" class="input flex-1" placeholder="Type your message...">
+                        <button id="roleplay-mic-btn" class="btn btn-secondary"
+                            title="Gunakan Suara (Speech-to-Text)">🎙️</button>
+                        <button id="roleplay-send-btn" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Assistant -->
+            <div class="card mt-md">
+                <h3>📝 HSE Report Assistant</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Masukkan draft laporan (boleh campur Bahasa Indonesia)
+                    untuk diubah ke format HSE baku berbahasa Inggris.</p>
+                <textarea id="hse-report-input" class="input mt-sm" rows="4"
+                    placeholder="Contoh: Ada pekerja yang jatuh karena tidak pakai safety harness di scaffolding..."></textarea>
+                <button id="translate-report-btn" class="btn btn-ai btn-full mt-sm">🧠 Minta AI Perbaiki
+                    Laporan</button>
+
+                <div id="hse-report-result" class="mt-sm hidden"
+                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap;">
+                </div>
+            </div>
+        </section>
+        <!-- Screen: English Fluency Coach (Beginner) -->
+        <section id="english-fluency-screen" class="screen">
+            <div class="card" style="background: linear-gradient(135deg, var(--primary), #fbbf24); color: white; border: none;">
+                <h2 style="color: white; margin-bottom: 5px;">🌟 English Fluency Coach</h2>
+                <p style="opacity: 0.9; font-size: 0.9rem;">Latihan santai untuk membantu Anda fasih berbicara Bahasa Inggris dari nol.</p>
+            </div>
+
+            <!-- Level Selector -->
+            <div class="card mt-md" id="fluency-level-card" style="border: 1px solid rgba(251, 191, 36, 0.2);">
+                <div class="flex-row" style="justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">📊 Learning Path</h3>
+                    <span class="badge-ai" style="background: var(--primary); color: var(--bg-primary); font-weight: bold;">Unlocked ⭐</span>
+                </div>
+                <p class="text-muted mb-sm" style="font-size: 0.85rem;">Pilih level yang sesuai dengan target kefasihan Anda.</p>
+                <div class="level-tabs" style="display: flex; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 5px; gap: 5px;">
+                    <button class="level-tab flex-1 active" id="level-intermediate" style="border: none; padding: 10px; border-radius: 8px; cursor: pointer; background: var(--primary); color: var(--bg-primary); font-weight: bold; transition: all 0.3s; box-shadow: 0 4px 10px var(--primary-glow);">🚀 Intermediate</button>
+                    <button class="level-tab flex-1" id="level-pro" style="border: none; padding: 10px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.3s;">💎 Pro / Expert</button>
+                </div>
+                <p id="level-desc" class="text-center mt-sm" style="font-size: 0.8rem; color: var(--primary); font-weight: 500;">
+                    Fokus: Idioms, Phrasal Verbs, & Natural Phrasing.
+                </p>
+            </div>
+
+            <!-- Step 1: Daily Essential -->
+            <div class="card mt-md" style="border-left: 4px solid #10b981;">
+                <div class="brain-header-row">
+                    <h3>🌱 Step 1: Daily Essential</h3>
+                    <span class="badge-ai" style="background: #10b981;">Idiom & Phrasal Verb</span>
+                </div>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 12px;">Ungkapan sehari-hari yang membuat Anda terdengar seperti native speaker.</p>
+                <div id="fluency-daily-content"
+                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px; border: 1px dashed var(--border);">
+                    <p class="text-center text-muted">Klik tombol di bawah untuk materi hari ini.</p>
+                </div>
+                <button class="btn btn-primary btn-full mt-sm" id="gen-fluency-btn">Dapatkan Materi Hari Ini ✨</button>
+            </div>
+
+            <!-- Step 2: Natural Sentence Builder -->
+            <div class="card mt-md" style="border-left: 4px solid #3b82f6;">
+                <h3>🧱 Step 2: Natural Sentence Builder</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 12px;">Tulis kalimat Indonesia, AI akan memberikan padanan yang paling **Natural** (Bukan harfiah).</p>
+                <div class="form-group">
+                    <textarea id="fluency-builder-input" class="input" placeholder="Contoh: Saya ingin belajar bahasa Inggris..." rows="2"></textarea>
+                </div>
+                <button class="btn btn-secondary btn-full mt-sm" id="build-sentence-btn">Ubah ke English & Pelajari 🧱</button>
+                <div id="fluency-builder-result" class="mt-sm hidden" 
+                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                </div>
+            </div>
+
+            <!-- Step 3: Listen & Repeat -->
+            <div class="card mt-md" style="border-left: 4px solid #f59e0b;">
+                <h3>🗣️ Step 3: Listen & Repeat</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 12px;">Dengarkan dan ikuti cara pengucapannya untuk melatih otot bicara Anda.</p>
+                <div id="fluency-mission-box" 
+                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px; border: 1px dashed var(--border);">
+                    <p class="text-center text-muted">Misi belum tersedia. Selesaikan Step 1 & 2 dulu ya!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 8: HSE Rig -->
+        <section id="hse-rig-screen" class="screen">
+            <div class="card">
+                <h2>🛢️ HSE Rig Learning</h2>
+                <p class="text-muted">Panduan dasar keselamatan dan operasi di Oil Rig untuk pemula dan HSE Officer.</p>
+                
+                <!-- Chapter Navigation -->
+                <div class="brain-tabs mt-sm" style="overflow-x: auto; white-space: nowrap; padding-bottom: 5px; -webkit-overflow-scrolling: touch;">
+                    <button class="brain-tab active rig-tab" onclick="switchRigChapter('intro', this)">🏗️ Intro</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('hazards', this)">⚠️ Hazards</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('ppe', this)">👷 PPE</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('routine', this)">📋 Rutinitas</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('clsr', this)">🛡️ CLSR</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('perilaku', this)">📜 Perilaku</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('poster', this)">🖼️ Poster</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('gas', this)">🔥 Gas & Fire</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('inspection', this)">✅ Inspeksi</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('pjsm', this)">📢 PJSM</button>
+                </div>
+            </div>
+
+            <!-- Chapter 1: Introduction -->
+            <div id="rig-chapter-intro" class="rig-chapter">
+                <div class="card mt-md" style="border-left: 4px solid var(--primary);">
+                    <h3>🏗️ Pengenalan Rig</h3>
+                    <img src="img/hse-rig/intro.png" alt="Rig Introduction"
+                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Pahami komponen utama dari onshore rig (rig darat),
+                        seperti
+                        derrick, drill floor, dan mud pit.</p>
+                    <div id="rig-intro-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                        <!-- Cards will be injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 2: Main Hazards -->
+            <div id="rig-chapter-hazards" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #f56565;">
+                    <h3>⚠️ Bahaya Utama (Major Hazards)</h3>
+                    <img src="img/hse-rig/hazards.png" alt="Rig Hazards"
+                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Ketahui risiko tetinggi di area rig seperti H2S,
+                        Blowout, dan Dropped Objects.</p>
+                    <div id="rig-hazards-modules"
+                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- Chapter 3: PPE requirements -->
+            <div id="rig-chapter-ppe" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #ed8936;">
+                    <h3>👷 Standar APD (PPE)</h3>
+                    <img src="img/hse-rig/ppe.png" alt="Rig PPE"
+                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Alat Pelindung Diri wajib di rig: Coverall, Hard Hat,
+                        Safety Glasses, Boots, dll.</p>
+                    <div id="rig-ppe-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 4: Daily Routine -->
+            <div id="rig-chapter-routine" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
+                    <h3>📋 Rutinitas HSE Officer</h3>
+                    <img src="img/hse-rig/routine.png" alt="HSE Routine"
+                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Agenda harian seorang HSE Officer: Toolbox Talk,
+                        Inspection, dan Permit Control.</p>
+                    <div id="rig-routine-modules"
+                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- Chapter 5: 10 Elemen CLSR -->
+            <div id="rig-chapter-clsr" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #8b5cf6;">
+                    <h3>🛡️ 10 Elemen CLSR</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Corporate Life Saving Rules (Aturan Penyelamat Nyawa
+                        Perusahaan) yang wajib ditaati tanpa toleransi di area operasi.</p>
+                    <div id="rig-clsr-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 6: 9 Perilaku Wajib -->
+            <div id="rig-chapter-perilaku" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #f59e0b;">
+                    <h3>📜 9 Perilaku Wajib</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Sembilan perilaku dasar wajib (Life Saving Rules) untuk
+                        menjamin keselamatan selama bekerja.</p>
+                    <div id="rig-perilaku-modules"
+                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- Chapter 7: Poster Print Area -->
+            <div id="rig-chapter-poster" class="rig-chapter hidden">
+                <div class="card mt-lg" style="text-align: center; background: var(--surface-hover);">
+                    <h3>🖼️ Peta Jalan Keselamatan (Safety Roadmap)</h3>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 20px;">Rangkuman visual terpadu untuk
+                        memudahkan Anda menghafal 9 Perilaku Wajib dan 10 Elemen CLSR.</p>
+                    <img src="img/hse-rig/clsr_roadmap_poster.png" alt="Peta Jalan Keselamatan Pertamina"
+                        style="width:100%; border-radius:8px; border:1px solid var(--border); margin-bottom: 20px;">
+    
+                    <div
+                        style="text-align: left; padding: 15px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary); border-radius: 8px;">
+                        <h4 style="margin-top: 0; color: var(--primary);">💡 Cara Menggunakan Peta Ini untuk Menghafal:</h4>
+                        <p style="font-size: 0.9rem; margin-bottom: 15px;">Gambar ini dirancang sebagai "Peta Jalan
+                            Keselamatan Pertamina" yang kohesif. Ikuti panduan visual ini:</p>
+    
+                        <h5 style="color: #10b981; margin-bottom: 5px;">Sisi Kiri (Hijau): Alur 9 Perilaku Wajib</h5>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0;">Ikuti pil bernomor (1-9)
+                            yang mengalir seperti jalur.</p>
+                        <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-color);">
+                            <li><strong>P-I-P (1):</strong> Terapkan Patuh-Intervensi-Peduli.</li>
+                            <li><strong>Kompeten (2):</strong> Punya kemampuan dan wewenang.</li>
+                            <li><strong>Sehat & Fit (3):</strong> Sehat secara fisik dan mental.</li>
+                            <li><strong>APD (4):</strong> Gunakan APD yang sesuai.</li>
+                            <li><strong>LMRA (5):</strong> Lakukan Last Minute Risk Assessment.</li>
+                            <li><strong>Lapor (6):</strong> Laporkan kondisi abnormal/berbahaya.</li>
+                            <li><strong>Permit SIKA (7):</strong> Pastikan SIKA tersedia.</li>
+                            <li><strong>Housekeeping (8):</strong> Jaga kebersihan dan kerapihan.</li>
+                            <li><strong>Laksanakan 10 CLSR (9):</strong> Terapkan perilaku kunci pada 10 Elemen CLSR. Garis
+                                besar dari poin 9 ini secara visual menunjuk ke arah 10 Elemen CLSR di kanan.</li>
+                        </ul>
+    
+                        <h5 style="color: #3b82f6; margin-top: 15px; margin-bottom: 5px;">Sisi Kanan (Warna): Grid 10 Elemen
+                            CLSR</h5>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0;">Ini adalah 10 kategori
+                            risiko yang harus Anda waspadai.</p>
+                        <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-color);">
+                            <li><strong>Baris Atas (01-05):</strong> Tools & Equipment, Line of Fire, Hot Work, Confined
+                                Space, Isolation of Energy (LOTO).</li>
+                            <li><strong>Baris Bawah (06-10):</strong> Lifting Operation, Working at Height, Ground
+                                Disturbance, Water-Based Work, Land Transportation.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div id="rig-poster-container" class="poster-hide-on-screen" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- Chapter 8: Gas Testing & Fire -->
+            <div id="rig-chapter-gas" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #f56565;">
+                    <h3>🔥 Gas Testing & Fire Limits</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Pahami batas aman konsentrasi gas berbahaya sebelum memulai izin Pekerjaan Panas (Hot Work) atau Memasuki Ruang Terbatas (Confined Space).</p>
+                    <div id="rig-gas-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 9: Inspection Checklist -->
+            <div id="rig-chapter-inspection" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <h3 style="margin: 0;">✅ Form Inspeksi Rig</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="generateInspectionPDF()" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
+                                <span>📄</span> Download PDF
+                            </button>
+                            <button onclick="if(confirm('Reset semua centang inspeksi?')) { localStorage.removeItem('rigInspectionState'); initHseRig(); }" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
+                                <span>🔄</span> Reset
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.9rem;">Gunakan daftar periksa interaktif ini saat melakukan Audit Keselamatan. Status Anda akan tersimpan otomatis.</p>
+                    <div id="rig-inspection-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 10: PJSM Generator -->
+            <div id="rig-chapter-pjsm" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #e53e3e;">
+                    <h3>📢 AI PJSM Generator</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Masukkan daftar pekerjaan hari ini, dan AI akan menyusun naskah <b>Pre-Job Safety Meeting (PJSM) / Toolbox Talk</b> gaya lisan lapangan, lengkap dengan bahaya, CLSR, mitigasi, dan yel-yel!</p>
+
+                    <div class="form-group mt-sm">
+                        <label style="font-size: 0.9rem; font-weight: 600;">📋 Daftar Pekerjaan Hari Ini</label>
+                        <textarea id="pjsm-work-input" class="form-control"
+                            placeholder="Contoh:&#10;1. Tripping in Drill Pipe 5 inch&#10;2. Maintenance pompa lumpur #2&#10;3. Pengelasan pipa di area terbatas&#10;4. Inspeksi scaffolding derrick"
+                            style="width: 100%; height: 120px; padding: 10px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
+                    </div>
+
+                    <button id="generate-pjsm-btn" class="btn btn-primary btn-full mt-sm"
+                        style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); border: none; font-size: 1rem;">
+                        📢 Generate Naskah PJSM ⚡
+                    </button>
+
+                    <div id="pjsm-loading" class="hidden mt-md" style="text-align: center; padding: 20px;">
+                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+                        <p class="text-muted">Senior HSSE Officer sedang menyusun naskah briefing...</p>
+                    </div>
+
+                    <div id="pjsm-result-area" class="mt-md hidden">
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <button id="copy-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Naskah</button>
+                            <button id="speak-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">🔊 Baca (TTS)</button>
+                            <button id="stop-speak-pjsm-btn" class="btn btn-secondary hidden" style="flex: 1; font-size: 0.85rem; padding: 8px; background: #e53e3e; color: white;">⏹️ Stop</button>
+                            <button id="export-pjsm-pdf-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📄 Export PDF</button>
+                        </div>
+                        <div id="pjsm-content"
+                            style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; overflow-x: auto;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JSA Builder removed - now accessed via Learning Hub > AI JSA & PTW -->
+
+        </section>
+    </div>
+
+    <!-- Scripts (modular) -->
+    <!-- Core / Data Layer -->
+    <script src="js/storage.js"></script>
+    <script src="js/cloud-sync.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/encryption.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/charts.js"></script>
+
+    <!-- UI Modules -->
+    <script src="js/backup-tags.js"></script>
+    <script src="js/journal-ui.js"></script>
+    <script src="js/planner-ui.js"></script>
+    <script src="js/finance-ui.js"></script>
+    <script src="js/habits-goals-ui.js"></script>
+    <script src="js/navigation-settings.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/wallet-budget-ui.js"></script>
+
+    <!-- Feature Modules -->
+    <script src="js/features.js"></script>
+    <script src="js/extras.js"></script>
+    <script src="js/edit-modal.js"></script>
+    <script src="js/onboarding.js"></script>
+    <script src="js/insight.js"></script>
+    <script src="js/gamification.js"></script>
+    <script src="js/hadith.js"></script>
+    <script src="js/brain-boost.js"></script>
+    <script src="js/journal-templates.js"></script>
+    <script src="js/motivation.js"></script>
+    <script src="js/islam-tracker.js"></script>
+    <script src="js/ai-tutors.js"></script>
+    <script src="js/todo-today.js"></script>
+    <script src="js/english-hse.js"></script>
+    <script src="js/english-fluency.js"></script>
+    <script src="js/hse-rig.js"></script>
+
+    <!-- App Initialization (must be last) -->
+    <script src="js/app-init.js"></script>
+
+    <!-- Register Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('SW registered:', registration);
+                    })
+                    .catch((error) => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+
+</html>

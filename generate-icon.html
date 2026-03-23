@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Icon Generator - Jurnal AI</title>
+    <style>
+        body {
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: system-ui;
+            color: white;
+            gap: 20px;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            border-radius: 20px;
+        }
+
+        .instructions {
+            max-width: 400px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        button {
+            background: #f59e0b;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #d97706;
+        }
+
+        .downloads {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>📱 Icon Generator</h1>
+
+    <canvas id="icon512" width="512" height="512"></canvas>
+
+    <div class="downloads">
+        <button onclick="download512()">📥 Download 512x512</button>
+        <button onclick="download180()">📥 Download 180x180 (Apple)</button>
+    </div>
+
+    <div class="instructions">
+        <p><strong>Instruksi:</strong></p>
+        <ol style="text-align: left;">
+            <li>Klik tombol download</li>
+            <li>Simpan sebagai:<br>
+                - <code>icon-512.png</code><br>
+                - <code>apple-touch-icon.png</code></li>
+            <li>Taruh di folder <code>icons/</code></li>
+            <li>Upload ulang ke GitHub/Netlify</li>
+        </ol>
+    </div>
+
+    <script>
+        function drawIcon(ctx, size) {
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#0a0a0f');
+            gradient.addColorStop(1, '#1a1a2e');
+
+            // Rounded rectangle background
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, size * 0.18);
+            ctx.fill();
+
+            // Inner glow
+            const innerGradient = ctx.createRadialGradient(
+                size / 2, size / 2, 0,
+                size / 2, size / 2, size / 2
+            );
+            innerGradient.addColorStop(0, 'rgba(245, 158, 11, 0.15)');
+            innerGradient.addColorStop(1, 'rgba(245, 158, 11, 0)');
+            ctx.fillStyle = innerGradient;
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, size * 0.18);
+            ctx.fill();
+
+            // Journal book
+            const bookX = size * 0.25;
+            const bookY = size * 0.2;
+            const bookW = size * 0.5;
+            const bookH = size * 0.6;
+
+            // Book gradient
+            const bookGradient = ctx.createLinearGradient(bookX, bookY, bookX + bookW, bookY + bookH);
+            bookGradient.addColorStop(0, '#f59e0b');
+            bookGradient.addColorStop(1, '#d97706');
+
+            ctx.fillStyle = bookGradient;
+            ctx.beginPath();
+            ctx.roundRect(bookX, bookY, bookW, bookH, size * 0.03);
+            ctx.fill();
+
+            // Book inner
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.roundRect(bookX + size * 0.04, bookY + size * 0.04, bookW - size * 0.08, bookH - size * 0.08, size * 0.02);
+            ctx.fill();
+
+            // Lines on book
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = size * 0.015;
+            ctx.lineCap = 'round';
+
+            const lineX = bookX + size * 0.08;
+            const lineW = bookW * 0.6;
+
+            ctx.beginPath();
+            ctx.moveTo(lineX, bookY + size * 0.12);
+            ctx.lineTo(lineX + lineW, bookY + size * 0.12);
+            ctx.stroke();
+
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(lineX, bookY + size * 0.20);
+            ctx.lineTo(lineX + lineW * 0.8, bookY + size * 0.20);
+            ctx.stroke();
+
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(lineX, bookY + size * 0.28);
+            ctx.lineTo(lineX + lineW * 0.6, bookY + size * 0.28);
+            ctx.stroke();
+
+            ctx.globalAlpha = 1;
+
+            // Sparkle
+            ctx.fillStyle = '#fbbf24';
+            const sparkleX = size * 0.78;
+            const sparkleY = size * 0.18;
+            const sparkleSize = size * 0.08;
+
+            ctx.beginPath();
+            ctx.moveTo(sparkleX, sparkleY - sparkleSize);
+            ctx.lineTo(sparkleX + sparkleSize * 0.3, sparkleY - sparkleSize * 0.3);
+            ctx.lineTo(sparkleX + sparkleSize, sparkleY);
+            ctx.lineTo(sparkleX + sparkleSize * 0.3, sparkleY + sparkleSize * 0.3);
+            ctx.lineTo(sparkleX, sparkleY + sparkleSize);
+            ctx.lineTo(sparkleX - sparkleSize * 0.3, sparkleY + sparkleSize * 0.3);
+            ctx.lineTo(sparkleX - sparkleSize, sparkleY);
+            ctx.lineTo(sparkleX - sparkleSize * 0.3, sparkleY - sparkleSize * 0.3);
+            ctx.closePath();
+            ctx.fill();
+
+            // Small dots
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.arc(size * 0.82, size * 0.35, size * 0.02, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.arc(size * 0.68, size * 0.12, size * 0.015, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.globalAlpha = 1;
+        }
+
+        // Draw 512x512
+        const canvas512 = document.getElementById('icon512');
+        const ctx512 = canvas512.getContext('2d');
+        drawIcon(ctx512, 512);
+
+        function download512() {
+            const link = document.createElement('a');
+            link.download = 'icon-512.png';
+            link.href = canvas512.toDataURL('image/png');
+            link.click();
+        }
+
+        function download180() {
+            const canvas180 = document.createElement('canvas');
+            canvas180.width = 180;
+            canvas180.height = 180;
+            const ctx180 = canvas180.getContext('2d');
+            drawIcon(ctx180, 180);
+
+            const link = document.createElement('a');
+            link.download = 'apple-touch-icon.png';
+            link.href = canvas180.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,108 @@
+// Service Worker for Jurnal AI PWA
+const CACHE_NAME = 'jurnal-ai-v14';
+const urlsToCache = [
+    './',
+    './index.html',
+    './style.css',
+    './manifest.json',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
+    // Core / Data Layer
+    './js/storage.js',
+    './js/cloud-sync.js',
+    './js/ai.js',
+    './js/theme.js',
+    './js/encryption.js',
+    './js/auth.js',
+    './js/charts.js',
+    // UI Modules
+    './js/backup-tags.js',
+    './js/journal-ui.js',
+    './js/planner-ui.js',
+    './js/finance-ui.js',
+    './js/habits-goals-ui.js',
+    './js/navigation-settings.js',
+    './js/dashboard.js',
+    './js/wallet-budget-ui.js',
+    // Feature Modules
+    './js/features.js',
+    './js/extras.js',
+    './js/edit-modal.js',
+    './js/onboarding.js',
+    './js/insight.js',
+    './js/gamification.js',
+    './js/hadith.js',
+    './js/brain-boost.js',
+    './js/journal-templates.js',
+    './js/motivation.js',
+    './js/islam-tracker.js',
+    './js/ai-tutors.js',
+    './js/todo-today.js',
+    './js/english-hse.js',
+    './js/hse-rig.js',
+    // App Initialization
+    './js/app-init.js'
+];
+
+// Install event - cache files
+self.addEventListener('install', (event) => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                console.log('Opened cache');
+                return cache.addAll(urlsToCache);
+            })
+            .catch((err) => {
+                console.log('Cache install failed:', err);
+            })
+    );
+    self.skipWaiting();
+});
+
+// Activate event - clean old caches
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('Deleting old cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        })
+    );
+    self.clients.claim();
+});
+
+// Fetch event - Network first, then cache fallback
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        fetch(event.request)
+            .then((response) => {
+                // Update cache with fresh response
+                if (response && response.status === 200 && response.type === 'basic') {
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME)
+                        .then((cache) => {
+                            cache.put(event.request, responseToCache);
+                        });
+                }
+                return response;
+            })
+            .catch(() => {
+                // Network failed, try cache
+                return caches.match(event.request)
+                    .then((response) => {
+                        if (response) {
+                            return response;
+                        }
+                        // If both fail and it's a navigation, show index.html
+                        if (event.request.mode === 'navigate') {
+                            return caches.match('./index.html');
+                        }
+                    });
+            })
+    );
+});
