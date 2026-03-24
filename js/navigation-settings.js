@@ -62,6 +62,15 @@ function showScreen(targetScreen) {
     } else if (targetScreen === 'goals') {
         renderGoalsList();
         updateGoalsStats();
+    } else if (targetScreen === 'epls') {
+        if (typeof initEplsHabitTracker === 'function') initEplsHabitTracker();
+        if (typeof updateEplsProgressUI === 'function') updateEplsProgressUI();
+    } else if (targetScreen === 'physics') {
+        if (typeof updatePhysicsProgressUI === 'function') updatePhysicsProgressUI();
+    } else if (targetScreen === 'hsse') {
+        if (typeof updateHsseProgressUI === 'function') updateHsseProgressUI();
+    } else if (targetScreen === 'automotive') {
+        if (typeof updateAutoProgressUI === 'function') updateAutoProgressUI();
     }
 }
 

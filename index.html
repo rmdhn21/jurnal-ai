@@ -192,6 +192,51 @@
                     <h2>📚 Learning Hub</h2>
                     <p class="text-muted">Tingkatkan karir dan karisma diri Anda dengan belajar.</p>
                 </div>
+                
+                <!-- EPLS Promo / Entry Banner -->
+                <div class="card mt-md" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);" onclick="navigateToSubscreen('epls')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🚀 EPLS System</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Sistem Belajar & Tracker English (A1-C1)</p>
+                        </div>
+                        <div style="font-size: 2rem;">📈</div>
+                    </div>
+                </div>
+
+                <!-- Physics Mastery Banner -->
+                <div class="card mt-md" style="background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);" onclick="navigateToSubscreen('physics')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🔬 Fisika Mastery</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Mekanika sampai Fisika Modern (5 Level)</p>
+                        </div>
+                        <div style="font-size: 2rem;">⚡</div>
+                    </div>
+                </div>
+
+                <!-- HSSE Mastery Banner -->
+                <div class="card mt-md" style="background: linear-gradient(135deg, #065f46, #10b981); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);" onclick="navigateToSubscreen('hsse')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🛡️ HSSE Mastery</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">K3 Dasar sampai Leadership & Audit</p>
+                        </div>
+                        <div style="font-size: 2rem;">🏗️</div>
+                    </div>
+                </div>
+
+                <!-- Automotive Mastery Banner -->
+                <div class="card mt-md" style="background: linear-gradient(135deg, #92400e, #f59e0b); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);" onclick="navigateToSubscreen('automotive')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🚗 Mesin Kendaraan</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Engine, Transmisi, Kelistrikan, Diesel</p>
+                        </div>
+                        <div style="font-size: 2rem;">🔧</div>
+                    </div>
+                </div>
+
                 <!-- Moving the AI Tutors card from the dashboard to here -->
                 <div class="card mt-md" id="ai-tutor-card" style="border-left: 4px solid var(--secondary);">
                     <div class="brain-header-row">
@@ -1453,11 +1498,11 @@
                 <button id="generate-jsa-btn" class="btn btn-primary btn-full mt-sm">Mulai Generate Dokumen ⚡</button>
 
                 <div id="jsa-result-area" class="mt-md hidden">
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button id="copy-jsa-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
-                        <button id="translate-jsa-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <button id="copy-jsa-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
+                        <button id="translate-jsa-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                        <button id="export-excel-jsa-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px;">📊 Excel</button>
+                        <button id="export-pdf-jsa-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px;">📄 PDF</button>
                     </div>
                     <div id="jsa-content"
                         style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
@@ -1872,6 +1917,142 @@
             <!-- JSA Builder removed - now accessed via Learning Hub > AI JSA & PTW -->
 
         </section>
+
+        <!-- EPLS System Screen (MUST be sibling of other screens, NOT nested) -->
+        <section id="epls-screen" class="screen">
+            <div class="header-back">
+                <button class="back-btn" onclick="handleBackButton()">
+                    <span class="back-icon">←</span> Kembali ke Learning Hub
+                </button>
+            </div>
+            
+            <div class="card mt-md">
+                <h2>📈 EPLS Dashboard</h2>
+                <p class="text-muted">Pantau progres dan konsistensi belajar Anda setiap hari.</p>
+            </div>
+            
+            <!-- Daily Habit Tracker -->
+            <div class="card mt-md">
+                <h3>🔥 Daily Learning Habit</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 10px;">Pertahankan konsistensi belajar harian Anda (Streak).</p>
+                <div class="habit-tracker" id="epls-habit-tracker">
+                    <!-- JS injected days -->
+                </div>
+                <button class="btn btn-primary mt-sm" id="epls-checkin-btn" style="width: 100%; border-radius: 20px;">✓ Validasi Belajar Hari Ini</button>
+            </div>
+
+            <!-- Learning Path A1-C1 -->
+            <div class="card mt-md">
+                <h3>📚 CEFR Learning Path</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Selesaikan struktur materi langkah demi langkah.</p>
+                
+                <div class="epls-level-card" onclick="openEplsLevel('A1')">
+                    <div class="level-header">
+                        <span class="level-badge bg-beginner">A1</span>
+                        <span class="level-title">Elementary Foundation</span>
+                    </div>
+                    <p class="level-desc">Fundamental grammar dan kosa kata sehari-hari.</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-A1" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-A1">0%</span> Selesai</div>
+                </div>
+
+                <div class="epls-level-card" onclick="openEplsLevel('A2')">
+                    <div class="level-header">
+                        <span class="level-badge bg-beginner">A2</span>
+                        <span class="level-title">Pre-Intermediate</span>
+                    </div>
+                    <p class="level-desc">Membangun kalimat kompleks & percakapan dasar.</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-A2" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-A2">0%</span> Selesai</div>
+                </div>
+                
+                <div class="epls-level-card" onclick="openEplsLevel('B1')">
+                    <div class="level-header">
+                        <span class="level-badge bg-intermediate">B1</span>
+                        <span class="level-title">Intermediate Mastery</span>
+                    </div>
+                    <p class="level-desc">Ekspresi opini, narasi, dan pemahaman teks umum.</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-B1" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-B1">0%</span> Selesai</div>
+                </div>
+
+                <div class="epls-level-card" onclick="openEplsLevel('B2')">
+                    <div class="level-header">
+                        <span class="level-badge bg-intermediate">B2</span>
+                        <span class="level-title">Upper-Intermediate</span>
+                    </div>
+                    <p class="level-desc">Kosakata profesional, artikel jurnal, dan debat.</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-B2" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-B2">0%</span> Selesai</div>
+                </div>
+
+                <div class="epls-level-card" onclick="openEplsLevel('C1')">
+                    <div class="level-header">
+                        <span class="level-badge bg-expert">C1</span>
+                        <span class="level-title">Advanced Proficiency</span>
+                    </div>
+                    <p class="level-desc">Penguasaan bahasa setara Penutur Asli (Native).</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-C1" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-C1">0%</span> Selesai</div>
+                </div>
+            </div>
+            
+            <!-- Exam Prep Section -->
+            <div class="card mt-md">
+                <h3>🏆 Exam Preparation</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Target IELTS, TOEFL, atau TOEIC.</p>
+                <div class="hub-grid">
+                    <button class="hub-btn" onclick="openEplsExam('IELTS')" style="padding: 15px 10px; align-items: center; text-align: center;">
+                        <div class="hub-icon" style="background: #ebf8ff; color: #3182ce; margin-bottom: 5px;">🌍</div>
+                        <span class="hub-label" style="font-size: 0.9rem;">IELTS Prep</span>
+                    </button>
+                    <button class="hub-btn" onclick="openEplsExam('TOEFL')" style="padding: 15px 10px; align-items: center; text-align: center;">
+                        <div class="hub-icon" style="background: #faf5ff; color: #805ad5; margin-bottom: 5px;">🗽</div>
+                        <span class="hub-label" style="font-size: 0.9rem;">TOEFL Prep</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Physics Mastery Screen -->
+        <section id="physics-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>🔬 Fisika Mastery</h2><p class="text-muted">Kuasai Fisika dari Mekanika sampai Fisika Modern.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Fisika</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Selesaikan setiap level secara berurutan.</p>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">1</span><span class="level-title">Mekanika & Kinematika</span></div><p class="level-desc">Gerak, gaya Newton, usaha, energi, momentum.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#06b6d4;">2</span><span class="level-title">Fluida & Termodinamika</span></div><p class="level-desc">Tekanan, Bernoulli, kalor, gas ideal, Carnot.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#8b5cf6;">3</span><span class="level-title">Gelombang, Bunyi & Cahaya</span></div><p class="level-desc">Interferensi, Doppler, cermin, lensa, difraksi.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#f59e0b;">4</span><span class="level-title">Listrik & Magnet</span></div><p class="level-desc">Coulomb, Ohm, Kirchhoff, Faraday, AC.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#ef4444;">5</span><span class="level-title">Fisika Modern & Nuklir</span></div><p class="level-desc">Foton, relativitas, atom Bohr, radioaktivitas, fisi & fusi.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- HSSE Mastery Screen -->
+        <section id="hsse-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>🛡️ HSSE Mastery</h2><p class="text-muted">Kuasai K3 dari dasar sampai Leadership & Audit.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path HSSE</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Selesaikan setiap level untuk naik tingkat.</p>
+                <div class="epls-level-card" onclick="openHsseLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#22c55e;">1</span><span class="level-title">Dasar K3 & Identifikasi Bahaya</span></div><p class="level-desc">APD, HIRA, JSA, PTW, Toolbox Talk, Housekeeping.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openHsseLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">2</span><span class="level-title">Process Safety & High Risk Work</span></div><p class="level-desc">LOTO, Confined Space, Hot Work, WAH, Lifting.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openHsseLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#ef4444;">3</span><span class="level-title">Emergency Response & Fire Safety</span></div><p class="level-desc">Pemadam api, ERP, P3K, Spill Response, H2S.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openHsseLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#10b981;">4</span><span class="level-title">Environmental Management</span></div><p class="level-desc">AMDAL, Limbah B3, ISO 14001, ISO 45001.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openHsseLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#8b5cf6;">5</span><span class="level-title">HSE Leadership & Audit</span></div><p class="level-desc">Investigasi, BBS, Safety Culture, AK3 Umum.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- Automotive Mastery Screen -->
+        <section id="automotive-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>🚗 Mesin Kendaraan Mastery</h2><p class="text-muted">Kuasai mesin dari dasar sampai alat berat.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Otomotif</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Belajar dari fondasi mesin sampai heavy equipment.</p>
+                <div class="epls-level-card" onclick="openAutoLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#f59e0b;">1</span><span class="level-title">Dasar Mesin & Komponen Utama</span></div><p class="level-desc">Motor bakar, pelumasan, pendinginan, bahan bakar.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openAutoLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#8b5cf6;">2</span><span class="level-title">Transmisi & Drivetrain</span></div><p class="level-desc">Kopling, transmisi M/T & A/T, differential, ban.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openAutoLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">3</span><span class="level-title">Kelistrikan & Elektronik</span></div><p class="level-desc">Aki, starter, alternator, ignition, sensor, ECU.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openAutoLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#ef4444;">4</span><span class="level-title">Rem, Suspensi & Safety</span></div><p class="level-desc">Rem hidrolik, ABS, shock absorber, airbag, ADAS.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openAutoLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#059669;">5</span><span class="level-title">Diesel Engine & Heavy Equipment</span></div><p class="level-desc">Diesel CRDi, hidrolik alat berat, overhaul.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
     </div>
 
     <!-- Scripts (modular) -->
@@ -1911,6 +2092,10 @@
     <script src="js/english-hse.js"></script>
     <script src="js/english-fluency.js"></script>
     <script src="js/hse-rig.js"></script>
+    <script src="js/epls.js"></script>
+    <script src="js/learn-physics.js"></script>
+    <script src="js/learn-hsse.js"></script>
+    <script src="js/learn-automotive.js"></script>
 
     <!-- App Initialization (must be last) -->
     <script src="js/app-init.js"></script>

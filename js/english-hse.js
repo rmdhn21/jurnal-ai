@@ -88,6 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('generate-jsa-btn')?.addEventListener('click', generateJSADocument);
     document.getElementById('copy-jsa-btn')?.addEventListener('click', copyJsaText);
     document.getElementById('translate-jsa-btn')?.addEventListener('click', translateJSADocument);
+    document.getElementById('export-excel-jsa-btn')?.addEventListener('click', exportJSAToExcel);
+    document.getElementById('export-pdf-jsa-btn')?.addEventListener('click', exportJSAToPDF);
 
     // AI Incident Investigator (RCA)
     document.getElementById('generate-rca-btn')?.addEventListener('click', generateRCADocument);
@@ -1048,6 +1050,9 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code.`
         if (responseText) {
             // Clean up backticks if model still sends them
             responseText = responseText.replace(/```html/g, '').replace(/```/g, '').trim();
+            
+            // Parse markdown bold specifically since the model tends to output **bold**
+            responseText = responseText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
             // Add basic table styling if not provided by AI
             if (!responseText.includes('<style>')) {
@@ -1157,6 +1162,186 @@ function copyJsaText() {
         console.error('Failed to copy text: ', err);
         alert('Gagal menyalin teks.');
     });
+}
+
+function exportJSAToExcel() {
+    const contentArea = document.getElementById('jsa-content');
+    if (!contentArea || !contentArea.innerHTML) {
+        alert('Gagal mengekspor: Dokumen kosong.');
+        return;
+    }
+
+    // Clean up empty paragraphs
+    let htmlContent = contentArea.innerHTML.replace(/<p><\/p>/g, '');
+
+    const excelContent = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" 
+      xmlns:x="urn:schemas-microsoft-com:office:excel" 
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+    <!--[if gte mso 9]>
+    <xml>
+        <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                    <x:Name>JSA_PTW</x:Name>
+                    <x:WorksheetOptions>
+                        <x:DisplayGridlines/>
+                    </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+    </xml>
+    <![endif]-->
+    <meta charset="utf-8">
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <td colspan="7" style="text-align:center; font-size: 20px; font-weight:bold; padding:20px;">
+                HSE DEPARTMENT - AI Generated Job Safety Analysis & Permit to Work
+            </td>
+        </tr>
+    </table>
+    ${htmlContent}
+</body>
+</html>
+    `;
+
+    // Create a Blob containing the Excel data
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+
+    // Create a download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Set dynamic filename
+    const now = new Date();
+    const dateStr = now.getFullYear() + (now.getMonth() + 1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0');
+    link.download = `JSA_PTW_${dateStr}.xls`;
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+async function exportJSAToPDF() {
+    const contentArea = document.getElementById('jsa-content');
+    if (!contentArea || !contentArea.innerHTML) {
+        alert('Gagal mengekspor: Dokumen kosong.');
+        return;
+    }
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    // Grab the raw HTML content and strip dark-theme inline styles
+    let rawHtml = contentArea.innerHTML;
+    rawHtml = rawHtml.replace(/<style[\s\S]*?<\/style>/gi, '');
+    rawHtml = rawHtml.replace(/color\s*:\s*#[0-9a-fA-F]{6}\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/background-color\s*:\s*#2d3748\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/background-color\s*:\s*rgba\(255,255,255,0\.05\)\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/border\s*:\s*1px solid rgba\(255,255,255,0\.2\)\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/border\s*:\s*1px solid #4a5568\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Create a new window for printing
+    const printWindow = window.open('', '', 'height=800,width=1200');
+    if (!printWindow) {
+        alert("Browser Anda memblokir Popup! Izinkan popup untuk aplikasi ini agar fitur Print/PDF bisa berjalan.");
+        return;
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>JSA_PTW_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    padding: 20px; 
+                    color: #000; 
+                    background: #fff; 
+                    font-size: 12px;
+                }
+                table { 
+                    border-collapse: collapse; 
+                    width: 100%; 
+                    margin-bottom: 20px; 
+                    page-break-inside: auto; 
+                }
+                tr { 
+                    page-break-inside: avoid; 
+                    page-break-after: auto; 
+                }
+                th, td { 
+                    border: 1px solid #000; 
+                    padding: 8px; 
+                    text-align: left; 
+                    vertical-align: top; 
+                    word-wrap: break-word;
+                }
+                th { 
+                    background-color: #f0f0f0 !important; 
+                    text-align: center; 
+                    font-weight: bold;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .risk-badge { 
+                    color: #000 !important; 
+                    font-weight: bold; 
+                    padding: 4px; 
+                    display: inline-block; 
+                    border-radius: 4px; 
+                    border: 1px solid #000;
+                }
+                @media print {
+                    @page { 
+                        size: landscape; 
+                        margin: 10mm; 
+                    }
+                    body { 
+                        padding: 0; 
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #3182ce; padding-bottom: 10px;">
+                <h2 style="margin: 0; color: #3182ce;">HSE DEPARTMENT</h2>
+                <p style="margin: 5px 0 0 0; color: #4a5568; font-size: 14px;">AI Generated Job Safety Analysis & Permit to Work</p>
+            </div>
+            <div style="margin-bottom: 20px; font-size: 12px; color: #555;">
+                <strong>Tanggal:</strong> ${dateStr} &nbsp; | &nbsp; <strong>Waktu:</strong> ${timeStr} WIB
+            </div>
+            ${rawHtml}
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Tunggu sebentar agar gambar/tabel sepenuhnya di-render sebelum memanggil dialog Print Chrome/Safari
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
 }
 
 // ==========================================
