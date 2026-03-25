@@ -50,6 +50,7 @@ ATURAN KETAT:
             body: JSON.stringify(requestBody)
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
         if (!response.ok) throw new Error('Gagal menghubungi Gemini.');
 
         const data = await response.json();

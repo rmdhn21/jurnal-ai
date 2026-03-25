@@ -1,0 +1,325 @@
+/**
+ * JS Lesson Tools - Shared utilities for AI Mastery Systems
+ * Handles PDF, Summary, Voice, Presentation, and Poster features.
+ */
+
+window.lessonTools = {
+    // 1. VOICEOVER / TTS
+    speak: function(selector, lang = 'id-ID') {
+        const el = document.querySelector(selector);
+        if (!el) return;
+        
+        window.speechSynthesis.cancel();
+        
+        let tempEl = document.createElement('div');
+        tempEl.innerHTML = el.innerHTML;
+        tempEl.querySelectorAll('.no-print, .loading-spinner, button, [style*="display: none"]').forEach(e => e.remove());
+        
+        const rawText = tempEl.innerText.trim();
+        if (!rawText) return;
+
+        let hasStarted = false;
+        const startSpeaking = () => {
+            if (hasStarted) return;
+            hasStarted = true;
+            
+            // Force resume in case it's paused
+            window.speechSynthesis.resume();
+
+            const utterance = new SpeechSynthesisUtterance(rawText);
+            utterance.lang = lang;
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                const voice = voices.find(v => v.lang.startsWith(lang));
+                if (voice) utterance.voice = voice;
+            }
+
+            utterance.onstart = () => console.log(`🔊 Mulai membaca dalam ${lang}...`);
+            utterance.onerror = (e) => {
+                if (e.error === 'interrupted') return; // Normal when resetting
+                console.error("❌ TTS Error:", e);
+            };
+            utterance.onend = () => console.log("🏁 Selesai membaca.");
+
+            window.speechSynthesis.speak(utterance);
+        };
+
+        // Wait for voices if empty, with a strict single-fire guard
+        if (window.speechSynthesis.getVoices().length === 0) {
+            const onVoices = () => {
+                if (window.speechSynthesis.getVoices().length > 0) {
+                    window.speechSynthesis.removeEventListener('voiceschanged', onVoices);
+                    startSpeaking();
+                }
+            };
+            window.speechSynthesis.addEventListener('voiceschanged', onVoices);
+            setTimeout(startSpeaking, 800); // Absolute fallback
+        } else {
+            startSpeaking();
+        }
+    },
+    
+    stopSpeech: function() {
+        window.speechSynthesis.cancel();
+    },
+
+    // 2. SUMMARY (Requires AI Call)
+    generateSummary: async function(system, sourceSelector, targetId) {
+        const sourceEl = document.querySelector(sourceSelector);
+        if (!sourceEl) return;
+        
+        const targetEl = document.getElementById(targetId);
+        targetEl.innerHTML = '<div class="loading-spinner" style="margin:10px auto;"></div><p class="text-center text-muted">📝 Menyusun rangkuman...</p>';
+        
+        const lessonText = sourceEl.innerText.split('📋 Kuis')[0]; // Remove quiz
+        const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+        if (!apiKey) return;
+
+        const prompt = `Ringkaslah materi berikut menjadi rangkuman yang sangat padat, jelas, dan poin-poin penting saja (maksimal 3 paragraf). Gunakan Bahasa Indonesia yang profesional.
+        
+        MATERI:
+        ${lessonText}`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
+            });
+            if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu sejenak.');
+            if (!response.ok) throw new Error('API Error');
+            const result = await response.json();
+            const summary = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal merangkum.';
+            targetEl.innerHTML = `<div style="background:var(--surface-hover);padding:15px;border-radius:10px;border-left:4px solid var(--primary);"><h4 style="margin-top:0;">📋 Rangkuman Cepat</h4>${window.formatAIText(summary)}</div>`;
+        } catch(e) { targetEl.innerHTML = '<p class="text-danger">❌ Gagal merangkum.</p>'; }
+    },
+
+    // 3. PDF EXPORT (Improved Print)
+    exportPDF: function(title, selector) {
+        const content = document.querySelector(selector).innerHTML;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>${title}</title>
+                <style>
+                    body { font-family: 'Inter', sans-serif; line-height: 1.6; padding: 40px; color: #333; }
+                    h2, h3, h4 { color: #2563eb; }
+                    .no-print { display: none; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <h1>${title}</h1>
+                <div id="content">${content}</div>
+                <script>
+                    // Remove buttons and quiz interaction from PDF if they exist
+                    document.querySelectorAll('button').forEach(b => b.remove());
+                    // Wait for images to load then print
+                    window.onload = () => { window.print(); window.close(); };
+                </script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    },
+
+    // 4. PRESENTATION / SLIDE VIEW
+    openPresentation: function(title, selector) {
+        const el = document.querySelector(selector);
+        const text = el.innerText.split('📋 Kuis')[0];
+        
+        // Simple slide logic: split by headers
+        const slides = text.split(/(?=#{1,3}\s|(?:\d\.\s\*\*))/);
+        
+        let slideIndex = 0;
+        const modal = document.createElement('div');
+        modal.id = 'presentation-modal';
+        modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;padding:20px;";
+        
+        const updateSlide = () => {
+            const content = slides[slideIndex] || "Selesai";
+            modal.innerHTML = `
+                <div style="position:absolute;top:20px;right:20px;cursor:pointer;font-size:1.5rem;" onclick="this.parentElement.remove()">✕</div>
+                <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:20px;">${title} • Slide ${slideIndex + 1} / ${slides.length}</div>
+                <div style="max-width:800px;width:100%;text-align:center;font-size:1.4rem;line-height:1.6;animation:fadeIn 0.3s ease;">
+                    ${window.formatAIText(content)}
+                </div>
+                <div style="margin-top:40px;display:flex;gap:20px;">
+                    <button class="btn btn-secondary" onclick="window.prevSlide()" ${slideIndex===0?'disabled':''}>Sebelumnya</button>
+                    <button class="btn btn-primary" onclick="window.nextSlide()" ${slideIndex===slides.length-1?'disabled':''}>Selanjutnya</button>
+                </div>
+                <style>@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }</style>
+            `;
+        };
+
+        window.nextSlide = () => { if(slideIndex < slides.length - 1) { slideIndex++; updateSlide(); } };
+        window.prevSlide = () => { if(slideIndex > 0) { slideIndex--; updateSlide(); } };
+        
+        updateSlide();
+        document.body.appendChild(modal);
+    },
+
+    // 5. POSTER / CHEAT SHEET
+    openPoster: function(title, selector) {
+        const el = document.querySelector(selector);
+        const content = el.innerHTML.split('📋 Kuis')[0];
+        
+        const modal = document.createElement('div');
+        modal.id = 'poster-modal';
+        modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:10000;overflow-y:auto;padding:40px 20px;";
+        
+        modal.innerHTML = `
+            <div style="position:absolute;top:20px;right:20px;cursor:pointer;font-size:1.5rem;color:white;" onclick="this.parentElement.remove()">✕</div>
+            <div style="background:white;max-width:800px;margin:0 auto;padding:40px;border-radius:0;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:10px solid var(--primary);">
+                <h1 style="text-align:center;color:var(--primary);margin-bottom:30px;text-transform:uppercase;letter-spacing:2px;">${title}</h1>
+                <div style="column-count:2;column-gap:30px;font-size:0.9rem;color:#333;">
+                    ${content}
+                </div>
+                <div style="margin-top:40px;text-align:center;border-top:1px solid #ddd;padding-top:20px;font-style:italic;color:#666;">
+                    Generasi AI • Mastery Learning Systems
+                </div>
+            </div>
+            <div style="text-align:center;margin-top:20px;">
+                <button class="btn btn-primary" onclick="window.print()">Simpan Poster (PDF)</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+};
+
+// Injection Helper for the Action Bar
+window.getActionBarHTML = function(title, system, moduleId) {
+    const lang = system === 'epls' ? 'en-US' : 'id-ID';
+    return `
+    <div class="action-bar no-print" style="background:var(--surface-hover);padding:10px;border-radius:12px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:8px;border:1px solid var(--border);">
+        <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.speak('#lesson-body', '${lang}')">🔊 Baca</button>
+        <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.exportPDF('${title}', '#lesson-body')">📄 PDF</button>
+        <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.generateSummary('${system}', '#lesson-body', 'lesson-summary-box')">📝 Summary</button>
+        <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openPresentation('${title}', '#lesson-body')">📽️ Slide</button>
+        <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openPoster('${title}', '#lesson-body')">🖼️ Poster</button>
+    </div>
+    <div id="lesson-summary-box" class="no-print" style="margin-bottom:15px;"></div>
+    <div id="lesson-body">`;
+};
+
+// --- SHARED HELPERS FOR STABILITY & FORMATTING ---
+window.formatAIText = function(text) {
+    const codeBlocks = [];
+    // 1. Extract code blocks first to protect them
+    let processedText = text.replace(/```([\s\S]*?)```/g, (match, code) => {
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        codeBlocks.push(`<pre style="background:#1e293b;padding:15px;border-radius:12px;overflow-x:auto;border:1px solid #334155;margin:20px 0;font-family:'Fira Code', monospace;font-size:0.85rem;color:#e2e8f0;box-shadow:inset 0 2px 4px rgba(0,0,0,0.3);"><code style="background:none;padding:0;color:inherit;">${code.trim()}</code></pre>`);
+        return placeholder;
+    });
+
+    // 2. Advanced Technical Rendering (Tables & Math)
+    
+    // 2a. Markdown Tables
+    processedText = processedText.replace(/(^\|.*\|$\n?)+/gm, (match) => {
+        const rows = match.trim().split('\n');
+        if (rows.length < 2) return match;
+        
+        let html = '<div style="overflow-x:auto;margin:20px 0;border-radius:12px;border:1px solid var(--border);"><table style="width:100%;border-collapse:collapse;font-size:0.9rem;background:var(--surface);">';
+        
+        rows.forEach((row, i) => {
+            const cols = row.split('|').filter(c => c.trim().length > 0 || row.indexOf('|') !== row.lastIndexOf('|')).map(c => c.trim());
+            if (i === 1 && row.includes('---')) return; // Skip separator line
+            
+            const cellTag = i === 0 ? 'th' : 'td';
+            const cellStyle = i === 0 
+                ? 'background:var(--primary);color:white;padding:12px;text-align:left;font-weight:600;' 
+                : 'padding:10px;border-bottom:1px solid var(--border);color:var(--text);';
+            
+            html += '<tr>';
+            cols.forEach(col => {
+                html += `<${cellTag} style="${cellStyle}">${col}</${cellTag}>`;
+            });
+            html += '</tr>';
+        });
+        
+        html += '</table></div>';
+        return html;
+    });
+
+    // 2b. Math & LaTeX Symbols (Simplified but Effective)
+    processedText = processedText
+        .replace(/\\\((.*?)\\\)/g, '<span class="math-mode" style="font-family:\'Cambria Math\', serif;font-style:italic;color:var(--primary);">$1</span>')
+        .replace(/\$(.*?)\$/g, '<span class="math-mode" style="font-family:\'Cambria Math\', serif;font-style:italic;color:var(--primary);">$1</span>')
+        .replace(/\\times/g, '&times;')
+        .replace(/\\Delta/g, '&Delta;')
+        .replace(/\\cdot/g, '&bull;')
+        .replace(/\\alpha/g, '&alpha;')
+        .replace(/\\beta/g, '&beta;')
+        .replace(/\\gamma/g, '&gamma;')
+        .replace(/\\phi/g, '&phi;')
+        .replace(/\\theta/g, '&theta;')
+        .replace(/\\pi/g, '&pi;')
+        .replace(/\\omega/g, '&omega;')
+        .replace(/\\mu/g, '&mu;')
+        .replace(/(\^)([0-9a-zA-Z\+\-\*\/]+)/g, '<sup>$2</sup>')
+        .replace(/(\_)([0-9a-zA-Z]+)/g, '<sub>$2</sub>');
+
+    // 3. Rich Formatting logic (Standard Markdown)
+    processedText = processedText
+        // Headers with professional styling
+        .replace(/^# (.*$)/gim, '<h2 style="color:var(--primary);margin:30px 0 15px;font-size:1.8rem;border-left:5px solid var(--primary);padding-left:15px;line-height:1.2;">$1</h2>')
+        .replace(/^## (.*$)/gim, '<h3 style="color:var(--primary);margin:25px 0 12px;font-size:1.5rem;display:flex;align-items:center;gap:10px;">$1</h3>')
+        .replace(/^### (.*$)/gim, '<h4 style="color:var(--text);margin:20px 0 10px;font-size:1.2rem;font-weight:600;opacity:0.9;">$1</h4>')
+        
+        // Bold and Horizontal Rules
+        .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--primary);font-weight:700;">$1</strong>')
+        .replace(/^---$/gm, '<hr style="border:0;height:1px;background:linear-gradient(to right, transparent, var(--border), transparent);margin:30px 0;">')
+        
+        // Lists (Unordered)
+        .replace(/^\s*[-*]\s+(.*)$/gim, '<div style="display:flex;gap:10px;margin-bottom:8px;padding-left:10px;"><span style="color:var(--primary);">•</span><span>$1</span></div>')
+        
+        // Numbered Lists
+        .replace(/^\s*(\d+)\.\s+(.*)$/gim, '<div style="display:flex;gap:10px;margin-bottom:8px;padding-left:10px;"><span style="color:var(--primary);font-weight:bold;">$1.</span><span>$2</span></div>')
+        
+        // Blockquotes / Cards for Tip/Info
+        .replace(/^> (.*$)/gim, '<div style="background:var(--surface-hover);border-left:4px solid var(--primary);padding:15px;margin:20px 0;border-radius:0 12px 12px 0;font-style:italic;color:var(--text);opacity:0.9;">$1</div>');
+
+    // 4. Final Polish: Newlines (Avoid breaking tags)
+    // We only replace newlines that are NOT inside a tag
+    processedText = processedText.trim();
+    
+    // 5. Re-insert code blocks
+    codeBlocks.forEach((html, i) => {
+        processedText = processedText.replace(`__CODE_BLOCK_${i}__`, html);
+    });
+
+    return `<div style="line-height:1.7;font-size:1.05rem;color:var(--text);white-space:pre-line;">${processedText}</div>`;
+};
+
+window.extractQuizAndCleanText = function(text) {
+    const quizBlocks = [];
+    const blockRegex = /\[QUIZ\]([\s\S]*?)\[\/QUIZ\]/g;
+    const cleanedText = text.replace(blockRegex, (_, block) => {
+        const qParts = block.split(/Pertanyaan:\s*/i);
+        qParts.forEach(part => {
+            if (!part.trim()) return;
+            const lines = part.trim().split('\n');
+            const q = lines[0].trim();
+            const a = part.match(/^A[\)\.]\s*(.*)/mi);
+            const b = part.match(/^B[\)\.]\s*(.*)/mi);
+            const c = part.match(/^C[\)\.]\s*(.*)/mi);
+            const d = part.match(/^D[\)\.]\s*(.*)/mi);
+            const ans = part.match(/Jawaban:\s*([A-D])/i);
+            const exp = part.match(/Penjelasan:\s*([\s\S]*?)$/i);
+            if (q && ans) {
+                quizBlocks.push({
+                    q: q,
+                    a: a?.[1]?.trim() || '', b: b?.[1]?.trim() || '', c: c?.[1]?.trim() || '', d: d?.[1]?.trim() || '',
+                    answer: ans[1].trim().toUpperCase(),
+                    explanation: exp?.[1]?.trim() || ''
+                });
+            }
+        });
+        return '';
+    });
+    return { quizBlocks, cleanedText };
+};

@@ -183,6 +183,7 @@ async function getInsightFromAI(userData) {
         })
     });
 
+    if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
     if (!response.ok) throw new Error("Gagal menghubungkan ke Gemini AI");
 
     const data = await response.json();

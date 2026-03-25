@@ -131,53 +131,64 @@ window.openAutoLesson = async function(level, moduleId) {
     const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
     if (!apiKey) { document.getElementById('auto-lesson-content').innerHTML = '<p style="color:#e53e3e;">⚠️ API Key belum diatur.</p>'; return; }
 
-    const prompt = `Kamu adalah mekanik senior bersertifikat dengan pengalaman 20 tahun di bengkel resmi dan alat berat (heavy equipment). Kamu juga memahami mesin diesel industri dan kendaraan operasional rig.
+    const prompt = `Kamu adalah Mekanik Senior (Master Technician) bersertifikat dengan pengalaman 25 tahun di bengkel resmi brand ternama dan industri alat berat. Buatkan materi pelajaran yang LENGKAP dan MENDALAM untuk topik berikut:
 
 📌 TOPIK: ${mod.title}
 📌 LEVEL: ${level.replace('L','Level ')} - ${data.title}
 📌 DESKRIPSI: ${mod.desc}
 
-Buatkan materi pelajaran LENGKAP dalam Bahasa Indonesia:
+FORMAT MATERI WAJIB (dalam Bahasa Indonesia):
 
-1. **📖 Penjelasan Konsep** (min 5 paragraf, jelaskan cara kerja komponen/sistem dengan bahasa sederhana)
+1. **📖 Penjelasan Konsep & Cara Kerja** (minimal 5 paragraf, jelaskan fundamental mekanis dan fisika di balik sistem ini dengan bahasa yang sangat mudah dipahami.)
 
-2. **🔧 Komponen & Fungsinya** (daftar komponen utama beserta fungsi masing-masing)
+2. **⚙️ Komponen Utama & Fungsinya** (daftar komponen krusial beserta penjelasan teknis fugsinya.)
 
-3. **⚠️ Gejala Kerusakan & Troubleshooting** (tabel gejala → kemungkinan penyebab → solusi)
+3. **⚠️ Gejala Kerusakan (Diagnostics)** (berikan panduan mendiagnosis masalah: suara, getaran, atau kode DTC yang mungkin muncul.)
 
-4. **🛠️ Langkah Perawatan / Perbaikan** (SOP perawatan berkala atau langkah perbaikan step-by-step)
+4. **🛠️ Panduan Perawatan & Rebuild** (minimal 5 langkah teknis untuk perawatan atau prosedur bongkar-pasang sesuai standar pabrik.)
 
-5. **💡 Tips Mekanik Pro** (3-5 tips dari pengalaman mekanik veteran)
+5. **💡 Tips Mekanik Veteran** (3-5 "trade secrets" atau tips praktis untuk mempermudah pekerjaan di bengkel.)
 
-6. **📋 KUIS INTERAKTIF** — Buat TEPAT 5 soal pilihan ganda:
+6. **📋 KUIS INTERAKTIF** — Buat TEPAT 5 soal pilihan ganda (A, B, C, D) dengan format berikut UNTUK SETIAP SOAL:
 [QUIZ]
-Pertanyaan: (pertanyaan)
+Pertanyaan: (tulis pertanyaan teknis)
 A) pilihan a
 B) pilihan b
 C) pilihan c
 D) pilihan d
-Jawaban: (huruf benar)
-Penjelasan: (penjelasan)
+Jawaban: (huruf benar, contoh: B)
+Penjelasan: (jelaskan alasan teknis dan logika mekanis jawabannya)
 [/QUIZ]
 
-Pastikan materinya sangat praktis dan bisa langsung diterapkan di bengkel!`;
+Pastikan materi sangat praktis, detail, dan setara manual servis profesional!`;
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 8192 } })
         });
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
         if (!response.ok) throw new Error('API Error');
         const result = await response.json();
-        let text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal.';
-        const quizBlocks = [];
-        text = text.replace(/\[QUIZ\]([\s\S]*?)\[\/QUIZ\]/g, (_, block) => { const q=block.match(/Pertanyaan:\s*(.*)/i),a=block.match(/^A\)\s*(.*)/mi),b=block.match(/^B\)\s*(.*)/mi),c=block.match(/^C\)\s*(.*)/mi),d=block.match(/^D\)\s*(.*)/mi),ans=block.match(/Jawaban:\s*([A-D])/i),exp=block.match(/Penjelasan:\s*([\s\S]*?)$/i); if(q&&ans) quizBlocks.push({q:q[1].trim(),a:a?.[1]?.trim()||'',b:b?.[1]?.trim()||'',c:c?.[1]?.trim()||'',d:d?.[1]?.trim()||'',answer:ans[1].trim().toUpperCase(),explanation:exp?.[1]?.trim()||''}); return ''; });
-        text = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^### (.*$)/gim,'<h4 style="color:var(--primary);margin-top:15px;">$1</h4>').replace(/^## (.*$)/gim,'<h3 style="color:var(--primary);margin-top:20px;">$1</h3>').replace(/^# (.*$)/gim,'<h2 style="color:var(--primary);margin-top:20px;">$1</h2>').replace(/\n/g,'<br>');
+        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal.';
+
+        const { quizBlocks, cleanedText } = window.extractQuizAndCleanText(rawText);
+        const formattedText = window.formatAIText(cleanedText);
+
         let quizHtml = '';
-        if (quizBlocks.length) { quizHtml = `<div style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;"><h3 style="color:var(--primary);">📋 Kuis (${quizBlocks.length} Soal)</h3>`; quizBlocks.forEach((q,i)=>{const qId=`aquiz_${moduleId}_${i}`; quizHtml+=`<div id="${qId}" style="background:var(--surface-hover);padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid var(--border);"><p style="font-weight:600;margin-bottom:10px;">${i+1}. ${q.q}</p>${['a','b','c','d'].map(o=>`<button class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;padding:10px;font-size:0.9rem;" onclick="checkGenericAnswer('${qId}','${o.toUpperCase()}','${q.answer}',this,'${encodeURIComponent(q.explanation)}')">${o.toUpperCase()}) ${q[o]}</button>`).join('')}<div id="${qId}_result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:0.9rem;"></div></div>`;}); quizHtml+=`<button class="btn btn-primary" style="width:100%;margin-top:10px;border-radius:20px;padding:12px;" onclick="completeGenericModule('auto','${level}','${moduleId}')">✅ Tandai Modul Selesai</button></div>`; }
+        if (quizBlocks.length) { quizHtml = `<div style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;"><h3 style="color:var(--primary);">📋 Kuis Interaktif (${quizBlocks.length} Soal)</h3>`; quizBlocks.forEach((q,i)=>{const qId=`aquiz_${moduleId}_${i}`; quizHtml+=`<div id="${qId}" style="background:var(--surface-hover);padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid var(--border);"><p style="font-weight:600;margin-bottom:10px;">${i+1}. ${q.q}</p>${['a','b','c','d'].map(o=>`<button class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;padding:10px;font-size:0.9rem;" onclick="checkGenericAnswer('${qId}','${o.toUpperCase()}','${q.answer}',this,'${encodeURIComponent(q.explanation)}')">${o.toUpperCase()}) ${q[o]}</button>`).join('')}<div id="${qId}_result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:0.9rem;"></div></div>`;}); quizHtml+=`<button class="btn btn-primary" style="width:100%;margin-top:10px;border-radius:20px;padding:12px;" onclick="completeGenericModule('auto','${level}','${moduleId}')">✅ Tandai Modul Selesai</button></div>`; }
         else { quizHtml = `<button class="btn btn-primary" style="width:100%;margin-top:20px;border-radius:20px;padding:12px;" onclick="completeGenericModule('auto','${level}','${moduleId}')">✅ Tandai Modul Selesai</button>`; }
-        document.getElementById('auto-lesson-content').innerHTML = `<div style="line-height:1.8;font-size:0.95rem;">${text}</div>${quizHtml}`;
-    } catch(err) { document.getElementById('auto-lesson-content').innerHTML = `<p style="color:#e53e3e;">❌ Gagal memuat.</p><button class="btn btn-secondary mt-sm" onclick="openAutoLesson('${level}','${moduleId}')">🔄 Coba Lagi</button>`; }
+        
+        const actionBar = window.getActionBarHTML(mod.title, 'auto', moduleId);
+        document.getElementById('auto-lesson-content').innerHTML = `
+            ${actionBar}
+            <div style="background:var(--surface);padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.1);border:1px solid var(--border);">
+                ${formattedText}
+            </div>
+            </div> <!-- Close lesson-body from actionBar -->
+            ${quizHtml}
+        `;
+    } catch(err) { document.getElementById('auto-lesson-content').innerHTML = `<p style="color:#e53e3e;">❌ Gagal memuat materi. Pastikan API Key dan internet aktif.</p><button class="btn btn-secondary mt-sm" onclick="openAutoLesson('${level}','${moduleId}')">🔄 Coba Lagi</button>`; }
 };
 
 // ============== SHARED UTILITIES (used by all 3 systems) ==============
@@ -202,13 +213,23 @@ window.checkGenericAnswer = function(qId, selected, correct, btnEl, encodedExp) 
 };
 
 window.completeGenericModule = function(system, level, moduleId) {
-    const keyMap = { physics: 'physics_progress', hsse: 'hsse_progress', auto: 'auto_progress' };
+    const keyMap = { 
+        physics: 'physics_progress', hsse: 'hsse_progress', auto: 'auto_progress',
+        psychology: 'psy_progress', investment: 'inv_progress', coding: 'code_progress', pertamina: 'ptm_progress'
+    };
     const key = keyMap[system];
     const progress = JSON.parse(localStorage.getItem(key) || '{}');
     if (!progress[level]) progress[level] = [];
     if (!progress[level].includes(moduleId)) progress[level].push(moduleId);
     localStorage.setItem(key, JSON.stringify(progress));
+    
+    // Refresh UI
     if (system === 'physics') openPhysicsLevel(level);
     else if (system === 'hsse') openHsseLevel(level);
     else if (system === 'auto') openAutoLevel(level);
-};
+    else if (system === 'psychology') openPsyLevel(level);
+    else if (system === 'investment') openInvLevel(level);
+    else if (system === 'coding') openCodeLevel(level);
+    else if (system === 'pertamina') openPtmLevel(level);
+}
+

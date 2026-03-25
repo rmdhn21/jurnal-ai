@@ -71,6 +71,14 @@ function showScreen(targetScreen) {
         if (typeof updateHsseProgressUI === 'function') updateHsseProgressUI();
     } else if (targetScreen === 'automotive') {
         if (typeof updateAutoProgressUI === 'function') updateAutoProgressUI();
+    } else if (targetScreen === 'psychology') {
+        if (typeof updatePsyProgressUI === 'function') updatePsyProgressUI();
+    } else if (targetScreen === 'investment') {
+        if (typeof updateInvProgressUI === 'function') updateInvProgressUI();
+    } else if (targetScreen === 'coding') {
+        if (typeof updateCodeProgressUI === 'function') updateCodeProgressUI();
+    } else if (targetScreen === 'pertamina') {
+        if (typeof updatePtmProgressUI === 'function') updatePtmProgressUI();
     }
 }
 

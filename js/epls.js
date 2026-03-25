@@ -393,42 +393,24 @@ Pastikan seluruh materi sangat detail, padat, dan berkualitas tinggi setara buku
             })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
         if (!response.ok) throw new Error('API Error');
 
         const result = await response.json();
-        let text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal mendapatkan respons dari AI.';
+        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal .';
+        
+        // Use shared helpers
+        const { quizBlocks, cleanedText } = window.extractQuizAndCleanText(rawText);
+        const formattedText = window.formatAIText(cleanedText);
 
-        // Parse quiz blocks
-        const quizBlocks = [];
-        text = text.replace(/\[QUIZ\]([\s\S]*?)\[\/QUIZ\]/g, (_, block) => {
-            const qMatch = block.match(/Pertanyaan:\s*(.*)/i);
-            const aMatch = block.match(/^A\)\s*(.*)/mi);
-            const bMatch = block.match(/^B\)\s*(.*)/mi);
-            const cMatch = block.match(/^C\)\s*(.*)/mi);
-            const dMatch = block.match(/^D\)\s*(.*)/mi);
-            const ansMatch = block.match(/Jawaban:\s*([A-D])/i);
-            const expMatch = block.match(/Penjelasan:\s*([\s\S]*?)$/i);
-
-            if (qMatch && ansMatch) {
-                quizBlocks.push({
-                    q: qMatch[1].trim(),
-                    a: aMatch?.[1]?.trim() || '',
-                    b: bMatch?.[1]?.trim() || '',
-                    c: cMatch?.[1]?.trim() || '',
-                    d: dMatch?.[1]?.trim() || '',
-                    answer: ansMatch[1].trim().toUpperCase(),
-                    explanation: expMatch?.[1]?.trim() || ''
-                });
-            }
-            return ''; // Remove quiz block from main text
-        });
-
-        // Convert markdown bold and headers
-        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        text = text.replace(/^### (.*$)/gim, '<h4 style="color:var(--primary);margin-top:15px;">$1</h4>');
-        text = text.replace(/^## (.*$)/gim, '<h3 style="color:var(--primary);margin-top:20px;">$1</h3>');
-        text = text.replace(/^# (.*$)/gim, '<h2 style="color:var(--primary);margin-top:20px;">$1</h2>');
-        text = text.replace(/\n/g, '<br>');
+        const actionBar = window.getActionBarHTML(lessonTitle, 'epls', moduleId);
+        document.getElementById('epls-lesson-content').innerHTML = `
+            ${actionBar}
+            <div style="background:var(--surface);padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.1);border:1px solid var(--border);position:relative;">
+                ${formattedText}
+            </div>
+            </div> <!-- Close lesson-body from actionBar -->
+        `;
 
         // Build quiz HTML
         let quizHtml = '';

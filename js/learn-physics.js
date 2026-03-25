@@ -151,60 +151,70 @@ window.openPhysicsLesson = async function(level, moduleId) {
     const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
     if (!apiKey) { document.getElementById('physics-lesson-content').innerHTML = '<p style="color:#e53e3e;">⚠️ API Key belum diatur.</p>'; return; }
 
-    const prompt = `Kamu adalah guru Fisika berpengalaman 15 tahun, ahli di bidang Fisika Teknik dan Fisika Dasar Universitas.
+    const prompt = `Kamu adalah Pakar Fisika (PhD Physics) dan Pendidik berpengalaman 20 tahun. Buatkan materi pelajaran yang LENGKAP dan MENDALAM untuk topik berikut:
 
 📌 TOPIK: ${mod.title}
 📌 LEVEL: ${level.replace('L','Level ')} - ${data.title}
 📌 DESKRIPSI: ${mod.desc}
 
-Buatkan materi pelajaran LENGKAP dalam Bahasa Indonesia:
+FORMAT MATERI WAJIB (dalam Bahasa Indonesia):
 
-1. **📖 Penjelasan Konsep** (min 5 paragraf, jelaskan dengan sangat mudah dipahami, sertakan RUMUS dan DERIVASI jika ada)
+1. **📖 Penjelasan Konsep & Teori** (minimal 5 paragraf, jelaskan sejelas-jelasnya dengan bahasa Indonesia yang mudah dipahami. Sertakan RUMUS dan DERIVASI jika ada.)
 
-2. **📐 Rumus-Rumus Penting** (daftar semua rumus relevan dengan penjelasan simbol-simbolnya)
+2. **📐 Rumus-Rumus Penting** (daftar semua rumus relevan dengan penjelasan simbol dan satuannya.)
 
-3. **📝 Contoh Soal & Pembahasan** (min 3 soal hitungan LENGKAP dengan langkah penyelesaian step-by-step)
+3. **📝 Contoh Soal & Pembahasan** (minimal 3 soal hitungan yang bervariasi, berikan penyelesaian step-by-step yang logis.)
 
-4. **💡 Tips & Tricks** (3-5 tips untuk menguasai topik ini)
+4. **💡 Tips & Tricks Senior** (3-5 tips praktis untuk memecahkan soal atau memahami konsep ini lebih cepat.)
 
-5. **📋 KUIS INTERAKTIF** — Buat TEPAT 5 soal pilihan ganda (A, B, C, D):
+5. **⚠️ Kesalahan Umum (Common Mistakes)** (3-5 kesalahan yang sering dilakukan siswa dalam topik ini beserta koreksinya.)
+
+6. **📋 KUIS INTERAKTIF** — Buat TEPAT 5 soal pilihan ganda (A, B, C, D) dengan format berikut UNTUK SETIAP SOAL:
 [QUIZ]
-Pertanyaan: (tulis pertanyaan, bisa hitungan)
+Pertanyaan: (tulis pertanyaan)
 A) pilihan a
 B) pilihan b
 C) pilihan c
 D) pilihan d
-Jawaban: (huruf benar)
-Penjelasan: (jelaskan & tunjukkan perhitungannya)
+Jawaban: (huruf benar, contoh: B)
+Penjelasan: (jelaskan & tunjukkan perhitungannya secara detail)
 [/QUIZ]
 
-Pastikan materi berkualitas tinggi setara buku Halliday/Resnick!`;
+Pastikan seluruh materi sangat detail, berkualitas tinggi, dan setara buku Halliday/Resnick atau Serway!`;
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 8192 } })
         });
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
         if (!response.ok) throw new Error('API Error');
         const result = await response.json();
-        let text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal.';
-        const quizBlocks = [];
-        text = text.replace(/\[QUIZ\]([\s\S]*?)\[\/QUIZ\]/g, (_, block) => {
-            const q = block.match(/Pertanyaan:\s*(.*)/i), a = block.match(/^A\)\s*(.*)/mi), b = block.match(/^B\)\s*(.*)/mi), c = block.match(/^C\)\s*(.*)/mi), d = block.match(/^D\)\s*(.*)/mi), ans = block.match(/Jawaban:\s*([A-D])/i), exp = block.match(/Penjelasan:\s*([\s\S]*?)$/i);
-            if (q && ans) quizBlocks.push({ q: q[1].trim(), a: a?.[1]?.trim()||'', b: b?.[1]?.trim()||'', c: c?.[1]?.trim()||'', d: d?.[1]?.trim()||'', answer: ans[1].trim().toUpperCase(), explanation: exp?.[1]?.trim()||'' });
-            return '';
-        });
-        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^### (.*$)/gim, '<h4 style="color:var(--primary);margin-top:15px;">$1</h4>').replace(/^## (.*$)/gim, '<h3 style="color:var(--primary);margin-top:20px;">$1</h3>').replace(/^# (.*$)/gim, '<h2 style="color:var(--primary);margin-top:20px;">$1</h2>').replace(/\n/g, '<br>');
+        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal.';
+        
+        // Use shared helpers
+        const { quizBlocks, cleanedText } = window.extractQuizAndCleanText(rawText);
+        const formattedText = window.formatAIText(cleanedText);
+
         let quizHtml = '';
         if (quizBlocks.length > 0) {
-            quizHtml = `<div style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;"><h3 style="color:var(--primary);">📋 Kuis (${quizBlocks.length} Soal)</h3>`;
+            quizHtml = `<div style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;"><h3 style="color:var(--primary);">📋 Kuis Interaktif (${quizBlocks.length} Soal)</h3>`;
             quizBlocks.forEach((q, i) => { const qId = `pquiz_${moduleId}_${i}`;
                 quizHtml += `<div id="${qId}" style="background:var(--surface-hover);padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid var(--border);"><p style="font-weight:600;margin-bottom:10px;">${i+1}. ${q.q}</p>${['a','b','c','d'].map(o=>`<button class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;padding:10px;font-size:0.9rem;" onclick="checkGenericAnswer('${qId}','${o.toUpperCase()}','${q.answer}',this,'${encodeURIComponent(q.explanation)}')">${o.toUpperCase()}) ${q[o]}</button>`).join('')}<div id="${qId}_result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:0.9rem;"></div></div>`;
             });
             quizHtml += `<button class="btn btn-primary" style="width:100%;margin-top:10px;border-radius:20px;padding:12px;" onclick="completeGenericModule('physics','${level}','${moduleId}')">✅ Tandai Modul Selesai</button></div>`;
         } else { quizHtml = `<button class="btn btn-primary" style="width:100%;margin-top:20px;border-radius:20px;padding:12px;" onclick="completeGenericModule('physics','${level}','${moduleId}')">✅ Tandai Modul Selesai</button>`; }
-        document.getElementById('physics-lesson-content').innerHTML = `<div style="line-height:1.8;font-size:0.95rem;">${text}</div>${quizHtml}`;
+        
+        const actionBar = window.getActionBarHTML(mod.title, 'physics', moduleId);
+        document.getElementById('physics-lesson-content').innerHTML = `
+            ${actionBar}
+            <div style="background:var(--surface);padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.1);border:1px solid var(--border);">
+                ${formattedText}
+            </div>
+            </div> <!-- Close lesson-body from actionBar -->
+            ${quizHtml}
+        `;
     } catch (err) {
-        document.getElementById('physics-lesson-content').innerHTML = `<p style="color:#e53e3e;">❌ Gagal memuat. Cek API Key & internet.</p><button class="btn btn-secondary mt-sm" onclick="openPhysicsLesson('${level}','${moduleId}')">🔄 Coba Lagi</button>`;
+        document.getElementById('physics-lesson-content').innerHTML = `<p style="color:#e53e3e;">❌ Gagal memuat materi. Pastikan API Key dan internet aktif.</p><button class="btn btn-secondary mt-sm" onclick="openPhysicsLesson('${level}','${moduleId}')">🔄 Coba Lagi</button>`;
     }
 };

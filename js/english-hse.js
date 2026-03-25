@@ -144,6 +144,7 @@ JANGAN TAMBAHKAN TEKS APAPUN SELAIN JSON TERSEBUT. PASTIKAN BISA DI-PARSE.`;
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -412,13 +413,12 @@ Silakan mulai sekarang.` }]
 
     try {
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: roleplayChatHistory, generationConfig: { temperature: 0.7 } })
         });
-
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan.');
         const data = await response.json();
 
         if (data.candidates && data.candidates[0].content) {
@@ -481,13 +481,12 @@ async function sendRoleplayMessage() {
 
     try {
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: roleplayChatHistory, generationConfig: { temperature: 0.7 } })
         });
-
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan.');
         const data = await response.json();
 
         if (data.candidates && data.candidates[0].content) {
@@ -614,6 +613,7 @@ Tampilkan struktur respon:
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -775,6 +775,7 @@ Format HANYA berupa JSON valid dengan struktur:
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1042,6 +1043,7 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code.`
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5 } }) // Lower temp for more analytical/standard output
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu sejenak.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1122,6 +1124,7 @@ ${currentJsaContentEn}`;
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1502,6 +1505,7 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code s
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1564,6 +1568,7 @@ ${currentRcaContentEn}`;
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1666,6 +1671,7 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code s
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6 } }) // Slightly higher temp for more natural speaking tone
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1728,6 +1734,7 @@ ${currentTbtContentEn}`;
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1915,6 +1922,7 @@ async function sendHseChatMessage() {
             })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
