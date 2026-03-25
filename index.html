@@ -237,6 +237,50 @@
                     </div>
                 </div>
 
+                <!-- Psychology Mastery Banner -->
+                <div class="card mt-md" style="background: linear-gradient(135deg, #d946ef, #8b5cf6); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(217, 70, 239, 0.4);" onclick="navigateToSubscreen('psychology')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🧠 Psikologi & EQ</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Kecerdasan Emosional & Mental Health</p>
+                        </div>
+                        <div style="font-size: 2rem;">🎭</div>
+                    </div>
+                </div>
+
+                <!-- Investment Mastery Banner -->
+                <div class="card mt-md" style="background: linear-gradient(135deg, #059669, #10b981); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);" onclick="navigateToSubscreen('investment')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">📈 Saham & Syariah</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Investasi Saham & Ekonomi Syariah</p>
+                        </div>
+                        <div style="font-size: 2rem;">💰</div>
+                    </div>
+                </div>
+
+                <!-- Coding Mastery Banner -->
+                <div class="card mt-md" style="background: linear-gradient(135deg, #334155, #3b82f6); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);" onclick="navigateToSubscreen('coding')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">💻 Coding & AI</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Web Dev, Python, & AI Mastery</p>
+                        </div>
+                        <div style="font-size: 2rem;">🤖</div>
+                    </div>
+                </div>
+
+                <!-- Pertamina Mastery Banner -->
+                <div class="card mt-md" style="background: linear-gradient(135deg, #1e3a8a, #ef4444); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);" onclick="navigateToSubscreen('pertamina')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">⛽ Pertamina Mastery</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Budaya AKHLAK & Bisnis Migas</p>
+                        </div>
+                        <div style="font-size: 2rem;">🚢</div>
+                    </div>
+                </div>
+
                 <!-- Moving the AI Tutors card from the dashboard to here -->
                 <div class="card mt-md" id="ai-tutor-card" style="border-left: 4px solid var(--secondary);">
                     <div class="brain-header-row">
@@ -2053,6 +2097,58 @@
             </div>
         </section>
 
+        <!-- Psychology Mastery Screen -->
+        <section id="psychology-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>🧠 Psikologi & EQ Mastery</h2><p class="text-muted">Kuasai kecerdasan emosional dan ilmu perilaku.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Psikologi</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Pahami diri dan orang lain melalui 5 level intensif.</p>
+                <div class="epls-level-card" onclick="openPsyLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#d946ef;">1</span><span class="level-title">Dasar Psikologi & Perilaku</span></div><p class="level-desc">Sejarah, sistem saraf, sensasi, persepsi, kepribadian.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPsyLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#a855f7;">2</span><span class="level-title">Kecerdasan Emosional (EQ)</span></div><p class="level-desc">5 pilar EQ, manajemen diri, empati, motivasi.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPsyLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#8b5cf6;">3</span><span class="level-title">Komunikasi & Hubungan</span></div><p class="level-desc">Active listening, asertif, bahasa tubuh, resolusi konflik.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPsyLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#6366f1;">4</span><span class="level-title">Mental Health & Resilience</span></div><p class="level-desc">Manajemen stres, mindfulness, ketangguhan mental, mindset.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPsyLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">5</span><span class="level-title">Leadership & Coaching</span></div><p class="level-desc">Gaya kepemimpinan, coaching, feedback, persuasi.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- Investment Mastery Screen -->
+        <section id="investment-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>📈 Saham & Ekonomi Syariah</h2><p class="text-muted">Bangun kekayaan dengan prinsip syariah yang kuat.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Investasi</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Selesaikan level untuk mencapai Financial Independence.</p>
+                <div class="epls-level-card" onclick="openInvLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#059669;">1</span><span class="level-title">Dasar Keuangan & Syariah</span></div><p class="level-desc">Time value of money & prinsip riba, gharar, maysir.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openInvLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#10b981;">2</span><span class="level-title">Produk Investasi Syariah</span></div><p class="level-desc">Reksa dana, sukuk, dan saham syariah (ISSI/JII).</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openInvLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#34d399;">3</span><span class="level-title">Analisis Fundamental & Teknikal</span></div><p class="level-desc">Membaca laporan keuangan & grafik harga saham.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openInvLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#6ee7b7;">4</span><span class="level-title">Manajemen Risiko & Portofolio</span></div><p class="level-desc">Diversifikasi asset & strategi money management.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openInvLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#a7f3d0;">5</span><span class="level-title">Financial Independence Road</span></div><p class="level-desc">Strategi pasif income & kebebasan energi finansial.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- Coding Mastery Screen -->
+        <section id="coding-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>💻 Coding & AI Mastery</h2><p class="text-muted">Kuasai teknologi masa depan dari nol.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Programmer</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Bangun skill development dan implementasi AI.</p>
+                <div class="epls-level-card" onclick="openCodeLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#475569;">1</span><span class="level-title">Logika & Dasar Programming</span></div><p class="level-desc">Algoritma, variabel, looping (Python/JS).</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openCodeLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#334155;">2</span><span class="level-title">Web Development (Frontend)</span></div><p class="level-desc">HTML, CSS, modern JavaScript, & UI Design.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openCodeLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#1e293b;">3</span><span class="level-title">Backend & Database</span></div><p class="level-desc">API development, SQL, & Server-side logic.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openCodeLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">4</span><span class="level-title">AI & Machine Learning Dasar</span></div><p class="level-desc">Prompt engineering, data science, & model AI.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openCodeLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#2563eb;">5</span><span class="level-title">Software Architecture & Cloud</span></div><p class="level-desc">System design, DevOps, & scaleable application.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- Pertamina Mastery Screen -->
+        <section id="pertamina-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>⛽ Pertamina Mastery</h2><p class="text-muted">Kuasai budaya dan bisnis di Pertamina Grup.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Pertamina</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Menjadi insan Pertamina yang unggul dan AKHLAK.</p>
+                <div class="epls-level-card" onclick="openPtmLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#1e3a8a;">1</span><span class="level-title">Visi & Budaya AKHLAK</span></div><p class="level-desc">Amanah, Kompeten, Harmonis, Loyal, Adaptif, Kolaboratif.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPtmLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#1e40af;">2</span><span class="level-title">Rantai Bisnis Migas (Up-Down)</span></div><p class="level-desc">Eksplorasi, produksi, kilang, hingga pemasaran.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPtmLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#ef4444;">3</span><span class="level-title">Standar Safety (CLSR & SUPREME)</span></div><p class="level-desc">Aturan keselamatan kerja & standar manajemen HSE.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPtmLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#dc2626;">4</span><span class="level-title">Operational Excellence & ESG</span></div><p class="level-desc">Efisiensi operasi dan keberlanjutan lingkungan.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPtmLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#b91c1c;">5</span><span class="level-title">Energy Transition & Future</span></div><p class="level-desc">Energi baru terbarukan & masa depan net zero emission.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
     </div>
 
     <!-- Scripts (modular) -->
@@ -2096,6 +2192,11 @@
     <script src="js/learn-physics.js"></script>
     <script src="js/learn-hsse.js"></script>
     <script src="js/learn-automotive.js"></script>
+    <script src="js/learn-psychology.js"></script>
+    <script src="js/learn-investment.js"></script>
+    <script src="js/learn-coding.js"></script>
+    <script src="js/learn-pertamina.js"></script>
+    <script src="js/lesson-tools.js"></script>
 
     <!-- App Initialization (must be last) -->
     <script src="js/app-init.js"></script>
