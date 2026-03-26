@@ -33,6 +33,11 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Markmap & D3 for Interactive Mind-Maps -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
+
     <!-- html2pdf.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
@@ -192,92 +197,79 @@
                     <h2>📚 Learning Hub</h2>
                     <p class="text-muted">Tingkatkan karir dan karisma diri Anda dengan belajar.</p>
                 </div>
-                
-                <!-- EPLS Promo / Entry Banner -->
-                <div class="card mt-md" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);" onclick="navigateToSubscreen('epls')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🚀 EPLS System</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Sistem Belajar & Tracker English (A1-C1)</p>
-                        </div>
-                        <div style="font-size: 2rem;">📈</div>
+
+                <!-- Mastery 2.0: Hexagon Dashboard -->
+                <div class="card mt-md" style="padding-bottom: 0;">
+                    <div class="card-header">
+                        <h3>⚡ Mastery Skills Tree</h3>
+                        <span class="badge-ai" style="background: var(--primary);">8 Modules</span>
                     </div>
+                    <div id="mastery-hexagon-dashboard" style="margin-top: -20px;"></div>
                 </div>
 
-                <!-- Physics Mastery Banner -->
-                <div class="card mt-md" style="background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);" onclick="navigateToSubscreen('physics')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🔬 Fisika Mastery</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Mekanika sampai Fisika Modern (5 Level)</p>
-                        </div>
-                        <div style="font-size: 2rem;">⚡</div>
+                <!-- Detailed Module List (Collapsible / Secondary) -->
+                <div class="card mt-md minimized" id="mastery-list-container">
+                    <div class="card-header" onclick="this.parentElement.classList.toggle('minimized')" style="cursor:pointer;">
+                        <h3>📋 Detailed Modules</h3>
+                        <span>⌄</span>
                     </div>
-                </div>
-
-                <!-- HSSE Mastery Banner -->
-                <div class="card mt-md" style="background: linear-gradient(135deg, #065f46, #10b981); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);" onclick="navigateToSubscreen('hsse')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🛡️ HSSE Mastery</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">K3 Dasar sampai Leadership & Audit</p>
+                    <div class="mastery-list-content">
+                        <!-- English EPLS -->
+                        <div class="card mt-sm" style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; border-radius: 12px; cursor: pointer; border: none;" onclick="navigateToSubscreen('epls')">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+                                <div><strong style="font-size: 1.1rem;">🇬🇧 English Mastery (EPLS)</strong></div>
+                                <div style="font-size: 1.5rem;">🎓</div>
+                            </div>
                         </div>
-                        <div style="font-size: 2rem;">🏗️</div>
-                    </div>
-                </div>
-
-                <!-- Automotive Mastery Banner -->
-                <div class="card mt-md" style="background: linear-gradient(135deg, #92400e, #f59e0b); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);" onclick="navigateToSubscreen('automotive')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🚗 Mesin Kendaraan</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Engine, Transmisi, Kelistrikan, Diesel</p>
+                        <!-- Physics -->
+                        <div class="card mt-sm" style="background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white; border-radius: 12px; cursor: pointer; border: none;" onclick="navigateToSubscreen('physics')">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+                                <div><strong style="font-size: 1.1rem;">🔬 Fisika Mastery</strong></div>
+                                <div style="font-size: 1.5rem;">⚡</div>
+                            </div>
                         </div>
-                        <div style="font-size: 2rem;">🔧</div>
-                    </div>
-                </div>
-
-                <!-- Psychology Mastery Banner -->
-                <div class="card mt-md" style="background: linear-gradient(135deg, #d946ef, #8b5cf6); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(217, 70, 239, 0.4);" onclick="navigateToSubscreen('psychology')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">🧠 Psikologi & EQ</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Kecerdasan Emosional & Mental Health</p>
+                        <!-- HSSE -->
+                        <div class="card mt-sm" style="background: linear-gradient(135deg, #065f46, #10b981); color: white; border-radius: 12px; cursor: pointer; border: none;" onclick="navigateToSubscreen('hsse')">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+                                <div><strong style="font-size: 1.1rem;">🛡️ HSSE Mastery</strong></div>
+                                <div style="font-size: 1.5rem;">🏗️</div>
+                            </div>
                         </div>
-                        <div style="font-size: 2rem;">🎭</div>
-                    </div>
-                </div>
-
-                <!-- Investment Mastery Banner -->
-                <div class="card mt-md" style="background: linear-gradient(135deg, #059669, #10b981); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);" onclick="navigateToSubscreen('investment')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">📈 Saham & Syariah</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Investasi Saham & Ekonomi Syariah</p>
+                        <!-- Automotive -->
+                        <div class="card mt-sm" style="background: linear-gradient(135deg, #92400e, #f59e0b); color: white; border-radius: 12px; cursor: pointer; border: none;" onclick="navigateToSubscreen('automotive')">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+                                <div><strong style="font-size: 1.1rem;">🚗 Mesin Kendaraan</strong></div>
+                                <div style="font-size: 1.5rem;">🔧</div>
+                            </div>
                         </div>
-                        <div style="font-size: 2rem;">💰</div>
-                    </div>
-                </div>
-
-                <!-- Coding Mastery Banner -->
-                <div class="card mt-md" style="background: linear-gradient(135deg, #334155, #3b82f6); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);" onclick="navigateToSubscreen('coding')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">💻 Coding & AI</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Web Dev, Python, & AI Mastery</p>
+                        <!-- Psychology -->
+                        <div class="card mt-sm" style="background: linear-gradient(135deg, #d946ef, #8b5cf6); color: white; border-radius: 12px; cursor: pointer; border: none;" onclick="navigateToSubscreen('psychology')">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+                                <div><strong style="font-size: 1.1rem;">🧠 Psikologi & EQ</strong></div>
+                                <div style="font-size: 1.5rem;">🎭</div>
+                            </div>
                         </div>
-                        <div style="font-size: 2rem;">🤖</div>
-                    </div>
-                </div>
-
-                <!-- Pertamina Mastery Banner -->
-                <div class="card mt-md" style="background: linear-gradient(135deg, #1e3a8a, #ef4444); color: white; border-radius: 12px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);" onclick="navigateToSubscreen('pertamina')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: white; margin: 0; font-size: 1.3rem;">⛽ Pertamina Mastery</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Budaya AKHLAK & Bisnis Migas</p>
+                        <!-- Investment -->
+                        <div class="card mt-sm" style="background: linear-gradient(135deg, #059669, #10b981); color: white; border-radius: 12px; cursor: pointer; border: none;" onclick="navigateToSubscreen('investment')">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+                                <div><strong style="font-size: 1.1rem;">📈 Saham & Syariah</strong></div>
+                                <div style="font-size: 1.5rem;">💰</div>
+                            </div>
                         </div>
-                        <div style="font-size: 2rem;">🚢</div>
+                        <!-- Coding -->
+                        <div class="card mt-sm" style="background: linear-gradient(135deg, #334155, #3b82f6); color: white; border-radius: 12px; cursor: pointer; border: none;" onclick="navigateToSubscreen('coding')">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+                                <div><strong style="font-size: 1.1rem;">💻 Coding & AI</strong></div>
+                                <div style="font-size: 1.5rem;">🤖</div>
+                            </div>
+                        </div>
+                        <!-- Pertamina -->
+                        <div class="card mt-sm" style="background: linear-gradient(135deg, #1e3a8a, #ef4444); color: white; border-radius: 12px; cursor: pointer; border: none;" onclick="navigateToSubscreen('pertamina')">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+                                <div><strong style="font-size: 1.1rem;">⛽ Pertamina Mastery</strong></div>
+                                <div style="font-size: 1.5rem;">🚢</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1951,8 +1943,8 @@
                             <button id="stop-speak-pjsm-btn" class="btn btn-secondary hidden" style="flex: 1; font-size: 0.85rem; padding: 8px; background: #e53e3e; color: white;">⏹️ Stop</button>
                             <button id="export-pjsm-pdf-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📄 Export PDF</button>
                         </div>
-                        <div id="pjsm-content"
-                            style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; overflow-x: auto;">
+                        <div id="pjsm-content" class="pjsm-generated-content"
+                            style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.7; white-space: normal; overflow-x: auto;">
                         </div>
                     </div>
                 </div>
@@ -2189,6 +2181,9 @@
     <script src="js/english-fluency.js"></script>
     <script src="js/hse-rig.js"></script>
     <script src="js/epls.js"></script>
+    <script src="js/lesson-tools.js"></script>
+    <script src="js/learn-shared.js"></script>
+    <script src="js/mastery-dashboard.js"></script>
     <script src="js/learn-physics.js"></script>
     <script src="js/learn-hsse.js"></script>
     <script src="js/learn-automotive.js"></script>
@@ -2196,7 +2191,6 @@
     <script src="js/learn-investment.js"></script>
     <script src="js/learn-coding.js"></script>
     <script src="js/learn-pertamina.js"></script>
-    <script src="js/lesson-tools.js"></script>
 
     <!-- App Initialization (must be last) -->
     <script src="js/app-init.js"></script>

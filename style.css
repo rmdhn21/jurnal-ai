@@ -4404,3 +4404,263 @@ body::before {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
+
+/* AI PJSM Generated Content Styling */
+.pjsm-generated-content {
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.8;
+}
+
+.pjsm-generated-content strong {
+    font-weight: 700;
+    text-shadow: 0 0 1px rgba(229, 62, 62, 0.2);
+}
+
+.pjsm-generated-content br {
+    display: block;
+    margin-bottom: 8px;
+    content: "";
+}
+
+/* Support for bullet points in the prompt response */
+.pjsm-generated-content p {
+    margin: 0 0 12px 0;
+}
+
+/* Inspection Memo Styles */
+.inspection-memo-btn {
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 10px;
+}
+.inspection-memo-btn:hover {
+    background: var(--primary);
+    color: var(--bg-primary);
+    border-color: var(--primary);
+}
+.inspection-memo-btn.has-content {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.inspection-memo-container {
+    margin-top: 10px;
+    padding: 12px;
+    background: rgba(var(--primary-rgb), 0.05);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.inspection-memo-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.85rem;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.inspection-memo-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.inspection-photo-preview {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-top: 5px;
+}
+
+.memo-saved-indicator {
+    color: var(--success);
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Mastery Editor Styles */
+.mastery-editor-toolbar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--primary);
+    border-radius: 30px;
+    padding: 8px 15px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translate(-50%, 50px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.editor-tool-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--surface-hover);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 1.1rem;
+}
+.editor-tool-btn:hover {
+    background: var(--primary);
+    color: var(--bg-primary);
+}
+.editor-tool-btn.active {
+    background: var(--primary);
+    color: var(--bg-primary);
+}
+
+.lesson-editable-area:focus {
+    outline: 2px dashed var(--primary);
+    outline-offset: 4px;
+    border-radius: 8px;
+}
+
+.lesson-highlight {
+    background: #fef08a; /* Soft Yellow */
+    color: #1a1a1a;
+    padding: 1px 4px;
+    border-radius: 4px;
+    box-shadow: 0 0 5px rgba(254, 240, 138, 0.5);
+}
+
+.inserted-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 15px 0;
+    border: 1px solid var(--border);
+    display: block;
+}
+
+.inserted-note-block {
+    background: rgba(var(--primary-rgb), 0.08);
+    border-left: 4px solid var(--primary);
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: var(--text-primary);
+}
+
+/* ===== Mastery 2.0: Mind-Map, Flashcards & Hexagon ===== */
+.mindmap-root { background: var(--primary); color: white; padding: 15px 25px; border-radius: 30px; font-weight: bold; z-index: 1500; box-shadow: 0 0 20px rgba(37, 99, 235, 0.4); text-transform: uppercase; letter-spacing: 1px; }
+.mindmap-nodes-wrap { display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; margin-top: 50px; width: 100%; }
+.mindmap-node { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; width: 250px; animation: fadeInScale 0.5s ease both; }
+.mindmap-node-title { color: var(--primary); font-weight: 600; margin-bottom: 10px; border-bottom: 1px solid rgba(37, 99, 235, 0.2); padding-bottom: 5px; }
+.mindmap-node-details { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #cbd5e1; }
+.mindmap-node-details li { margin-bottom: 5px; padding-left: 12px; position: relative; }
+.mindmap-node-details li::before { content: '•'; position: absolute; left: 0; color: var(--primary); }
+@keyframes fadeInScale { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+/* Flashcards */
+.flashcard-inner { width: 320px; height: 450px; position: relative; transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer; }
+.flashcard-inner.flipped { transform: rotateY(180deg); }
+/* Mastery 2.0: Flashcards & Mind-Map */
+.flashcard-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+}
+.flashcard-inner.flipped {
+    transform: rotateY(180deg);
+}
+.flashcard-front, .flashcard-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    box-sizing: border-box;
+}
+.flashcard-back {
+    transform: rotateY(180deg);
+}
+
+/* Markmap Custom Styling */
+#markmap-svg g.markmap-node {
+    cursor: pointer;
+}
+#markmap-svg g.markmap-node rect {
+    fill: rgba(255, 255, 255, 0.05);
+    stroke: var(--primary);
+    rx: 8;
+    ry: 8;
+}
+#markmap-svg g.markmap-node text {
+    fill: white !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+}
+#markmap-svg path.markmap-link {
+    stroke: rgba(255, 255, 255, 0.2);
+    stroke-width: 2px;
+}
+#markmap-svg g.markmap-node:hover rect {
+    fill: var(--primary);
+}
+
+/* Hexagon Dashboard */
+#mastery-hexagon-dashboard { min-height: 250px; }
+.hexagon-dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; padding: 40px 20px; perspective: 1000px; }
+.hexagon-node { width: 180px; height: 200px; background: rgba(255,255,255,0.03); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.4s ease; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); position: relative; text-align: center; padding: 20px; }
+.hexagon-node:hover { background: rgba(37, 99, 235, 0.1); transform: scale(1.05) translateZ(20px); border-color: var(--primary); }
+.hexagon-node.completed { background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(139, 92, 246, 0.2)); border-color: var(--primary); box-shadow: 0 0 20px rgba(37, 99, 235, 0.3); }
+.hexagon-icon { font-size: 2.5rem; margin-bottom: 10px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
+.hexagon-title { font-size: 0.9rem; font-weight: 600; color: white; margin-bottom: 5px; }
+.hexagon-progress { width: 80%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+.hexagon-progress-fill { height: 100%; background: var(--primary); transition: width 1s ease-out; }
+
+/* Collapsible Mastery List */
+.mastery-list-content { transition: max-height 0.3s ease-out; overflow: hidden; max-height: 2000px; }
+.card.minimized .mastery-list-content { max-height: 0; }
+.card.minimized .card-header span { transform: rotate(-90deg); }
+.card-header span { transition: transform 0.3s; }
