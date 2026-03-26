@@ -324,12 +324,23 @@ window.backToEplsDashboard = function() {
 
 // ============== AI LESSON GENERATION ==============
 
-window.openEplsLesson = async function(level, moduleId) {
+window.openEplsLesson = async function(level, moduleId, forceRefresh = false) {
     const data = eplsSyllabus[level];
     const mod = data.modules.find(m => m.id === moduleId);
     if (!mod) return;
 
     const screen = document.getElementById('epls-screen');
+    const cacheKey = `lesson_cache_epls_${moduleId}`;
+
+    // 1. Check Cache first
+    if (!forceRefresh) {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            renderEplsLessonContent(screen, level, moduleId, cached);
+            return;
+        }
+    }
+
     screen.innerHTML = `
         <div class="header-back">
             <button class="back-btn" onclick="openEplsLevel('${level}')">
@@ -360,6 +371,10 @@ window.openEplsLesson = async function(level, moduleId) {
 📌 SKILL: ${mod.skill}
 📌 DESKRIPSI: ${mod.desc}
 
+⚠️ ATURAN PENTING PENULISAN SIMBOL (WAJIB):
+- JANGAN GUNAKAN LaTeX ($...$, \\(...\\), \\[...\\]).
+- Gunakan tag HTML sederhana untuk simbol/satuan (seperti <sup>2</sup>).
+
 FORMAT MATERI WAJIB (dalam Bahasa Indonesia dengan contoh Bahasa Inggris):
 
 1. **📖 Penjelasan Materi** (minimal 5 paragraf, jelaskan sejelas-jelasnya dengan bahasa Indonesia yang sangat mudah dipahami. Sertakan RUMUS/POLA/FORMULA jika topik grammar.)
@@ -381,7 +396,7 @@ Jawaban: (huruf jawaban yang benar, contoh: B)
 Penjelasan: (jelaskan mengapa jawaban tersebut benar)
 [/QUIZ]
 
-Pastikan seluruh materi sangat detail, padat, dan berkualitas tinggi setara buku Cambridge atau Oxford!`;
+Pastikan seluruh materi sangat detail, padat, and berkualitas tinggi setara buku Cambridge atau Oxford!`;
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -393,62 +408,15 @@ Pastikan seluruh materi sangat detail, padat, dan berkualitas tinggi setara buku
             })
         });
 
-        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
+        if (response.status === 429) throw new Error('Quota Exceeded');
         if (!response.ok) throw new Error('API Error');
 
         const result = await response.json();
-        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal .';
+        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal.';
         
-        // Use shared helpers
-        const { quizBlocks, cleanedText } = window.extractQuizAndCleanText(rawText);
-        const formattedText = window.formatAIText(cleanedText);
-
-        const actionBar = window.getActionBarHTML(lessonTitle, 'epls', moduleId);
-        document.getElementById('epls-lesson-content').innerHTML = `
-            ${actionBar}
-            <div style="background:var(--surface);padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.1);border:1px solid var(--border);position:relative;">
-                ${formattedText}
-            </div>
-            </div> <!-- Close lesson-body from actionBar -->
-        `;
-
-        // Build quiz HTML
-        let quizHtml = '';
-        if (quizBlocks.length > 0) {
-            quizHtml = `<div style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;">
-                <h3 style="color:var(--primary);">📋 Kuis Interaktif (${quizBlocks.length} Soal)</h3>`;
-            quizBlocks.forEach((q, i) => {
-                const qId = `quiz_${moduleId}_${i}`;
-                quizHtml += `
-                <div id="${qId}" style="background:var(--surface-hover);padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid var(--border);">
-                    <p style="font-weight:600;margin-bottom:10px;">${i+1}. ${q.q}</p>
-                    ${['a','b','c','d'].map(opt => `
-                        <button class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;padding:10px;font-size:0.9rem;" 
-                            onclick="checkEplsAnswer('${qId}','${opt.toUpperCase()}','${q.answer}', this, '${encodeURIComponent(q.explanation)}')">
-                            ${opt.toUpperCase()}) ${q[opt]}
-                        </button>
-                    `).join('')}
-                    <div id="${qId}_result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:0.9rem;"></div>
-                </div>`;
-            });
-            quizHtml += `
-                <button class="btn btn-primary" style="width:100%;margin-top:10px;border-radius:20px;padding:12px;" 
-                    onclick="completeEplsModule('${level}','${moduleId}')">
-                    ✅ Tandai Modul Selesai & Kembali
-                </button>
-            </div>`;
-        } else {
-            quizHtml = `
-                <button class="btn btn-primary" style="width:100%;margin-top:20px;border-radius:20px;padding:12px;" 
-                    onclick="completeEplsModule('${level}','${moduleId}')">
-                    ✅ Tandai Modul Selesai & Kembali
-                </button>`;
-        }
-
-        document.getElementById('epls-lesson-content').innerHTML = `
-            <div style="line-height:1.8;font-size:0.95rem;">${text}</div>
-            ${quizHtml}
-        `;
+        // Save to cache
+        localStorage.setItem(cacheKey, rawText);
+        renderEplsLessonContent(screen, level, moduleId, rawText);
 
     } catch (err) {
         console.error('EPLS Lesson Error:', err);
@@ -456,6 +424,67 @@ Pastikan seluruh materi sangat detail, padat, dan berkualitas tinggi setara buku
         <button class="btn btn-secondary mt-sm" onclick="openEplsLesson('${level}','${moduleId}')">🔄 Coba Lagi</button>`;
     }
 };
+
+function renderEplsLessonContent(screen, level, moduleId, rawText) {
+    const data = eplsSyllabus[level]; 
+    const mod = data.modules.find(m => m.id === moduleId);
+    const { quizBlocks, cleanedText } = window.extractQuizAndCleanText(rawText);
+    const formattedText = window.formatAIText(cleanedText);
+
+    let html = `
+        <div class="header-back" style="display:flex; justify-content:space-between; align-items:center;">
+            <button class="back-btn" onclick="openEplsLevel('${level}')">
+                <span class="back-icon">←</span> Kembali ke Level ${level}
+            </button>
+            <button class="btn btn-secondary btn-small" onclick="openEplsLesson('${level}','${moduleId}', true)">🔄 Buat Ulang</button>
+        </div>
+        <div class="card mt-md" style="border-left: 4px solid ${data.color};">
+            <h2>${mod.title}</h2>
+            <p class="text-muted">${mod.skill} • Level ${level}</p>
+        </div>
+        <div id="epls-lesson-content" class="card mt-md">
+            <div style="background:var(--surface);padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.1);border:1px solid var(--border);position:relative;">
+                ${formattedText}
+            </div>
+    `;
+
+    // Build quiz HTML
+    let quizHtml = '';
+    if (quizBlocks.length > 0) {
+        quizHtml = `<div style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;">
+            <h3 style="color:var(--primary);">📋 Kuis Interaktif (${quizBlocks.length} Soal)</h3>`;
+        quizBlocks.forEach((q, i) => {
+            const qId = `quiz_${moduleId}_${i}`;
+            quizHtml += `
+            <div id="${qId}" style="background:var(--surface-hover);padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid var(--border);">
+                <p style="font-weight:600;margin-bottom:10px;">${i+1}. ${q.q}</p>
+                ${['a','b','c','d'].map(opt => `
+                    <button class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;padding:10px;font-size:0.9rem;" 
+                        onclick="checkEplsAnswer('${qId}','${opt.toUpperCase()}','${q.answer}', this, '${encodeURIComponent(q.explanation)}')">
+                        ${opt.toUpperCase()}) ${q[opt]}
+                    </button>
+                `).join('')}
+                <div id="${qId}_result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:0.9rem;"></div>
+            </div>`;
+        });
+        quizHtml += `
+            <button class="btn btn-primary" style="width:100%;margin-top:10px;border-radius:20px;padding:12px;" 
+                onclick="completeEplsModule('${level}','${moduleId}')">
+                ✅ Tandai Modul Selesai & Kembali
+            </button>
+        </div>`;
+    } else {
+        quizHtml = `
+            <button class="btn btn-primary" style="width:100%;margin-top:20px;border-radius:20px;padding:12px;" 
+                onclick="completeEplsModule('${level}','${moduleId}')">
+                ✅ Tandai Modul Selesai & Kembali
+            </button>`;
+    }
+
+    html += quizHtml + `</div>`;
+    screen.innerHTML = html;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 // ============== QUIZ SYSTEM ==============
 

@@ -163,31 +163,187 @@ window.lessonTools = {
         document.body.appendChild(modal);
     },
 
-    // 5. POSTER / CHEAT SHEET
-    openPoster: function(title, selector) {
+    // 6. INTERACTIVE MIND-MAP (Markmap)
+    openMindMap: async function(title, selector) {
         const el = document.querySelector(selector);
-        const content = el.innerHTML.split('📋 Kuis')[0];
+        if (!el) return;
         
         const modal = document.createElement('div');
-        modal.id = 'poster-modal';
-        modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:10000;overflow-y:auto;padding:40px 20px;";
+        modal.id = 'mindmap-modal';
+        modal.className = 'mastery-modal';
+        modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;z-index:20000;display:flex;flex-direction:column;padding:20px;overflow:hidden;";
         
         modal.innerHTML = `
-            <div style="position:absolute;top:20px;right:20px;cursor:pointer;font-size:1.5rem;color:white;" onclick="this.parentElement.remove()">✕</div>
-            <div style="background:white;max-width:800px;margin:0 auto;padding:40px;border-radius:0;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:10px solid var(--primary);">
-                <h1 style="text-align:center;color:var(--primary);margin-bottom:30px;text-transform:uppercase;letter-spacing:2px;">${title}</h1>
-                <div style="column-count:2;column-gap:30px;font-size:0.9rem;color:#333;">
-                    ${content}
-                </div>
-                <div style="margin-top:40px;text-align:center;border-top:1px solid #ddd;padding-top:20px;font-style:italic;color:#666;">
-                    Generasi AI • Mastery Learning Systems
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;color:white;z-index:20001;">
+                <h3 style="margin:0;">🧠 Interactive Mind-Map: ${title}</h3>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn btn-secondary btn-small" onclick="window.resetMindmapZoom()">🔭 Reset Zoom</button>
+                    <button class="btn btn-secondary btn-small" onclick="this.closest('#mindmap-modal').remove()">✕ Tutup</button>
                 </div>
             </div>
-            <div style="text-align:center;margin-top:20px;">
-                <button class="btn btn-primary" onclick="window.print()">Simpan Poster (PDF)</button>
+            <div id="mindmap-container" style="flex:1;background:rgba(255,255,255,0.03);border-radius:20px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.1);box-shadow:inset 0 0 50px rgba(0,0,0,0.5);">
+                <svg id="markmap-svg" style="width:100%;height:100%;"></svg>
+                <div id="mindmap-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+                    <div class="loading-spinner"></div>
+                </div>
             </div>
         `;
         document.body.appendChild(modal);
+
+        const lessonText = el.innerText.split('📋 Kuis')[0];
+        const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+        if (!apiKey) return;
+
+        const prompt = `Buatlah struktur Mind-Map yang LENGKAP dan MENDALAM dari materi di bawah.
+        Format output WAJIB dalam Markdown Outline (hanya level judul #, ##, ###, dan list - ).
+        - Jangan gunakan kode lain.
+        - Fokus pada hierarki konsep.
+        - Tambahkan detail teknis di level terdalam.
+        
+        MATERI:
+        ${lessonText}`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
+            });
+            const result = await response.json();
+            const markdown = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            
+            document.getElementById('mindmap-loading').remove();
+            this.renderMarkmap(markdown);
+        } catch(e) {
+            console.error('Mindmap Error:', e);
+            document.getElementById('mindmap-container').innerHTML = '<p class="text-danger p-md">❌ Gagal memuat Peta Konsep.</p>';
+        }
+    },
+
+    renderMarkmap: function(markdown) {
+        if (!window.markmap) {
+            console.error('Markmap library not loaded');
+            return;
+        }
+        
+        const { Transformer, Markmap, loadCSS, loadJS } = window.markmap;
+        const transformer = new Transformer();
+        const { root, features } = transformer.transform(markdown);
+        const { styles, scripts } = transformer.getUsedAssets(features);
+        
+        if (styles) loadCSS(styles);
+        if (scripts) loadJS(scripts, { getMarkmap: () => window.markmap });
+        
+        const mm = Markmap.create('#markmap-svg', {
+            autoFit: true,
+            duration: 500,
+            paddingX: 16,
+            maxWidth: 300,
+            initialExpandLevel: 2
+        }, root);
+
+        window.resetMindmapZoom = () => mm.rescale(1);
+    },
+
+    // 7. AI FLASHCARDS
+    openFlashcards: async function(title, selector) {
+        const el = document.querySelector(selector);
+        if (!el) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'flashcards-modal';
+        modal.className = 'mastery-modal';
+        modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.98);z-index:20000;display:flex;flex-direction:column;padding:20px;overflow:hidden;";
+        
+        modal.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;color:white;">
+                <h3 style="margin:0;">🗂️ Flashcards: ${title}</h3>
+                <button class="btn btn-secondary" onclick="this.closest('#flashcards-modal').remove()">✕ Tutup</button>
+            </div>
+            <div id="flashcards-container" style="flex:1;display:flex;align-items:center;justify-content:center;perspective:1000px;">
+                <div class="loading-spinner"></div>
+            </div>
+            <div id="flashcards-controls" style="display:none;justify-content:center;gap:20px;padding:20px;">
+                <button class="btn btn-secondary" id="fc-prev">⬅️</button>
+                <button class="btn btn-primary" id="fc-flip">🔄 Balik</button>
+                <button class="btn btn-secondary" id="fc-next">➡️</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const lessonText = el.innerText.split('📋 Kuis')[0];
+        const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+        if (!apiKey) return;
+
+        const prompt = `Buatlah 10 kartu hapalan (Flashcards) dari materi berikut untuk membantu mengingat poin penting.
+        Format output JSON murni saja: [{"front": "Pertanyaan/Istilah", "back": "Jawaban/Definisi"}, ...].
+        
+        MATERI:
+        ${lessonText}`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
+            });
+            const result = await response.json();
+            const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text.replace(/```json|```/g, '').trim();
+            const cards = JSON.parse(jsonText);
+            
+            this.renderFlashcards(cards);
+        } catch(e) {
+            document.getElementById('flashcards-container').innerHTML = '<p class="text-danger">❌ Gagal memuat Flashcards.</p>';
+        }
+    },
+
+    renderFlashcards: function(cards) {
+        let currentIndex = 0;
+        const container = document.getElementById('flashcards-container');
+        const controls = document.getElementById('flashcards-controls');
+        controls.style.display = 'flex';
+        controls.style.gap = '15px';
+        
+        const updateCard = () => {
+            const card = cards[currentIndex];
+            container.innerHTML = `
+                <div class="flashcard-inner" id="fc-card-inner" style="width:100%; max-width:450px; height:300px; cursor:pointer;" onclick="this.classList.toggle('flipped')">
+                    <div class="flashcard-front" style="background:linear-gradient(135deg, #1e293b, #334155); border:1px solid rgba(255,255,255,0.1); box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); display:flex; flex-direction:column; padding:40px; text-align:center; justify-content:center;">
+                        <div style="position:absolute; top:20px; left:20px; font-size:0.75rem; color:var(--primary); font-weight:600; text-transform:uppercase; letter-spacing:1px;">Question ${currentIndex + 1} / ${cards.length}</div>
+                        <div style="font-size:1.6rem; font-weight:700; color:white; line-height:1.4; margin-bottom:20px;">${card.front}</div>
+                        <div style="position:absolute; bottom:20px; width:100%; left:0; font-size:0.8rem; color:#94a3b8; opacity:0.6;">Tap to flip 🔄</div>
+                    </div>
+                    <div class="flashcard-back" style="background:linear-gradient(135deg, #0f172a, #1e293b); border:1px solid var(--primary); box-shadow:0 0 30px rgba(59,130,246,0.2); display:flex; flex-direction:column; padding:40px; text-align:center; justify-content:center;">
+                        <div style="position:absolute; top:20px; left:20px; font-size:0.75rem; color:var(--success); font-weight:600; text-transform:uppercase; letter-spacing:1px;">Answer</div>
+                        <div style="font-size:1.2rem; line-height:1.6; color:#e2e8f0;">${card.back}</div>
+                        <div style="position:absolute; bottom:20px; width:100%; left:0; font-size:0.8rem; color:var(--primary); opacity:0.8;">Tap to go back ↩️</div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const btnStyle = "padding:12px 25px; border-radius:30px; font-weight:600; transition:all 0.3s ease; box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);";
+        document.getElementById('fc-flip').style.display = 'none'; // Replaced by card click
+        document.getElementById('fc-prev').style = btnStyle;
+        document.getElementById('fc-next').style = btnStyle;
+
+        document.getElementById('fc-next').onclick = (e) => {
+            e.stopPropagation();
+            if (currentIndex < cards.length - 1) { 
+                currentIndex++; 
+                container.style.opacity = '0';
+                setTimeout(() => { updateCard(); container.style.opacity = '1'; }, 200);
+            }
+        };
+        document.getElementById('fc-prev').onclick = (e) => {
+            e.stopPropagation();
+            if (currentIndex > 0) { 
+                currentIndex--; 
+                container.style.opacity = '0';
+                setTimeout(() => { updateCard(); container.style.opacity = '1'; }, 200);
+            }
+        };
+
+        container.style.transition = 'opacity 0.2s ease';
+        updateCard();
     }
 };
 
@@ -201,6 +357,8 @@ window.getActionBarHTML = function(title, system, moduleId) {
         <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.generateSummary('${system}', '#lesson-body', 'lesson-summary-box')">📝 Summary</button>
         <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openPresentation('${title}', '#lesson-body')">📽️ Slide</button>
         <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openPoster('${title}', '#lesson-body')">🖼️ Poster</button>
+        <button class="btn btn-primary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openMindMap('${title}', '#lesson-body')">🧠 Mind-Map</button>
+        <button class="btn btn-primary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openFlashcards('${title}', '#lesson-body')">🗂️ Flashcards</button>
     </div>
     <div id="lesson-summary-box" class="no-print" style="margin-bottom:15px;"></div>
     <div id="lesson-body">`;
@@ -247,8 +405,10 @@ window.formatAIText = function(text) {
 
     // 2b. Math & LaTeX Symbols (Simplified but Effective)
     processedText = processedText
-        .replace(/\\\((.*?)\\\)/g, '<span class="math-mode" style="font-family:\'Cambria Math\', serif;font-style:italic;color:var(--primary);">$1</span>')
-        .replace(/\$(.*?)\$/g, '<span class="math-mode" style="font-family:\'Cambria Math\', serif;font-style:italic;color:var(--primary);">$1</span>')
+        .replace(/\\\((.*?)\\\)/g, '$1') // Strip \( \)
+        .replace(/\\\[([\s\S]*?)\\\]/g, '$1') // Strip \[ \]
+        .replace(/\$(.*?)\$/g, '$1') // Strip $ $
+        .replace(/\\text\{(.*?)\}/g, '$1') // Strip \text{...}
         .replace(/\\times/g, '&times;')
         .replace(/\\Delta/g, '&Delta;')
         .replace(/\\cdot/g, '&bull;')
@@ -260,6 +420,19 @@ window.formatAIText = function(text) {
         .replace(/\\pi/g, '&pi;')
         .replace(/\\omega/g, '&omega;')
         .replace(/\\mu/g, '&mu;')
+        .replace(/\\rho/g, '&rho;')
+        .replace(/\\sigma/g, '&sigma;')
+        .replace(/\\lambda/g, '&lambda;')
+        .replace(/\\epsilon/g, '&epsilon;')
+        .replace(/\\eta/g, '&eta;')
+        .replace(/\\tau/g, '&tau;')
+        .replace(/\\approx/g, '&approx;')
+        .replace(/\\neq/g, '&ne;')
+        .replace(/\\le/g, '&le;')
+        .replace(/\\ge/g, '&ge;')
+        // Superscripts & Subscripts (Standard and Curly Braces)
+        .replace(/\^\{([\s\S]*?)\}/g, '<sup>$1</sup>')
+        .replace(/\_\{([\s\S]*?)\}/g, '<sub>$1</sub>')
         .replace(/(\^)([0-9a-zA-Z\+\-\*\/]+)/g, '<sup>$2</sup>')
         .replace(/(\_)([0-9a-zA-Z]+)/g, '<sub>$2</sub>');
 

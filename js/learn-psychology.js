@@ -106,22 +106,20 @@ window.openPsyLevel = function(level) {
 
 window.backToPsyDashboard = function() { const s = document.getElementById('psychology-screen'); if (s && originalPsychologyHtml) { s.innerHTML = originalPsychologyHtml; updatePsyProgressUI(); } window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
-window.openPsyLesson = async function(level, moduleId) {
-    const data = psychologySyllabus[level]; const mod = data.modules.find(m => m.id === moduleId); if (!mod) return;
-    const screen = document.getElementById('psychology-screen');
-    screen.innerHTML = `<div class="header-back"><button class="back-btn" onclick="openPsyLevel('${level}')"><span class="back-icon">←</span> Kembali</button></div>
-    <div class="card mt-md" style="border-left:4px solid ${data.color};"><h2>${mod.title}</h2><p class="text-muted">${mod.skill} • Level ${level.replace('L','')}</p></div>
-    <div class="card mt-md" id="psy-lesson-content"><div class="loading-spinner" style="margin:20px auto;"></div><p class="text-center text-muted">🧠 Tutor Psikologi Anda sedang menyusun materi...</p></div>`;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
-    if (!apiKey) { document.getElementById('psy-lesson-content').innerHTML = '<p style="color:#e53e3e;">⚠️ API Key belum diatur.</p>'; return; }
+window.openPsyLesson = function(level, moduleId, forceRefresh = false) {
+    const data = psychologySyllabus[level]; 
+    const mod = data.modules.find(m => m.id === moduleId); 
+    if (!mod) return;
 
     const prompt = `Kamu adalah Psikolog Klinis dan Pakar Kecerdasan Emosional (EQ) dengan pengalaman praktik 20 tahun. Buatkan materi pelajaran yang LENGKAP dan MENDALAM untuk topik berikut:
 
 📌 TOPIK: ${mod.title}
 📌 LEVEL: ${level.replace('L','Level ')} - ${data.title}
 📌 DESKRIPSI: ${mod.desc}
+
+⚠️ ATURAN PENTING PENULISAN SIMBOL (WAJIB):
+- JANGAN GUNAKAN LaTeX ($...$, \\(...\\), \\[...\\], \\text{...}).
+- Gunakan tag HTML sederhana untuk simbol/satuan (seperti <sup>2</sup>).
 
 FORMAT MATERI WAJIB (dalam Bahasa Indonesia):
 
@@ -131,7 +129,7 @@ FORMAT MATERI WAJIB (dalam Bahasa Indonesia):
 
 3. **🧘 Aktivitas / Latihan Mandiri** (instruksi latihan praktis yang bisa dilakukan pengguna saat ini juga.)
 
-4. **💼 Penerapan dalam Kehidupan & Karir** (bagaimana konsep ini membantu dalam hubungan sosial dan profesional.)
+4. **💼 Penerapan dalam Kehidupan & Karir** (bagaimana konsep ini membantu dalam hubungan sosial and profesional.)
 
 5. **🌟 Tips dari Pakar EQ** (3-5 nasihat bijak untuk menjaga kesehatan mental dan stabilitas emosi.)
 
@@ -148,31 +146,16 @@ Penjelasan: (jelaskan alasan psikologis di balik jawaban benar tersebut)
 
 Pastikan materi sangat empatik, ilmiah, praktis, dan berkualitas setara literatur psikologi modern!`;
 
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 8192 } })
-        });
-        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
-        if (!response.ok) throw new Error('API Error');
-        const result = await response.json();
-        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal.';
-        
-        const { quizBlocks, cleanedText } = window.extractQuizAndCleanText(rawText);
-        const formattedText = window.formatAIText(cleanedText);
+    const onComplete = () => {
+        const progress = JSON.parse(localStorage.getItem('psy_progress') || '{}');
+        if (!progress[level]) progress[level] = [];
+        if (!progress[level].includes(moduleId)) {
+            progress[level].push(moduleId);
+            localStorage.setItem('psy_progress', JSON.stringify(progress));
+            updatePsyProgressUI();
+        }
+        backToPsyDashboard();
+    };
 
-        let quizHtml = '';
-        if (quizBlocks.length) { quizHtml = `<div style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;"><h3 style="color:var(--primary);">📋 Kuis Interaktif (${quizBlocks.length} Soal)</h3>`; quizBlocks.forEach((q,i)=>{const qId=`psyquiz_${moduleId}_${i}`; quizHtml+=`<div id="${qId}" style="background:var(--surface-hover);padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid var(--border);"><p style="font-weight:600;margin-bottom:10px;">${i+1}. ${q.q}</p>${['a','b','c','d'].map(o=>`<button class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;padding:10px;font-size:0.9rem;" onclick="checkGenericAnswer('${qId}','${o.toUpperCase()}','${q.answer}',this,'${encodeURIComponent(q.explanation)}')">${o.toUpperCase()}) ${q[o]}</button>`).join('')}<div id="${qId}_result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:0.9rem;"></div></div>`;}); quizHtml+=`<button class="btn btn-primary" style="width:100%;margin-top:10px;border-radius:20px;padding:12px;" onclick="completeGenericModule('psychology','${level}','${moduleId}')">✅ Tandai Modul Selesai</button></div>`; }
-        else { quizHtml = `<button class="btn btn-primary" style="width:100%;margin-top:20px;border-radius:20px;padding:12px;" onclick="completeGenericModule('psychology','${level}','${moduleId}')">✅ Tandai Modul Selesai</button>`; }
-        
-        const actionBar = window.getActionBarHTML(mod.title, 'psychology', moduleId);
-        document.getElementById('psy-lesson-content').innerHTML = `
-            ${actionBar}
-            <div style="background:var(--surface);padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.1);border:1px solid var(--border);">
-                ${formattedText}
-            </div>
-            </div> <!-- Close lesson-body from actionBar -->
-            ${quizHtml}
-        `;
-    } catch(err) { document.getElementById('psy-lesson-content').innerHTML = `<p style="color:#e53e3e;">❌ Gagal memuat materi. Pastikan API Key dan internet aktif.</p><button class="btn btn-secondary mt-sm" onclick="openPsyLesson('${level}','${moduleId}')">🔄 Coba Lagi</button>`; }
+    showAiLessonScreen('psychology-screen', mod.title, prompt, onComplete, `psy_${moduleId}`, forceRefresh, () => openPsyLevel(level));
 };

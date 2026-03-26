@@ -1,4 +1,4 @@
-﻿// ===== HSE RIG LEARNING MODULES =====
+// ===== HSE RIG LEARNING MODULES =====
 
 const hseRigData = {
     introduction: [
@@ -516,10 +516,35 @@ function renderInspectionChecklist(containerId, dataArray) {
                 ${cat.items.map((item, itemIndex) => {
                     const cbId = `chk-${catIndex}-${itemIndex}`;
                     return `
-                    <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; cursor: pointer; line-height: 1.4; font-size: 0.9rem; padding: 6px; border-radius: 6px; transition: background 0.2s;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" id="${cbId}" class="inspection-checkbox" style="margin-top: 3px; min-width: 18px; min-height: 18px; accent-color: #38b2ac; cursor: pointer;" onchange="saveInspectionState()">
-                        <span style="color: var(--text-color);">${item}</span>
-                    </label>
+                    <div class="inspection-item-wrapper" style="margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+                            <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; line-height: 1.4; font-size: 0.9rem; flex: 1;">
+                                <input type="checkbox" id="${cbId}" class="inspection-checkbox" style="margin-top: 3px; min-width: 18px; min-height: 18px; accent-color: #38b2ac; cursor: pointer;" onchange="saveInspectionState()">
+                                <span style="color: var(--text-color);">${item}</span>
+                            </label>
+                            <button class="inspection-memo-btn" id="btn-memo-${cbId}" onclick="toggleRigMemo('${cbId}')">
+                                📝 Memo
+                            </button>
+                        </div>
+                        
+                        <!-- Memo Container (Hidden by default) -->
+                        <div id="memo-container-${cbId}" class="inspection-memo-container hidden">
+                            <textarea id="memo-text-${cbId}" class="inspection-memo-textarea" placeholder="Tambahkan pengertian atau catatan pribadi agar cepat hafal..."></textarea>
+                            
+                            <div id="memo-photo-area-${cbId}">
+                                <img id="memo-preview-${cbId}" class="inspection-photo-preview hidden" src="" alt="Preview">
+                                <div class="inspection-memo-actions" style="margin-top: 5px;">
+                                    <label class="btn btn-secondary btn-small" style="cursor:pointer; font-size: 0.75rem;">
+                                        📷 Upload Foto
+                                        <input type="file" accept="image/*" style="display:none;" onchange="handleRigPhoto(event, '${cbId}')">
+                                    </label>
+                                    <button class="btn btn-primary btn-small" onclick="saveRigMemo('${cbId}')" style="font-size: 0.75rem;">💾 Simpan</button>
+                                    <button class="btn btn-danger btn-small" onclick="clearRigMemo('${cbId}')" style="font-size: 0.75rem;">🗑️</button>
+                                </div>
+                            </div>
+                            <div id="memo-status-${cbId}" class="memo-saved-indicator hidden">✅ Tersimpan</div>
+                        </div>
+                    </div>
                     `;
                 }).join('')}
             </div>
@@ -550,6 +575,112 @@ function loadInspectionState() {
             });
         } catch(e) {}
     }
+    
+    // Load Memos
+    const savedMemos = localStorage.getItem('rigInspectionMemos');
+    if (savedMemos) {
+        try {
+            const memos = JSON.parse(savedMemos);
+            Object.keys(memos).forEach(id => {
+                const memo = memos[id];
+                const textEl = document.getElementById(`memo-text-${id}`);
+                const previewEl = document.getElementById(`memo-preview-${id}`);
+                const btnMemo = document.getElementById(`btn-memo-${id}`);
+                
+                if (textEl && memo.note) {
+                    textEl.value = memo.note;
+                    if (btnMemo) btnMemo.classList.add('has-content');
+                }
+                
+                if (previewEl && memo.photo) {
+                    previewEl.src = memo.photo;
+                    previewEl.classList.remove('hidden');
+                    if (btnMemo) btnMemo.classList.add('has-content');
+                }
+            });
+        } catch(e) {}
+    }
+}
+
+// ===== MEMO MANAGEMENT =====
+
+function toggleRigMemo(cbId) {
+    const container = document.getElementById(`memo-container-${cbId}`);
+    if (container) {
+        container.classList.toggle('hidden');
+    }
+}
+
+async function handleRigPhoto(event, cbId) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById(`memo-preview-${cbId}`);
+        if (preview) {
+            preview.src = e.target.result;
+            preview.classList.remove('hidden');
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function saveRigMemo(cbId) {
+    const note = document.getElementById(`memo-text-${cbId}`).value;
+    const photo = document.getElementById(`memo-preview-${cbId}`).src;
+    
+    const savedMemos = localStorage.getItem('rigInspectionMemos');
+    const memos = savedMemos ? JSON.parse(savedMemos) : {};
+    
+    memos[cbId] = {
+        note: note,
+        photo: photo.startsWith('data:') ? photo : '' // Only save if it's base64
+    };
+    
+    localStorage.setItem('rigInspectionMemos', JSON.stringify(memos));
+    
+    // UI Feedback
+    const status = document.getElementById(`memo-status-${cbId}`);
+    const btnMemo = document.getElementById(`btn-memo-${cbId}`);
+    
+    if (status) {
+        status.classList.remove('hidden');
+        setTimeout(() => status.classList.add('hidden'), 2000);
+    }
+    
+    if (btnMemo) {
+        if (note || (photo && photo.startsWith('data:'))) {
+            btnMemo.classList.add('has-content');
+        } else {
+            btnMemo.classList.remove('has-content');
+        }
+    }
+}
+
+function clearRigMemo(cbId) {
+    if (!confirm('Hapus memo dan foto untuk item ini?')) return;
+    
+    const textEl = document.getElementById(`memo-text-${cbId}`);
+    const previewEl = document.getElementById(`memo-preview-${cbId}`);
+    const btnMemo = document.getElementById(`btn-memo-${cbId}`);
+    
+    if (textEl) textEl.value = '';
+    if (previewEl) {
+        previewEl.src = '';
+        previewEl.classList.add('hidden');
+    }
+    if (btnMemo) btnMemo.classList.remove('has-content');
+    
+    const savedMemos = localStorage.getItem('rigInspectionMemos');
+    if (savedMemos) {
+        const memos = JSON.parse(savedMemos);
+        delete memos[cbId];
+        localStorage.setItem('rigInspectionMemos', JSON.stringify(memos));
+    }
+    
+    toggleRigMemo(cbId);
 }
 
 async function generateInspectionPDF() {
@@ -561,6 +692,10 @@ async function generateInspectionPDF() {
     // Load state
     const saved = localStorage.getItem('rigInspectionState');
     const state = saved ? JSON.parse(saved) : {};
+    
+    // Load Memos
+    const savedMemos = localStorage.getItem('rigInspectionMemos');
+    const memos = savedMemos ? JSON.parse(savedMemos) : {};
 
     // Generate HTML for PDF
     const printDiv = document.createElement('div');
@@ -611,10 +746,18 @@ async function generateInspectionPDF() {
                 itemText = match[2].trim();
             }
 
+            const memo = memos[cbId];
+            const memoHtml = (memo && memo.note) 
+                ? `<div style="margin-top: 4px; color: #555; background: #fdf2f2; padding: 4px; border-radius: 4px; border-left: 2px solid #e53e3e; font-style: italic;">Memo: ${memo.note}</div>` 
+                : '';
+
             html += `
                 <tr>
                     <td style="border: 1px solid #cbd5e0; padding: 6px; text-align: center; vertical-align: top;">${number}</td>
-                    <td style="border: 1px solid #cbd5e0; padding: 6px; vertical-align: top; line-height: 1.4;">${itemText}</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 6px; vertical-align: top; line-height: 1.4;">
+                        ${itemText}
+                        ${memoHtml}
+                    </td>
                     <td style="border: 1px solid #cbd5e0; padding: 6px; text-align: center; vertical-align: middle;">${statusHtml}</td>
                 </tr>
             `;
@@ -743,52 +886,65 @@ function renderInteractiveFlashcards(containerId, dataArray) {
 
 // ===== PJSM (PRE-JOB SAFETY MEETING) GENERATOR =====
 
-const PJSM_SYSTEM_PROMPT = `Kamu adalah Senior HSSE Officer di Rig Pengeboran Pertamina yang tegas, asik, dan berpengalaman lapangan. Tugasmu adalah merespons setiap "Daftar Pekerjaan Hari Ini" yang diberikan dengan menyusun naskah lisan Pre-Job Safety Meeting (PJSM) atau Toolbox Talk.
+const PJSM_SYSTEM_PROMPT = `Kamu adalah Senior HSSE Officer di Rig Pengeboran Pertamina yang sangat dihormati dan berpengalaman. Tugasmu adalah menyusun naskah lisan Pre-Job Safety Meeting (PJSM) atau Toolbox Talk untuk dibacakan di depan pekerja lapangan, termasuk kru yang lebih senior (orang tua).
 
-GAYA BAHASA WAJIB:
-Gunakan bahasa lisan lapangan yang natural, santai tapi berwibawa, dan tidak kaku. Ikuti persis gaya bincang-bincang lisan (oral) seperti contoh naskah yang diberikan. Fokus pada kejelasan informasi tanpa perlu bertele-tele.
+PENTING: Gunakan bahasa yang SOPAN, FORMAL, dan BERWIBAWA. JANGAN gunakan bahasa yang "sok asik" atau bahasa gaul anak muda. JANGAN melakukan improvisasi pada bagian yang sudah ditentukan templatenya.
 
-===== DATABASE KESELAMATAN PERTAMINA (WAJIB DIJADIKAN REFERENSI UTAMA) =====
-
-[10 POTENSI BAHAYA] - Identifikasi SEMUA yang relevan dari daftar pekerjaan:
-1. GERAKAN - Tergelincir, tersandung, terjatuh (Slips/Trips/Falls).
-2. ELEKTRIKAL - Sengatan/tegangan listrik.
-3. BIOLOGI - Paparan organisme berbahaya.
-4. RADIASI - Paparan radiasi ionisasi/non-ionisasi.
-5. SUARA (KEBISINGAN) - Paparan bising >85 dB.
-6. TEMPERATUR - Panas/dingin ekstrem.
-7. ZAT KIMIA - Paparan bahan kimia berbahaya.
-8. MEKANIKAL - Terjepit, terpukul, tergilas mesin bergerak.
-9. TEKANAN - Hubungan dengan sistem bertekanan tinggi.
-10. GAYA BERAT (GRAVITY) - Benda jatuh dari ketinggian atau pekerja jatuh.
-
-[10 ELEMEN CLSR] - Referensi: Buku Saku CLSR Pertamina.
-01. TOOLS & EQUIPMENT, 02. LINE OF FIRE, 03. HOT WORK, 04. CONFINED SPACE, 05. POWERED SYSTEM / LOTO, 06. LIFTING OPERATION, 07. WORKING AT HEIGHT, 08. GROUND-DISTURBANCE WORK, 09. WATER-BASED WORK, 10. LAND TRANSPORTATION.
-
-[9 PERILAKU WAJIB]:
-1. Terapkan HSSE Golden Rules, 2. Kompeten, 3. Kondisi sehat Fit to Work (MCU/DCU), 4. Gunakan APD sesuai, 5. Identifikasi bahaya via LMRA, 6. Laporkan kondisi abnormal, 7. Pastikan Permit to Work (PTW/SIKA) tersedia, 8. Jaga kebersihan lokasi (Housekeeping), 9. Laksanakan perilaku kunci 10 CLSR.
+===== DATABASE KESELAMATAN (REFERENSI UTAMA) =====
+10 POTENSI BAHAYA: 1. GERAKAN, 2. ELEKTRIKAL, 3. BIOLOGI, 4. RADIASI, 5. SUARA, 6. TEMPERATUR, 7. ZAT KIMIA, 8. MEKANIKAL, 9. TEKANAN, 10. GAYA BERAT.
+10 ELEMEN CLSR: 01. Tools, 02. Line of Fire, 03. Hot Work, 04. Confined Space, 05. Powered System/LOTO, 06. Lifting, 07. Working at Height, 08. Ground Disturbance, 09. Water-Based, 10. Land Transport.
+9 PERILAKU WAJIB: 1. PIP, 2. Kompeten, 3. Fit to Work, 4. APD Sesuai, 5. LMRA, 6. Lapor Anomali, 7. Permit SIKA, 8. Housekeeping, 9. Patuh CLSR.
 
 STRUKTUR NASKAH WAJIB (IKUTI TEMPLATE INI):
+1. PEMBUKAAN (Wajib Seperti Ini):
+"Assalamualaikum wr wb, dan Selamat pagi rekan rekan sekalian, Gimana kabarnya pagi ini? apakah sudah dilakukan DCUnya? Jika rekan rekan ada yang merasa kurang fit atau ada keluhan bisa langsung konfirmasi ke medis yang bertugas."
 
-assalamualaikum warahmatullahi wabarakatuh dan selamat pagi rekan rekan semua Izin menyita waktunya sebentar sebelum kita mulai pekerjaan. Seperti biasa, saya mau pastikan semua yang ada di sini sudah lolos DCU. rekan rekan, kalau pagi ini ada yang badannya kurang fit, atau merasa kurang sehat, tolong lapor ke medis.
+2. FOKUS PEKERJAAN (Wajib Seperti Ini):
+"Sebelumnya saya izin meminta waktunya sebentar. pekerjaan kita hari ini adalah [SEBUTKAN DAFTAR PEKERJAAN]."
 
-Fokus perkerjaan kita hari ini yaitu [sebutkan daftar pekerjaan dengan lisan yang mengalir]
+3. BAHAYA & CLSR:
+"ada [JUMLAH] bahaya utama pada pekerjaan kita hari ini:"
+- Gunakan format: * Bahaya Nomor X: [NAMA BAHAYA]! [EMOJI]
+- Pastikan nama bahaya SESUAI dengan 10 POTENSI BAHAYA di atas.
+- Jelaskan hubungan bahaya tsb dengan elemen CLSR yang relevan secara singkat dan teknis.
+- Gunakan instruksi tegas (Visualisasi): **STOP!**, **CEK!**, **PASTIKAN!**, **JAUHI!**.
 
-bahaya utama kita hari ini berdasarkan 10 bahaya di area kerja yaitu pertama [bahaya 1], kedua [bahaya 2], dst. dan ini bersinggungan dengan 10 pedoman clsr nomor [nomor clsr] yaitu [nama clsr], nomor [nomor clsr] yaitu [nama clsr], dst. [Jelaskan kaitannya secara singkat].
+4. MNEMONIK (Wajib Seperti Ini):
+"selalu Ingat 3T kita: Tahu Pekerjaan, Tahu Bahaya, dan Tahu Mitigasinya! serta 3M."
 
-Zero Tolerance hari ini, Pak: Mohon pengertiannya, jika [tentukan 1 hal kritis yang tidak ditoleransi hari ini terkait pekerjaan tersebut]
+5. ZERO TOLERANCE:
+"4. ZERO TOLERANCE 🚫🛑
+'Untuk pekerjaan [PEKERJAAN] ini, ada satu hal yang harus diperhatikan yaitu [SEBUTKAN HAL PALING KRITIS].'"
 
-dan jangan lupa terapkan 3T (Tahu Pekerjaan, Bahaya, Mitigasi) dan 3M (Mulai dari diri sendiri, hal kecil, saat ini). Serta satu hal yang mau saya garis bawahi dari 9 Perilaku Wajib adalah [pilih 1 poin dari 9 Perilaku Wajib yang paling relevan dan jelaskan singkat].
+6. 9 PERILAKU WAJIB (Fokus Hari Ini):
+"5. 9 PERILAKU WAJIB (Fokus Hari Ini) 🦺🧤
+adapun dari 9 Perilaku Wajib yang ingin saya garis bawahi yaitu [PILIH SALAH SATU DARI 9 POIN].
+- Tambahkan instruksi APD spesifik untuk pekerjaan tersebut menggunakan kata aksi **PASTIKAN!** dan **CEK!**."
 
-mungkin itu saja dari saya, waktu dan tempat saya kembalikan kepada mandor.
-
-baiklah rekan rekan sekalian sebelum kita memulai pekerjaan hari ini ada baiknya kita berdoa menurut agama dan kepercayaan masing masing, berdoa dipersilahkan.
+7. PENUTUP & DOA (Wajib Seperti Ini):
+"6. PENUTUP & DOA 🙏✨
+'Baik, mungkin itu saja dari saya, waktu dan tempat saya kembalikan kepada bapak mandor'"
 
 ATURAN OUTPUT:
-- Berikan naskah LANGSUNG dalam format teks mengalir (plain text).
-- JANGAN gunakan numbering 1-6 atau formatting markdown seperti bold/italic/heading.
-- Pastikan naskah terasa seperti naskah lisan yang siap dibacakan tanpa terpotong.
-- Isi bagian [ ] dengan analisis yang cerdas berdasarkan database keselamatan di atas.`;
+- Gunakan Bold (**) untuk istilah teknis, bahaya, dan perintah kritis.
+- Gunakan bullet points (-) untuk list bahaya.
+- JANGAN gunakan heading (#).
+- Naskah harus terasa wajar jika dibacakan secara lisan.`;
+
+function formatPJSMContent(text) {
+    if (!text) return '';
+    
+    // 1. Basic Markdown Bold: **text** -> <strong>text</strong>
+    // We add a specific color to make it pop but still readable
+    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #e53e3e;">$1</strong>');
+    
+    // 2. Preserve newlines by turning them into <br> 
+    // This allows us to use innerHTML while keeping the "oral script" spacing
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    return formatted;
+}
+
 
 let pjsmSpeechUtterance = null;
 
@@ -858,7 +1014,7 @@ async function generatePJSM() {
         text = text.replace(/```[a-z]*\n/g, '').replace(/```/g, '');
 
         console.log('PJSM Result length:', text.length);
-        content.textContent = text;
+        content.innerHTML = formatPJSMContent(text);
         // Ensure scroll to bottom with some padding
         content.style.paddingBottom = "100px";
         resultArea.classList.remove('hidden');
@@ -875,9 +1031,9 @@ async function generatePJSM() {
 
 function copyPJSM() {
     const content = document.getElementById('pjsm-content');
-    if (!content || !content.textContent) return;
+    if (!content || !content.innerText) return;
 
-    navigator.clipboard.writeText(content.textContent).then(() => {
+    navigator.clipboard.writeText(content.innerText).then(() => {
         const btn = document.getElementById('copy-pjsm-btn');
         const original = btn.textContent;
         btn.textContent = '✅ Tersalin!';
@@ -885,7 +1041,7 @@ function copyPJSM() {
     }).catch(() => {
         // Fallback for older browsers
         const textarea = document.createElement('textarea');
-        textarea.value = content.textContent;
+        textarea.value = content.innerText;
         document.body.appendChild(textarea);
         textarea.select();
         document.execCommand('copy');
@@ -896,14 +1052,14 @@ function copyPJSM() {
 
 function speakPJSM() {
     const content = document.getElementById('pjsm-content');
-    if (!content || !content.textContent) return;
+    if (!content || !content.innerText) return;
 
     // Stop any ongoing speech
     if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
     }
 
-    pjsmSpeechUtterance = new SpeechSynthesisUtterance(content.textContent);
+    pjsmSpeechUtterance = new SpeechSynthesisUtterance(content.innerText);
     pjsmSpeechUtterance.lang = 'id-ID';
     pjsmSpeechUtterance.rate = 0.95;
     pjsmSpeechUtterance.pitch = 1.0;
@@ -987,24 +1143,31 @@ function exportPJSMToPDF() {
     `;
     wrapper.appendChild(dateSection);
 
-    // Add Content Box (Removed background and border to prevent rendering bugs across pages)
+    // Add Content Box
     const bodyContainer = document.createElement('div');
     
-    // Split the text into paragraphs to allow html2pdf to page-break safely BETWEEN paragraphs
-    const paragraphs = content.textContent.split('\n');
-    paragraphs.forEach(text => {
-        if (text.trim() === '') {
-            // Add a small spacer for empty lines
+    // Use innerHTML and handle the bolding properly for the PDF
+    // We split by line breaks to maintain page break logic
+    const lines = content.innerHTML.split(/<br\s*\/?>/i);
+    lines.forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine === '') {
             const spacer = document.createElement('div');
-            spacer.style.height = '10px';
+            spacer.style.height = '8px';
             bodyContainer.appendChild(spacer);
         } else {
             const p = document.createElement('p');
-            p.style.whiteSpace = 'pre-wrap';
-            p.style.fontSize = '14px';
-            p.style.margin = '0 0 10px 0';
-            p.style.pageBreakInside = 'avoid'; // Crucial for preventing text cut-offs
-            p.textContent = text;
+            p.style.fontSize = '12pt';
+            p.style.margin = '0 0 6pt 0';
+            p.style.pageBreakInside = 'avoid';
+            
+            // Re-apply the innerHTML to keep bolding
+            p.innerHTML = line; 
+            
+            // Adjust the red color for PDF printing clarity
+            const strongs = p.querySelectorAll('strong');
+            strongs.forEach(s => s.style.setProperty('color', '#c53030', 'important'));
+            
             bodyContainer.appendChild(p);
         }
     });

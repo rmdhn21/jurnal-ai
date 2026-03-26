@@ -9,10 +9,32 @@
  * @param {string} moduleName - The name of the module being learned.
  * @param {string} prompt - The AI prompt to generate content.
  * @param {function} onComplete - Callback when user marks module as complete.
+ * @param {string} moduleId - (Optional) ID for caching.
+ * @param {boolean} forceRefresh - (Optional) Force new generation.
+ * @param {function} onBack - (Optional) Callback when user clicks back button.
  */
-async function showAiLessonScreen(screenId, moduleName, prompt, onComplete) {
+window.showAiLessonScreen = async function(screenId, moduleName, prompt, onComplete, moduleId = null, forceRefresh = false, onBack = null) {
     const screen = document.getElementById(screenId);
     if (!screen) return;
+
+    // 1. Check Edit/Cache first (if not forcing refresh)
+    const cacheKey = moduleId ? `lesson_cache_${moduleId}` : null;
+    const editKey = moduleId ? `lesson_edit_${moduleId}` : null;
+    
+    if (cacheKey && !forceRefresh) {
+        const edited = editKey ? localStorage.getItem(editKey) : null;
+        const cached = localStorage.getItem(cacheKey);
+        
+        if (edited) {
+            console.log(`Loading ${moduleId} from edited version...`);
+            renderLessonContent(screen, moduleName, edited, onComplete, moduleId, screenId, prompt, onBack, true);
+            return;
+        } else if (cached) {
+            console.log(`Loading ${moduleId} from cache...`);
+            renderLessonContent(screen, moduleName, cached, onComplete, moduleId, screenId, prompt, onBack);
+            return;
+        }
+    }
 
     // Save previous state to allow "Back" functionality
     const originalHtml = screen.innerHTML;
@@ -31,8 +53,12 @@ async function showAiLessonScreen(screenId, moduleName, prompt, onComplete) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     document.getElementById('lesson-back-btn').onclick = () => {
-        screen.innerHTML = originalHtml;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (typeof onBack === 'function') {
+            onBack();
+        } else {
+            screen.innerHTML = originalHtml;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
@@ -53,87 +79,122 @@ async function showAiLessonScreen(screenId, moduleName, prompt, onComplete) {
 
         if (!response.ok) throw new Error('API Error');
         const result = await response.json();
-        let text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal menghasilkan materi.';
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal menghasilkan materi.';
 
-        // Parse quiz blocks [QUIZ] ... [/QUIZ] or just [QUIZ]
-        const quizBlocks = [];
-        // Support both [QUIZ]...[/QUIZ] and just [QUIZ] at the end
-        const quizRegex = /\[QUIZ\]([\s\S]*?)(\[\/QUIZ\]|$)/g;
-        text = text.replace(quizRegex, (_, block) => {
-            const lines = block.trim().split('\n');
-            let currentQ = null;
-            
-            lines.forEach(line => {
-                line = line.trim();
-                if (line.match(/^\d+\./)) {
-                    if (currentQ) quizBlocks.push(currentQ);
-                    currentQ = { q: line.replace(/^\d+\.\s*/, ''), a: '', b: '', c: '', d: '', answer: '', explanation: '' };
-                } else if (line.startsWith('A.')) currentQ.a = line.replace(/^A\.\s*/, '');
-                else if (line.startsWith('B.')) currentQ.b = line.replace(/^B\.\s*/, '');
-                else if (line.startsWith('C.')) currentQ.c = line.replace(/^C\.\s*/, '');
-                else if (line.startsWith('D.')) currentQ.d = line.replace(/^D\.\s*/, '');
-                else if (line.toLowerCase().startsWith('jawaban:')) {
-                    const ans = line.match(/[A-D]/i);
-                    if (ans) currentQ.answer = ans[0].toUpperCase();
-                } else if (line.toLowerCase().startsWith('penjelasan:')) {
-                    currentQ.explanation = line.replace(/^penjelasan:\s*/i, '');
-                }
-            });
-            if (currentQ) quizBlocks.push(currentQ);
-            return '';
-        });
+        // Save to cache
+        if (cacheKey) localStorage.setItem(cacheKey, text);
 
-        // Basic Markdown to HTML
-        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                   .replace(/^### (.*$)/gim, '<h4 style="color:var(--primary);margin-top:15px;">$1</h4>')
-                   .replace(/^## (.*$)/gim, '<h3 style="color:var(--primary);margin-top:20px;">$1</h3>')
-                   .replace(/^# (.*$)/gim, '<h2 style="color:var(--primary);margin-top:20px;">$1</h2>')
-                   .replace(/\n/g, '<br>');
-
-        let quizHtml = '';
-        if (quizBlocks.length > 0) {
-            quizHtml = `<div style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;"><h3 style="color:var(--primary);">📋 Kuis Interaktif</h3>`;
-            quizBlocks.forEach((q, i) => {
-                const qId = `gen_quiz_${i}`;
-                quizHtml += `
-                    <div id="${qId}" style="background:var(--surface-hover);padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid var(--border);">
-                        <p style="font-weight:600;margin-bottom:10px;">${i+1}. ${q.q}</p>
-                        ${['a', 'b', 'c', 'd'].filter(k => q[k]).map(opt => `
-                            <button class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;padding:10px;font-size:0.9rem;" 
-                                onclick="checkGenericAnswer('${qId}','${opt.toUpperCase()}','${q.answer}', this, '${encodeURIComponent(q.explanation || '')}')">
-                                ${opt.toUpperCase()}) ${q[opt]}
-                            </button>
-                        `).join('')}
-                        <div id="${qId}_result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:0.9rem;"></div>
-                    </div>
-                `;
-            });
-            quizHtml += `
-                <button class="btn btn-primary" style="width:100%;margin-top:10px;border-radius:20px;padding:12px;" id="lesson-complete-btn">
-                    ✅ Selesaikan Modul (+20 XP)
-                </button>
-            </div>`;
-        } else {
-            quizHtml = `<button class="btn btn-primary" style="width:100%;margin-top:20px;border-radius:20px;padding:12px;" id="lesson-complete-btn">✅ Selesaikan Modul (+20 XP)</button>`;
-        }
-
-        const formattedText = window.formatAIText(text);
-        document.getElementById('lesson-content-area').innerHTML = `
-            <div style="background:var(--surface);padding:20px;border-radius:12px;border:1px solid var(--border);">
-                ${formattedText}
-            </div>
-            ${quizHtml}`;
-        
-        document.getElementById('lesson-complete-btn').onclick = () => {
-            if (typeof addXP === 'function') addXP(20);
-            onComplete(true);
-        };
+        renderLessonContent(screen, moduleName, text, onComplete, moduleId, screenId, prompt, onBack);
 
     } catch (err) {
         console.error('AI Lesson Error:', err);
         document.getElementById('lesson-content-area').innerHTML = `<p style="color:#e53e3e;">❌ Gagal memuat materi. Coba lagi nanti.</p>
-        <button class="btn btn-secondary mt-sm" onclick="showAiLessonScreen('${screenId}', '${moduleName}', '${prompt.replace(/'/g, "\\'")}', ${onComplete})">🔄 Coba Lagi</button>`;
+        <button class="btn btn-secondary mt-sm" onclick="showAiLessonScreen('${screenId}', '${moduleName}', '${prompt.replace(/'/g, "\\'")}', ${onComplete}, '${moduleId}', true, ${onBack})">🔄 Coba Lagi</button>`;
     }
+}
+
+/**
+ * Helpler to render the parsed lesson content
+ */
+function renderLessonContent(screen, moduleName, rawText, onComplete, moduleId, screenId, prompt, onBack = null, isEdited = false) {
+    let text = rawText;
+    const { quizBlocks, cleanedText } = window.extractQuizAndCleanText(rawText);
+    const formattedText = window.formatAIText(cleanedText);
+    
+    const actionBar = (typeof window.getActionBarHTML === 'function') ? window.getActionBarHTML(moduleName, 'mastery', moduleId) : '';
+
+    // Header with Regenerate and Edit buttons
+    screen.innerHTML = `
+        <div class="header-back" style="display:flex; justify-content:space-between; align-items:center;">
+            <button class="back-btn" id="lesson-back-btn"><span class="back-icon">←</span> Kembali</button>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-secondary btn-small" id="lesson-edit-btn">✏️ Edit</button>
+                <button class="btn btn-secondary btn-small" id="lesson-regenerate-btn">🔄 Buat Ulang</button>
+            </div>
+        </div>
+        ${actionBar}
+        <div class="card mt-md">
+            <h2>${moduleName}</h2>
+            <p class="text-muted">Materi Pelajaran AI ${isEdited ? '(Customized)' : ''}</p>
+        </div>
+        <div id="lesson-content-area-container">
+            <div class="card mt-md lesson-content-card" id="lesson-content-card" style="background:var(--surface);padding:20px;border-radius:12px;border:1px solid var(--border);">
+                <div id="lesson-content-editable" class="${isEdited ? '' : 'formatted-ai-content'}">
+                    ${isEdited ? rawText : formattedText}
+                </div>
+            </div>
+            
+            <!-- Editor Toolbar (Hidden by default) -->
+            <div id="mastery-editor-toolbar" class="mastery-editor-toolbar hidden">
+                <button class="editor-tool-btn" onclick="applyMasteryStyle('bold')" title="Tebal"><strong>B</strong></button>
+                <button class="editor-tool-btn" onclick="applyMasteryStyle('italic')" title="Miring"><em>I</em></button>
+                <button class="editor-tool-btn" onclick="applyMasteryStyle('highlight')" title="Highlight">🖍️</button>
+                <button class="editor-tool-btn" onclick="document.getElementById('mastery-image-input').click()" title="Sisipkan Gambar">🖼️</button>
+                <button class="editor-tool-btn" onclick="insertMasteryNoteBlock()" title="Sisipkan Catatan">📝</button>
+                <div style="width:1px; background:var(--border); margin:0 5px;"></div>
+                <button class="btn btn-primary btn-small" onclick="saveMasteryEdit('${moduleId}')">💾 Simpan</button>
+                <input type="file" id="mastery-image-input" accept="image/*" style="display:none;" onchange="handleMasteryImageSelection(event)">
+            </div>
+            
+            <div id="lesson-quiz-area"></div>
+        </div>
+        ${actionBar ? '</div>' : ''} 
+    `;
+
+    document.getElementById('lesson-edit-btn').onclick = () => {
+        toggleMasteryEditMode();
+    };
+
+    document.getElementById('lesson-back-btn').onclick = () => {
+        if (typeof onBack === 'function') {
+            onBack();
+        } else {
+            window.history.back(); 
+        }
+    };
+
+    document.getElementById('lesson-regenerate-btn').onclick = () => {
+        if(confirm('Materi baru akan di-generate ulang. Semua highlight dan catatan manual Anda akan hilang. Lanjutkan?')) {
+            const editKey = moduleId ? `lesson_edit_${moduleId}` : null;
+            if (editKey) localStorage.removeItem(editKey);
+            showAiLessonScreen(screenId, moduleName, prompt, onComplete, moduleId, true, onBack);
+        }
+    };
+
+    document.getElementById('lesson-edit-btn').onclick = toggleMasteryEditMode;
+
+    // Build quiz HTML
+    let quizHtml = '';
+    if (quizBlocks.length > 0) {
+        quizHtml = `<div class="card mt-md" style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;"><h3 style="color:var(--primary);">📋 Kuis Interaktif</h3>`;
+        quizBlocks.forEach((q, i) => {
+            const qId = `gen_quiz_${i}`;
+            quizHtml += `
+                <div id="${qId}" style="background:var(--surface-hover);padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid var(--border);">
+                    <p style="font-weight:600;margin-bottom:10px;">${i+1}. ${q.q}</p>
+                    ${['a', 'b', 'c', 'd'].filter(k => q[k]).map(opt => `
+                        <button class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;padding:10px;font-size:0.9rem;" 
+                            onclick="checkGenericAnswer('${qId}','${opt.toUpperCase()}','${q.answer}', this, '${encodeURIComponent(q.explanation || '')}')">
+                            ${opt.toUpperCase()}) ${q[opt]}
+                        </button>
+                    `).join('')}
+                    <div id="${qId}_result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:0.9rem;"></div>
+                </div>
+            `;
+        });
+        quizHtml += `<button class="btn btn-primary" style="width:100%;margin-top:10px;border-radius:20px;padding:12px;" id="lesson-complete-btn">✅ Selesaikan Modul (+20 XP)</button></div>`;
+    } else {
+        quizHtml = `<button class="btn btn-primary" style="width:100%;margin-top:20px;border-radius:20px;padding:12px;" id="lesson-complete-btn">✅ Selesaikan Modul (+20 XP)</button>`;
+    }
+
+    document.getElementById('lesson-quiz-area').innerHTML = quizHtml;
+    
+    document.getElementById('lesson-complete-btn').onclick = () => {
+        if (typeof addXP === 'function') addXP(20);
+        onComplete(true);
+    };
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /**
@@ -180,3 +241,127 @@ window.checkGenericAnswer = function(qId, selected, correct, btnEl, encodedExp) 
     }
     resultDiv.style.display = 'block';
 };
+
+// ===== MASTERY EDITOR LOGIC =====
+
+let isMasteryEditMode = false;
+
+function toggleMasteryEditMode() {
+    isMasteryEditMode = !isMasteryEditMode;
+    const editable = document.getElementById('lesson-content-editable');
+    const toolbar = document.getElementById('mastery-editor-toolbar');
+    const editBtn = document.getElementById('lesson-edit-btn');
+    
+    if (isMasteryEditMode) {
+        editable.contentEditable = "true";
+        editable.classList.add('lesson-editable-area');
+        toolbar.classList.remove('hidden');
+        editBtn.textContent = '❌ Batal';
+        editBtn.classList.replace('btn-secondary', 'btn-danger');
+    } else {
+        editable.contentEditable = "false";
+        editable.classList.remove('lesson-editable-area');
+        toolbar.classList.add('hidden');
+        editBtn.textContent = '✏️ Edit';
+        editBtn.classList.replace('btn-danger', 'btn-secondary');
+        // Optional: reload from cache? 
+    }
+}
+
+function applyMasteryStyle(command) {
+    if (command === 'highlight') {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.className = 'lesson-highlight';
+        
+        try {
+            range.surroundContents(span);
+        } catch (e) {
+            // Fallback for complex selections
+            document.execCommand('backColor', false, '#fef08a');
+        }
+    } else {
+        document.execCommand(command, false, null);
+    }
+}
+
+function handleMasteryImageSelection(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.className = 'inserted-image';
+        
+        const selection = window.getSelection();
+        if (selection.rangeCount) {
+            const range = selection.getRangeAt(0);
+            range.insertNode(img);
+            range.collapse(false);
+        } else {
+            document.getElementById('lesson-content-editable').appendChild(img);
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function insertMasteryNoteBlock() {
+    const div = document.createElement('div');
+    div.className = 'inserted-note-block';
+    div.innerHTML = 'Ketik catatan penting Anda di sini...';
+    
+    const selection = window.getSelection();
+    if (selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        range.insertNode(div);
+        range.collapse(false);
+    } else {
+        document.getElementById('lesson-content-editable').appendChild(div);
+    }
+}
+
+function saveMasteryEdit(moduleId) {
+    const editable = document.getElementById('lesson-content-editable');
+    const html = editable.innerHTML;
+    
+    localStorage.setItem(`lesson_edit_${moduleId}`, html);
+    
+    alert('Perubahan berhasil disimpan!');
+    toggleMasteryEditMode();
+    
+    // Refresh subtitle
+    const subtitle = editable.closest('.card').previousElementSibling.querySelector('p');
+    if (subtitle) subtitle.textContent = 'Materi Pelajaran AI (Customized)';
+}
+
+window.checkGenericAnswer = function(qId, selected, correct, btnEl, encodedExp) {
+    const container = document.getElementById(qId);
+    const resultDiv = document.getElementById(`${qId}_result`);
+    if (!container || !resultDiv) return;
+    
+    const buttons = container.querySelectorAll('button');
+    const explanation = decodeURIComponent(encodedExp);
+    buttons.forEach(b => { b.disabled = true; b.style.opacity = '0.7'; });
+    
+    if (selected === correct) {
+        btnEl.style.background = '#38a169'; btnEl.style.color = 'white'; btnEl.style.border = '2px solid #38a169';
+        resultDiv.style.background = 'rgba(56,161,105,0.15)'; resultDiv.style.color = '#38a169';
+        resultDiv.innerHTML = `✅ <strong>Benar!</strong> ${explanation}`;
+    } else {
+        btnEl.style.background = '#e53e3e'; btnEl.style.color = 'white'; btnEl.style.border = '2px solid #e53e3e';
+        buttons.forEach(b => { if (b.textContent.trim().startsWith(correct + ')')) { b.style.background = '#38a169'; b.style.color = 'white'; b.style.border = '2px solid #38a169'; } });
+        resultDiv.style.background = 'rgba(229,62,62,0.15)'; resultDiv.style.color = '#e53e3e';
+        resultDiv.innerHTML = `❌ <strong>Salah.</strong> Jawaban: <strong>${correct}</strong>. ${explanation}`;
+    }
+    resultDiv.style.display = 'block';
+};
+window.toggleMasteryEditMode = toggleMasteryEditMode;
+window.applyMasteryStyle = applyMasteryStyle;
+window.handleMasteryImageSelection = handleMasteryImageSelection;
+window.insertMasteryNoteBlock = insertMasteryNoteBlock;
+window.saveMasteryEdit = saveMasteryEdit;

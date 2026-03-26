@@ -138,24 +138,25 @@ window.backToPhysicsDashboard = function() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-window.openPhysicsLesson = async function(level, moduleId) {
+window.openPhysicsLesson = function(level, moduleId, forceRefresh = false) {
     const data = physicsSyllabus[level];
     const mod = data.modules.find(m => m.id === moduleId);
     if (!mod) return;
-    const screen = document.getElementById('physics-screen');
-    screen.innerHTML = `<div class="header-back"><button class="back-btn" onclick="openPhysicsLevel('${level}')"><span class="back-icon">←</span> Kembali ke Level ${level.replace('L','')}</button></div>
-    <div class="card mt-md" style="border-left:4px solid ${data.color};"><h2>${mod.title}</h2><p class="text-muted">${mod.skill} • Level ${level.replace('L','')}</p></div>
-    <div class="card mt-md" id="physics-lesson-content"><div class="loading-spinner" style="margin:20px auto;"></div><p class="text-center text-muted">🧠 AI Guru Fisika sedang menyusun materi...</p></div>`;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
-    if (!apiKey) { document.getElementById('physics-lesson-content').innerHTML = '<p style="color:#e53e3e;">⚠️ API Key belum diatur.</p>'; return; }
 
     const prompt = `Kamu adalah Pakar Fisika (PhD Physics) dan Pendidik berpengalaman 20 tahun. Buatkan materi pelajaran yang LENGKAP dan MENDALAM untuk topik berikut:
 
 📌 TOPIK: ${mod.title}
 📌 LEVEL: ${level.replace('L','Level ')} - ${data.title}
 📌 DESKRIPSI: ${mod.desc}
+
+⚠️ ATURAN PENTING PENULISAN SIMBOL (WAJIB):
+- JANGAN GUNAKAN LaTeX ($...$, \\(...\\), \\[...\\], \\text{...}).
+- Gunakan tag HTML sederhana untuk simbol matematika:
+    - Pangkat: gunakan <sup> (contoh: m<sup>2</sup>, x<sup>10</sup>).
+    - Indeks: gunakan <sub> (contoh: H<sub>2</sub>O).
+    - Perkalian: gunakan &times; (×).
+    - Pembagian: gunakan &divide; (÷).
+    - Karakter Yunani: gunakan entitas HTML (contoh: &Delta;, &pi;, &rho;, &omega;).
 
 FORMAT MATERI WAJIB (dalam Bahasa Indonesia):
 
@@ -180,41 +181,18 @@ Jawaban: (huruf benar, contoh: B)
 Penjelasan: (jelaskan & tunjukkan perhitungannya secara detail)
 [/QUIZ]
 
-Pastikan seluruh materi sangat detail, berkualitas tinggi, dan setara buku Halliday/Resnick atau Serway!`;
+Pastikan seluruh materi sangat detail, berkualitas tinggi, and setara buku Halliday/Resnick atau Serway!`;
 
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 8192 } })
-        });
-        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
-        if (!response.ok) throw new Error('API Error');
-        const result = await response.json();
-        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal.';
-        
-        // Use shared helpers
-        const { quizBlocks, cleanedText } = window.extractQuizAndCleanText(rawText);
-        const formattedText = window.formatAIText(cleanedText);
+    const onComplete = () => {
+        const progress = JSON.parse(localStorage.getItem('physics_progress') || '{}');
+        if (!progress[level]) progress[level] = [];
+        if (!progress[level].includes(moduleId)) {
+            progress[level].push(moduleId);
+            localStorage.setItem('physics_progress', JSON.stringify(progress));
+            updatePhysicsProgressUI();
+        }
+        backToPhysicsDashboard();
+    };
 
-        let quizHtml = '';
-        if (quizBlocks.length > 0) {
-            quizHtml = `<div style="margin-top:25px;border-top:2px solid var(--primary);padding-top:15px;"><h3 style="color:var(--primary);">📋 Kuis Interaktif (${quizBlocks.length} Soal)</h3>`;
-            quizBlocks.forEach((q, i) => { const qId = `pquiz_${moduleId}_${i}`;
-                quizHtml += `<div id="${qId}" style="background:var(--surface-hover);padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid var(--border);"><p style="font-weight:600;margin-bottom:10px;">${i+1}. ${q.q}</p>${['a','b','c','d'].map(o=>`<button class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;padding:10px;font-size:0.9rem;" onclick="checkGenericAnswer('${qId}','${o.toUpperCase()}','${q.answer}',this,'${encodeURIComponent(q.explanation)}')">${o.toUpperCase()}) ${q[o]}</button>`).join('')}<div id="${qId}_result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:0.9rem;"></div></div>`;
-            });
-            quizHtml += `<button class="btn btn-primary" style="width:100%;margin-top:10px;border-radius:20px;padding:12px;" onclick="completeGenericModule('physics','${level}','${moduleId}')">✅ Tandai Modul Selesai</button></div>`;
-        } else { quizHtml = `<button class="btn btn-primary" style="width:100%;margin-top:20px;border-radius:20px;padding:12px;" onclick="completeGenericModule('physics','${level}','${moduleId}')">✅ Tandai Modul Selesai</button>`; }
-        
-        const actionBar = window.getActionBarHTML(mod.title, 'physics', moduleId);
-        document.getElementById('physics-lesson-content').innerHTML = `
-            ${actionBar}
-            <div style="background:var(--surface);padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.1);border:1px solid var(--border);">
-                ${formattedText}
-            </div>
-            </div> <!-- Close lesson-body from actionBar -->
-            ${quizHtml}
-        `;
-    } catch (err) {
-        document.getElementById('physics-lesson-content').innerHTML = `<p style="color:#e53e3e;">❌ Gagal memuat materi. Pastikan API Key dan internet aktif.</p><button class="btn btn-secondary mt-sm" onclick="openPhysicsLesson('${level}','${moduleId}')">🔄 Coba Lagi</button>`;
-    }
+    showAiLessonScreen('physics-screen', mod.title, prompt, onComplete, `physics_${moduleId}`, forceRefresh, () => openPhysicsLevel(level));
 };
