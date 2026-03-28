@@ -90,17 +90,30 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('translate-jsa-btn')?.addEventListener('click', translateJSADocument);
     document.getElementById('export-excel-jsa-btn')?.addEventListener('click', exportJSAToExcel);
     document.getElementById('export-pdf-jsa-btn')?.addEventListener('click', exportJSAToPDF);
+    document.getElementById('save-jsa-lib-btn')?.addEventListener('click', () => {
+        const docType = document.getElementById('jsa-doc-type')?.value || 'JSA';
+        const jobDesc = document.getElementById('jsa-job-desc')?.value || '';
+        saveCurrentViewToLibrary(`${docType}: ${jobDesc.substring(0, 30)}...`, '#jsa-content', 'HSE');
+    });
 
     // AI Incident Investigator (RCA)
     document.getElementById('generate-rca-btn')?.addEventListener('click', generateRCADocument);
     document.getElementById('copy-rca-btn')?.addEventListener('click', copyRcaText);
     document.getElementById('translate-rca-btn')?.addEventListener('click', translateRCADocument);
+    document.getElementById('save-rca-lib-btn')?.addEventListener('click', () => {
+        const incidentDesc = document.getElementById('rca-incident-desc')?.value || '';
+        saveCurrentViewToLibrary(`RCA: ${incidentDesc.substring(0, 30)}...`, '#rca-content', 'HSE');
+    });
     document.getElementById('rca-mic-btn')?.addEventListener('click', toggleRcaVoiceInput);
 
     // AI Daily TBT & P5M Briefing Generator
     document.getElementById('generate-tbt-btn')?.addEventListener('click', generateTBTDocument);
     document.getElementById('copy-tbt-btn')?.addEventListener('click', copyTbtText);
     document.getElementById('translate-tbt-btn')?.addEventListener('click', translateTBTDocument);
+    document.getElementById('save-tbt-lib-btn')?.addEventListener('click', () => {
+        const opDesc = document.getElementById('tbt-operation-desc')?.value || '';
+        saveCurrentViewToLibrary(`TBT: ${opDesc.substring(0, 30)}...`, '#tbt-content', 'HSE');
+    });
 
     // AI HSE Regulation Expert (Chatbot)
     document.getElementById('send-hse-chat-btn')?.addEventListener('click', sendHseChatMessage);
@@ -642,6 +655,16 @@ Tampilkan struktur respon:
                 speakBtn.onclick = () => playPronunciation(englishTextOnly, 'en-US');
                 resultDiv.insertBefore(speakBtn, resultDiv.firstChild);
             }
+
+            // Add Save Button
+            const saveBtn = document.createElement('button');
+            saveBtn.innerHTML = '💾 Simpan ke Perpustakaan';
+            saveBtn.className = 'btn btn-ai mt-sm';
+            saveBtn.style.display = 'block';
+            saveBtn.style.width = '100%';
+            saveBtn.style.background = 'var(--secondary)';
+            saveBtn.onclick = () => saveCurrentViewToLibrary('HSE Report Translation', '#hse-report-result', 'HSE');
+            resultDiv.appendChild(saveBtn);
         } else {
             resultDiv.innerHTML = '<span class="text-danger">Gagal memproses laporan. Silakan coba lagi.</span>';
         }

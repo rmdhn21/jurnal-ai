@@ -79,6 +79,10 @@ function showScreen(targetScreen) {
         if (typeof updateCodeProgressUI === 'function') updateCodeProgressUI();
     } else if (targetScreen === 'pertamina') {
         if (typeof updatePtmProgressUI === 'function') updatePtmProgressUI();
+    } else if (targetScreen === 'library') {
+        if (typeof refreshLibraryUI === 'function') refreshLibraryUI();
+    } else if (targetScreen === 'workout-tracker') {
+        if (typeof initWorkoutTracker === 'function') initWorkoutTracker();
     }
 }
 

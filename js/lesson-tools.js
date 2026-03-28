@@ -127,58 +127,34 @@ window.lessonTools = {
         printWindow.document.close();
     },
 
-    // 4. PRESENTATION / SLIDE VIEW
-    openPresentation: function(title, selector) {
-        const el = document.querySelector(selector);
-        const text = el.innerText.split('📋 Kuis')[0];
-        
-        // Simple slide logic: split by headers
-        const slides = text.split(/(?=#{1,3}\s|(?:\d\.\s\*\*))/);
-        
-        let slideIndex = 0;
-        const modal = document.createElement('div');
-        modal.id = 'presentation-modal';
-        modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;padding:20px;";
-        
-        const updateSlide = () => {
-            const content = slides[slideIndex] || "Selesai";
-            modal.innerHTML = `
-                <div style="position:absolute;top:20px;right:20px;cursor:pointer;font-size:1.5rem;" onclick="this.parentElement.remove()">✕</div>
-                <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:20px;">${title} • Slide ${slideIndex + 1} / ${slides.length}</div>
-                <div style="max-width:800px;width:100%;text-align:center;font-size:1.4rem;line-height:1.6;animation:fadeIn 0.3s ease;">
-                    ${window.formatAIText(content)}
-                </div>
-                <div style="margin-top:40px;display:flex;gap:20px;">
-                    <button class="btn btn-secondary" onclick="window.prevSlide()" ${slideIndex===0?'disabled':''}>Sebelumnya</button>
-                    <button class="btn btn-primary" onclick="window.nextSlide()" ${slideIndex===slides.length-1?'disabled':''}>Selanjutnya</button>
-                </div>
-                <style>@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }</style>
-            `;
-        };
-
-        window.nextSlide = () => { if(slideIndex < slides.length - 1) { slideIndex++; updateSlide(); } };
-        window.prevSlide = () => { if(slideIndex > 0) { slideIndex--; updateSlide(); } };
-        
-        updateSlide();
-        document.body.appendChild(modal);
-    },
+    // 4. (REMOVED) PRESENTATION / SLIDE VIEW
+    // 5. (REMOVED) POSTER VIEW
 
     // 6. INTERACTIVE MIND-MAP (Markmap)
-    openMindMap: async function(title, selector) {
+    openMindMap: async function(title, selector, system, moduleId, forceRegenerate = false) {
         const el = document.querySelector(selector);
         if (!el) return;
         
-        const modal = document.createElement('div');
-        modal.id = 'mindmap-modal';
-        modal.className = 'mastery-modal';
-        modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;z-index:20000;display:flex;flex-direction:column;padding:20px;overflow:hidden;";
+        const cacheKey = `cache_mm_${system}_${moduleId}`;
+        const cachedMarkdown = localStorage.getItem(cacheKey);
+
+        const modalId = 'mindmap-modal';
+        let modal = document.getElementById(modalId);
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = modalId;
+            modal.className = 'mastery-modal';
+            modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;z-index:20000;display:flex;flex-direction:column;padding:20px;padding-top: calc(env(safe-area-inset-top) + 20px);overflow:hidden;";
+            document.body.appendChild(modal);
+        }
         
         modal.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;color:white;z-index:20001;">
-                <h3 style="margin:0;">🧠 Interactive Mind-Map: ${title}</h3>
-                <div style="display:flex;gap:10px;">
-                    <button class="btn btn-secondary btn-small" onclick="window.resetMindmapZoom()">🔭 Reset Zoom</button>
-                    <button class="btn btn-secondary btn-small" onclick="this.closest('#mindmap-modal').remove()">✕ Tutup</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;color:white;z-index:20001;background:rgba(30,41,59,0.5);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);position:sticky;top:0;">
+                <h3 style="margin:0;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🧠 Mind-Map: ${title}</h3>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary btn-small" style="padding:8px 12px;border-radius:20px;" onclick="lessonTools.openMindMap('${title.replace(/'/g, "\\'")}', '${selector}', '${system}', '${moduleId}', true)">🔄</button>
+                    <button class="btn btn-ai btn-small" id="save-mindmap-btn" style="background:var(--secondary);padding:8px 12px;border-radius:20px;" onclick="window.saveMindmapToLibrary('${title.replace(/'/g, "\\'")}')">💾</button>
+                    <button class="btn btn-secondary btn-small" style="padding:8px 12px;border-radius:20px;" onclick="this.closest('#mindmap-modal').remove()">✕ Tutup</button>
                 </div>
             </div>
             <div id="mindmap-container" style="flex:1;background:rgba(255,255,255,0.03);border-radius:20px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.1);box-shadow:inset 0 0 50px rgba(0,0,0,0.5);">
@@ -188,17 +164,23 @@ window.lessonTools = {
                 </div>
             </div>
         `;
-        document.body.appendChild(modal);
+
+        if (cachedMarkdown && !forceRegenerate) {
+            console.log('Using cached Mind-Map');
+            setTimeout(() => {
+                document.getElementById('mindmap-loading')?.remove();
+                this.renderMarkmap(cachedMarkdown);
+                window.currentMindmapMarkdown = cachedMarkdown;
+            }, 300);
+            return;
+        }
 
         const lessonText = el.innerText.split('📋 Kuis')[0];
         const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
         if (!apiKey) return;
 
-        const prompt = `Buatlah struktur Mind-Map yang LENGKAP dan MENDALAM dari materi di bawah.
+        const prompt = `Buatlah struktur Mind-Map yang LENGKAB dan MENDALAM dari materi di bawah.
         Format output WAJIB dalam Markdown Outline (hanya level judul #, ##, ###, dan list - ).
-        - Jangan gunakan kode lain.
-        - Fokus pada hierarki konsep.
-        - Tambahkan detail teknis di level terdalam.
         
         MATERI:
         ${lessonText}`;
@@ -211,8 +193,10 @@ window.lessonTools = {
             const result = await response.json();
             const markdown = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
             
-            document.getElementById('mindmap-loading').remove();
+            localStorage.setItem(cacheKey, markdown);
+            document.getElementById('mindmap-loading')?.remove();
             this.renderMarkmap(markdown);
+            window.currentMindmapMarkdown = markdown;
         } catch(e) {
             console.error('Mindmap Error:', e);
             document.getElementById('mindmap-container').innerHTML = '<p class="text-danger p-md">❌ Gagal memuat Peta Konsep.</p>';
@@ -245,19 +229,31 @@ window.lessonTools = {
     },
 
     // 7. AI FLASHCARDS
-    openFlashcards: async function(title, selector) {
+    openFlashcards: async function(title, selector, system, moduleId, forceRegenerate = false) {
         const el = document.querySelector(selector);
         if (!el) return;
 
-        const modal = document.createElement('div');
-        modal.id = 'flashcards-modal';
-        modal.className = 'mastery-modal';
-        modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.98);z-index:20000;display:flex;flex-direction:column;padding:20px;overflow:hidden;";
+        const cacheKey = `cache_fc_${system}_${moduleId}`;
+        const cachedJSON = localStorage.getItem(cacheKey);
+
+        const modalId = 'flashcards-modal';
+        let modal = document.getElementById(modalId);
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = modalId;
+            modal.className = 'mastery-modal';
+            modal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.98);z-index:20000;display:flex;flex-direction:column;padding:20px;padding-top: calc(env(safe-area-inset-top) + 20px);overflow:hidden;";
+            document.body.appendChild(modal);
+        }
         
         modal.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;color:white;">
-                <h3 style="margin:0;">🗂️ Flashcards: ${title}</h3>
-                <button class="btn btn-secondary" onclick="this.closest('#flashcards-modal').remove()">✕ Tutup</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;color:white;z-index:20001;background:rgba(30,41,59,0.5);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);position:sticky;top:0;">
+                <h3 style="margin:0;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🗂️ Flashcards: ${title}</h3>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary btn-small" style="padding:8px 12px;border-radius:20px;" onclick="lessonTools.openFlashcards('${title.replace(/'/g, "\\'")}', '${selector}', '${system}', '${moduleId}', true)">🔄</button>
+                    <button class="btn btn-ai btn-small" id="save-flashcards-btn" style="background:var(--secondary);padding:8px 12px;border-radius:20px;" onclick="window.saveFlashcardsToLibrary('${title.replace(/'/g, "\\'")}')">💾</button>
+                    <button class="btn btn-secondary btn-small" style="padding:8px 12px;border-radius:20px;" onclick="this.closest('#flashcards-modal').remove()">✕ Tutup</button>
+                </div>
             </div>
             <div id="flashcards-container" style="flex:1;display:flex;align-items:center;justify-content:center;perspective:1000px;">
                 <div class="loading-spinner"></div>
@@ -268,14 +264,25 @@ window.lessonTools = {
                 <button class="btn btn-secondary" id="fc-next">➡️</button>
             </div>
         `;
-        document.body.appendChild(modal);
+
+        if (cachedJSON && !forceRegenerate) {
+            console.log('Using cached Flashcards');
+            try {
+                const cards = JSON.parse(cachedJSON);
+                setTimeout(() => {
+                    this.renderFlashcards(cards);
+                    window.currentFlashcardsData = cards;
+                }, 300);
+                return;
+            } catch(e) { console.warn('Cache corrupted for FC'); }
+        }
 
         const lessonText = el.innerText.split('📋 Kuis')[0];
         const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
         if (!apiKey) return;
 
-        const prompt = `Buatlah 10 kartu hapalan (Flashcards) dari materi berikut untuk membantu mengingat poin penting.
-        Format output JSON murni saja: [{"front": "Pertanyaan/Istilah", "back": "Jawaban/Definisi"}, ...].
+        const prompt = `Buatlah 10 kartu hapalan (Flashcards) dari materi berikut.
+        Format output JSON murni saja: [{"front": "Pertanyaan", "back": "Jawaban"}, ...].
         
         MATERI:
         ${lessonText}`;
@@ -289,6 +296,8 @@ window.lessonTools = {
             const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text.replace(/```json|```/g, '').trim();
             const cards = JSON.parse(jsonText);
             
+            localStorage.setItem(cacheKey, jsonText);
+            window.currentFlashcardsData = cards;
             this.renderFlashcards(cards);
         } catch(e) {
             document.getElementById('flashcards-container').innerHTML = '<p class="text-danger">❌ Gagal memuat Flashcards.</p>';
@@ -353,12 +362,11 @@ window.getActionBarHTML = function(title, system, moduleId) {
     return `
     <div class="action-bar no-print" style="background:var(--surface-hover);padding:10px;border-radius:12px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:8px;border:1px solid var(--border);">
         <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.speak('#lesson-body', '${lang}')">🔊 Baca</button>
-        <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.exportPDF('${title}', '#lesson-body')">📄 PDF</button>
+        <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.exportPDF('${title.replace(/'/g, "\\'")}', '#lesson-body')">📄 PDF</button>
         <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.generateSummary('${system}', '#lesson-body', 'lesson-summary-box')">📝 Summary</button>
-        <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openPresentation('${title}', '#lesson-body')">📽️ Slide</button>
-        <button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openPoster('${title}', '#lesson-body')">🖼️ Poster</button>
-        <button class="btn btn-primary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openMindMap('${title}', '#lesson-body')">🧠 Mind-Map</button>
-        <button class="btn btn-primary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openFlashcards('${title}', '#lesson-body')">🗂️ Flashcards</button>
+        <button class="btn btn-primary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openMindMap('${title.replace(/'/g, "\\'")}', '#lesson-body', '${system}', '${moduleId}')">🧠 Mind-Map</button>
+        <button class="btn btn-primary" style="font-size:0.8rem;padding:6px 12px;" onclick="lessonTools.openFlashcards('${title.replace(/'/g, "\\'")}', '#lesson-body', '${system}', '${moduleId}')">🗂️ Flashcards</button>
+        <button class="btn btn-ai" id="save-to-lib-btn" style="font-size:0.8rem;padding:6px 12px;background:var(--secondary);color:white;border:none;" onclick="saveCurrentViewToLibrary('${title.replace(/'/g, "\\'")}', '#lesson-body', '${system}')">💾 Simpan</button>
     </div>
     <div id="lesson-summary-box" class="no-print" style="margin-bottom:15px;"></div>
     <div id="lesson-body">`;
@@ -495,4 +503,91 @@ window.extractQuizAndCleanText = function(text) {
         return '';
     });
     return { quizBlocks, cleanedText };
+};
+
+// Global helper to save ANY AI-generated view to the library
+window.saveCurrentViewToLibrary = function(title, selector, category) {
+    const element = document.querySelector(selector);
+    if (!element) {
+        alert("Gagal menemukan konten untuk disimpan.");
+        return;
+    }
+
+    const content = element.innerHTML;
+    const item = {
+        title: title || "Tanpa Judul",
+        content: content,
+        category: category || "General",
+        type: "ai_generated_lesson",
+        timestamp: new Date().toISOString()
+    };
+
+    if (typeof saveGeneration === 'function') {
+        saveGeneration(item);
+        
+        // Find the button to give feedback
+        // Use a generic approach since this might be called from multiple places
+        const btns = document.querySelectorAll('button');
+        let targetBtn = null;
+        btns.forEach(b => {
+            if (b.innerText.includes('Simpan') || b.id === 'save-to-lib-btn') {
+                // If there are multiple, try to find the one visible/closest
+                if (b.getBoundingClientRect().width > 0) targetBtn = b;
+            }
+        });
+
+        if (targetBtn) {
+            const originalText = targetBtn.innerHTML;
+            targetBtn.innerHTML = '✅ Disimpan';
+            targetBtn.style.background = 'var(--success)';
+            targetBtn.disabled = true;
+            setTimeout(() => {
+                targetBtn.innerHTML = originalText;
+                targetBtn.style.background = '';
+                targetBtn.disabled = false;
+            }, 3000);
+        } else {
+            alert("✅ Berhasil disimpan ke Perpustakaan AI!");
+        }
+    } else {
+        alert("Fitur penyimpanan belum siap.");
+    }
+};
+
+window.saveMindmapToLibrary = function(title) {
+    if (!window.currentMindmapMarkdown) return;
+    
+    const item = {
+        title: `Mind-Map: ${title}`,
+        content: window.currentMindmapMarkdown,
+        category: "Mind-Map",
+        type: "mindmap",
+        timestamp: new Date().toISOString()
+    };
+    
+    saveGeneration(item);
+    const btn = document.getElementById('save-mindmap-btn');
+    if (btn) {
+        btn.innerHTML = '✅ Disimpan';
+        btn.disabled = true;
+    }
+};
+
+window.saveFlashcardsToLibrary = function(title) {
+    if (!window.currentFlashcardsData) return;
+    
+    const item = {
+        title: `Flashcards: ${title}`,
+        content: JSON.stringify(window.currentFlashcardsData), // Save as JSON string
+        category: "Flashcards",
+        type: "flashcards",
+        timestamp: new Date().toISOString()
+    };
+    
+    saveGeneration(item);
+    const btn = document.getElementById('save-flashcards-btn');
+    if (btn) {
+        btn.innerHTML = '✅ Disimpan';
+        btn.disabled = true;
+    }
 };

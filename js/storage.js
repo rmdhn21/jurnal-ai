@@ -23,7 +23,8 @@ const STORAGE_KEYS = {
     ISLAMIC_TRACKS: 'jurnal_ai_islamic_tracks',
     CACHED_NEWS: 'jurnal_ai_cached_news',
     TUTOR_LAST_DATE: 'jurnal_ai_tutor_last_date',
-    HSE_VOCAB_BANK: 'jurnal_ai_hse_vocab_bank'
+    HSE_VOCAB_BANK: 'jurnal_ai_hse_vocab_bank',
+    SAVED_GENERATIONS: 'jurnal_ai_saved_generations'
 };
 
 // ===== UTILITY FUNCTIONS =====
@@ -590,4 +591,36 @@ function deleteVocabFromBank(id) {
     let bank = getVocabBank();
     bank = bank.filter(v => v.id !== id);
     localStorage.setItem(STORAGE_KEYS.HSE_VOCAB_BANK, JSON.stringify(bank));
+}
+
+// ==== SAVED GENERATIONS FUNCTIONS ====
+function getSavedGenerations() {
+    const data = localStorage.getItem(STORAGE_KEYS.SAVED_GENERATIONS);
+    return data ? JSON.parse(data) : [];
+}
+
+function saveGeneration(item) {
+    const saved = getSavedGenerations();
+    
+    // Check if already saved (based on content hash or similar, but for now simple title/type)
+    const existingIndex = saved.findIndex(s => s.title === item.title && s.type === item.type && s.feature === item.feature);
+    
+    if (existingIndex >= 0) {
+        saved[existingIndex] = { ...saved[existingIndex], ...item, updatedAt: new Date().toISOString() };
+    } else {
+        item.id = generateId();
+        item.createdAt = new Date().toISOString();
+        saved.unshift(item);
+    }
+    
+    localStorage.setItem(STORAGE_KEYS.SAVED_GENERATIONS, JSON.stringify(saved));
+    triggerCloudSync();
+    return item;
+}
+
+function deleteSavedGeneration(id) {
+    let saved = getSavedGenerations();
+    saved = saved.filter(s => s.id !== id);
+    localStorage.setItem(STORAGE_KEYS.SAVED_GENERATIONS, JSON.stringify(saved));
+    triggerCloudSync();
 }

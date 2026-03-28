@@ -28,12 +28,45 @@ const hseRigData = {
         },
         {
             title: "5. Power System (Sistem Tenaga)",
-            desc: "<b>Fungsi utama:</b> Sumber kehidupan listrik mandiri di tengah antah berantah untuk menggerakkan seluruh mesin rig di atas.<br><br><b>📌 Komponen Pada Gambar:</b><br>• <b>Gensets (Generator Sets / Mesin Diesel):</b> Generator diesel raksasa (biasanya ada 3-4 unit bekerja paralel) berbentuk blok kontainer tangguh penghasil listrik tegangan besar setingkat megawatt.<br>• <b>SCR / VFD Room (Control House):</b> Ruang kontrol kelistrikan (biasanya kontainer putih ber-AC) pusat konversi dan distribusi listrik ke motor-motor alat rig.<br>• <b>Main Power Cables:</b> Kabel transmisi listrik tebal layaknya ular yang menyalurkan listrik dari Genset ke SCR, dan dari SCR ke Drawworks/Mud Pump.<br>• <b>Exhaust / Muffler:</b> Knalpot pembuangan asap panas dan peredam suara pada atas unit Gensets.<br><br><span style='color: #e53e3e;'><b>⚠️ Bahaya utama:</b> Tingkat kebisingan ekstrem (tuli jika menolak pakai pelindung telinga), risiko tinggi tersengat listrik (wajib ketat aturan LOTO), dan bahaya ledakan bahan bakar tangki diesel/solar.</span>",
+            desc: "<b>Fungsi utama:</b> Sumber kehidupan listrik mandiri di tengah antah berantah untuk menggerakkan seluruh mesin rig di atas.<br><br><b>📌 Komponen Pada Gambar:</b><br>• <b>Gensets:</b> Generator diesel raksasa penghasil listrik megawatt.<br>• <b>SCR / VFD Room:</b> Pusat distribusi listrik ke motor-motor alat rig.<br>• <b>Main Power Cables:</b> Kabel transmisi listrik tebal.<br><br><span style='color: #e53e3e;'><b>⚠️ Potensi Bahaya:</b> Kebisingan ekstrem, sengatan listrik tegangan tinggi (LOTO wajib), dan risiko ledakan bahan bakar diesel.</span>",
             icon: "⚡",
             image: "img/hse-rig/sys_power.png"
         }
     ],
+    wellLifecycle: [
+        {
+            title: "Siklus Hidup Sumur Migas",
+            desc: "Memahami perjalanan sebuah sumur dari awal hingga akhir:<br><br>1. <b>Eksplorasi:</b> Pencarian cadangan minyak baru melalui survei seismik dan pengeboran sumur liar (Wildcat).<br>2. <b>Penilaian (Appraisal):</b> Mengukur potensi cadangan dan nilai komersial melalui Well Testing.<br>3. <b>Pengembangan:</b> Pengeboran sumur produksi secara massal dan pemasangan fasilitas permukaan.<br>4. <b>Komplesi:</b> Mempersiapkan sumur agar siap mengalirkan minyak/gas secara aman.<br>5. <b>Produksi:</b> Tahap mengalirkan fluida bumi ke tangki pengumpul.<br>6. <b>Intervensi:</b> Perbaikan atau optimalisasi sumur (Well Workover/Snobbing).<br>7. <b>Penutupan (P&A):</b> Permanently Plug and Abandon (P&A) sumur yang sudah tidak ekonomis agar aman bagi lingkungan.",
+            icon: "🔄",
+            image: "img/hse-rig/well_lifecycle.png"
+        }
+    ],
+    rigSequence: [
+        {
+            title: "Alur Operasional Rig",
+            desc: "Urutan kerja mekanis dan logistik rig:<br><br>• <b>Mobilisasi:</b> Perpindahan peralatan rig dari gudang ke lokasi sumur menggunakan truk berat.<br>• <b>Rig Up:</b> Proses pendirian menara (mast) dan perakitan seluruh 5 sistem utama rig.<br>• <b>Drilling Ops:</b> Proses pengeboran lubang sumur secara aktif.<br>• <b>Well Completion:</b> Pemasangan pipa produksi (tubing) dan Wellhead.<br>• <b>Rig Down:</b> Pembongkaran menara dan mesin setelah pekerjaan selesai.<br>• <b>Demobilisasi:</b> Pemindahan rig keluar dari lokasi sumur.",
+            icon: "⚙️",
+            image: "img/hse-rig/rig_sequence.png"
+        }
+    ],
+    criticalParameters: [
+        {
+            title: "Parameter Kritis Sumur",
+            desc: "Data teknis yang wajib dipantau HSE dan Driller:<br><br>• <b>Trajektori:</b> Arah lubang sumur (Vertikal, Berarah, atau Horizontal).<br>• <b>Mud Weight (MW):</b> Berat jenis lumpur penyeimbang tekanan formasi (Prime barrier).<br>• <b>Litologi:</b> Jenis batuan yang ditembus (Shale, Sandstone) - waspada zona rekah.<br>• <b>Casing Shoe:</b> Kedalaman kritis ujung pipa pelindung terakhir.<br>• <b>BHT (Bottom Hole Temperature):</b> Suhu dasar sumur yang mempengaruhi alat bor.<br>• <b>Well History:</b> Riwayat sumur sekitar (Offset Wells) untuk antisipasi bahaya serupa.<br>• <b>SIMOPS:</b> Pengawasan pekerjaan yang berlangsung bersamaan (Simultaneous Operations).",
+            icon: "📊",
+            image: "img/hse-rig/well_parameters.png"
+        }
+    ],
+    hsseOversight: [
+        {
+            title: "Tanggung Jawab Pengawasan HSSE",
+            desc: "Fokus utama Supervisor HSE di lapangan Rig:<br><br>• <b>Lantai Bor (Drill Floor):</b> Mengawasi area paling berbahaya (Red Zone/Pinch Point).<br>• <b>JSA / PTW:</b> Memastikan izin kerja selaras dengan identitas bahaya aktual.<br>• <b>Chemical & Waste:</b> Pengawasan penanganan bahan kimia berbahaya dan limbah lumpur.<br>• <b>Well Control:</b> Memonitor indikasi dini semburan liar (Kick) dan memandu tanggap darurat.<br>• <b>Emergency Response:</b> Memastikan seluruh kru paham tugas dalam Muster Point dan pemakaian peralatan darurat.",
+            icon: "🛡️",
+            image: "img/hse-rig/hsse_oversight_rig.png"
+        }
+    ],
     hazards: [
+
         {
             title: "1. Gerakan (Motion)",
             desc: "Bahaya dari suatu benda atau alat yang bergerak (berputar, mengayun, meluncur) yang dapat menabrak atau membentur pekerja.",
@@ -473,7 +506,12 @@ function initHseRig() {
     renderInteractiveFlashcards('rig-clsr-modules', hseRigData.clsr);
     renderInteractiveFlashcards('rig-perilaku-modules', hseRigData.perilaku);
     renderRigModules('rig-gas-modules', hseRigData.gasFire, true);
+    renderRigModules('rig-lifecycle-modules', hseRigData.wellLifecycle);
+    renderRigModules('rig-sequence-modules', hseRigData.rigSequence);
+    renderRigModules('rig-parameters-modules', hseRigData.criticalParameters);
+    renderRigModules('rig-oversight-modules', hseRigData.hsseOversight);
     if (typeof renderInspectionChecklist === 'function' && hseRigData.inspection) {
+
         renderInspectionChecklist('rig-inspection-modules', hseRigData.inspection);
     }
 }

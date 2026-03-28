@@ -444,7 +444,12 @@ function renderEplsLessonContent(screen, level, moduleId, rawText) {
         </div>
         <div id="epls-lesson-content" class="card mt-md">
             <div style="background:var(--surface);padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.1);border:1px solid var(--border);position:relative;">
-                ${formattedText}
+                <div style="margin-bottom: 25px;">
+                    ${window.getActionBarHTML ? window.getActionBarHTML(mod.title, 'epls', moduleId) : ''}
+                    ${formattedText}
+                </div>
+                    ${formattedText}
+                </div>
             </div>
     `;
 
