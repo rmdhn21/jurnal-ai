@@ -1,15 +1,15 @@
 // ===== WALLET UI LOGIC =====
-function initWalletUI() {
+async function initWalletUI() {
     const manageBtn = document.getElementById('manage-wallets-btn');
     const modal = document.getElementById('wallet-modal');
     const closeBtn = document.getElementById('close-wallet-modal');
     const addBtn = document.getElementById('add-wallet-btn');
 
     if (manageBtn) {
-        manageBtn.addEventListener('click', () => {
+        manageBtn.addEventListener('click', async () => {
             if (modal) {
                 modal.classList.remove('hidden');
-                renderWalletManagementList();
+                await renderWalletManagementList();
             }
         });
     }
@@ -30,11 +30,11 @@ function initWalletUI() {
         addBtn.addEventListener('click', handleAddWallet);
     }
 
-    renderWalletListSummary();
-    updateWalletSelectOptions();
+    await renderWalletListSummary();
+    await updateWalletSelectOptions();
 }
 
-function handleAddWallet() {
+async function handleAddWallet() {
     const nameInput = document.getElementById('new-wallet-name');
     const balanceInput = document.getElementById('new-wallet-balance');
     const name = nameInput.value.trim();
@@ -52,21 +52,23 @@ function handleAddWallet() {
         createdAt: new Date().toISOString()
     };
 
-    saveWallet(wallet);
+    await saveWallet(wallet);
 
     nameInput.value = '';
     balanceInput.value = '0';
 
-    renderWalletManagementList();
-    renderWalletListSummary();
-    updateWalletSelectOptions();
+    await renderWalletManagementList();
+    await renderWalletListSummary();
+    await updateWalletSelectOptions();
+    if (typeof updateFinanceSummary === 'function') await updateFinanceSummary();
+    if (typeof updateFinancialHealthScore === 'function') await updateFinancialHealthScore();
 }
 
-function renderWalletManagementList() {
+async function renderWalletManagementList() {
     const listEl = document.getElementById('wallet-management-list');
     if (!listEl) return;
 
-    const wallets = getWallets();
+    const wallets = await getWallets();
 
     listEl.innerHTML = wallets.map(w => `
         <div class="wallet-management-item">
@@ -76,20 +78,22 @@ function renderWalletManagementList() {
     `).join('');
 }
 
-window.deleteWalletUI = function (id) {
+window.deleteWalletUI = async function (id) {
     if (confirm('Hapus dompet ini? Transaksi terkait tidak akan dihapus (akan error tampilannya).')) {
-        deleteWallet(id);
-        renderWalletManagementList();
-        renderWalletListSummary();
-        updateWalletSelectOptions();
+        await deleteWallet(id);
+        await renderWalletManagementList();
+        await renderWalletListSummary();
+        await updateWalletSelectOptions();
+        if (typeof updateFinanceSummary === 'function') await updateFinanceSummary();
+        if (typeof updateFinancialHealthScore === 'function') await updateFinancialHealthScore();
     }
 };
 
-function renderWalletListSummary() {
+async function renderWalletListSummary() {
     const container = document.getElementById('wallet-list-summary');
     if (!container) return;
 
-    const wallets = getWallets();
+    const wallets = await getWallets();
 
     container.innerHTML = wallets.map(w => `
         <div class="wallet-chip">
@@ -99,29 +103,29 @@ function renderWalletListSummary() {
     `).join('');
 }
 
-function updateWalletSelectOptions() {
+async function updateWalletSelectOptions() {
     const select = document.getElementById('transaction-wallet');
     if (!select) return;
 
-    const wallets = getWallets();
+    const wallets = await getWallets();
     select.innerHTML = wallets.map(w => `
         <option value="${w.id}">${w.name} (${formatCurrency(w.balance || 0)})</option>
     `).join('');
 }
 
 // ===== BUDGET UI LOGIC =====
-function initBudgetUI() {
-    const manageBtn = document.getElementById('manage-budget-btn');
+async function initBudgetUI() {
+    const manageBtn = document.getElementById('manage-budgets-btn');
     const modal = document.getElementById('budget-modal');
     const closeBtn = document.getElementById('close-budget-modal');
     const addBtn = document.getElementById('add-budget-btn');
 
     if (manageBtn) {
-        manageBtn.addEventListener('click', () => {
+        manageBtn.addEventListener('click', async () => {
             if (modal) {
                 modal.classList.remove('hidden');
                 updateBudgetCategoryOptions();
-                renderBudgetManagementList();
+                await renderBudgetManagementList();
             }
         });
     }
@@ -142,7 +146,7 @@ function initBudgetUI() {
         addBtn.addEventListener('click', handleAddBudget);
     }
 
-    renderBudgetListSummary();
+    await renderBudgetListSummary();
 }
 
 function updateBudgetCategoryOptions() {
@@ -156,7 +160,7 @@ function updateBudgetCategoryOptions() {
     select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
 }
 
-function handleAddBudget() {
+async function handleAddBudget() {
     const categorySelect = document.getElementById('new-budget-category');
     const limitInput = document.getElementById('new-budget-limit');
 
@@ -175,18 +179,18 @@ function handleAddBudget() {
         createdAt: new Date().toISOString()
     };
 
-    saveBudget(budget);
+    await saveBudget(budget);
     limitInput.value = '';
 
-    renderBudgetManagementList();
-    renderBudgetListSummary();
+    await renderBudgetManagementList();
+    await renderBudgetListSummary();
 }
 
-function renderBudgetManagementList() {
+async function renderBudgetManagementList() {
     const listEl = document.getElementById('budget-management-list');
     if (!listEl) return;
 
-    const budgets = getBudgets();
+    const budgets = await getBudgets();
 
     listEl.innerHTML = budgets.map(b => `
         <div class="budget-management-item">
@@ -199,16 +203,16 @@ function renderBudgetManagementList() {
     `).join('');
 }
 
-window.deleteBudgetUI = function (id) {
+window.deleteBudgetUI = async function (id) {
     if (confirm('Hapus budget ini?')) {
-        deleteBudget(id);
-        renderBudgetManagementList();
-        renderBudgetListSummary();
+        await deleteBudget(id);
+        await renderBudgetManagementList();
+        await renderBudgetListSummary();
     }
 };
 
-function getCategoryExpenses(category) {
-    const transactions = getTransactions();
+async function getCategoryExpenses(category) {
+    const transactions = await getTransactions();
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -223,26 +227,27 @@ function getCategoryExpenses(category) {
         .reduce((sum, t) => sum + t.amount, 0);
 }
 
-function renderBudgetListSummary() {
+async function renderBudgetListSummary() {
     const container = document.getElementById('budget-list-summary');
     if (!container) return;
 
-    const budgets = getBudgets();
+    const budgets = await getBudgets();
 
     if (budgets.length === 0) {
         container.innerHTML = '<p class="text-muted budget-empty">Belum ada budget yang diatur</p>';
         return;
     }
 
-    container.innerHTML = budgets.map(b => {
-        const spent = getCategoryExpenses(b.category);
+    let itemsHtml = '';
+    for (const b of budgets) {
+        const spent = await getCategoryExpenses(b.category);
         const percentage = Math.min((spent / b.limit) * 100, 100);
 
         let colorClass = 'bg-success';
         if (percentage >= 100) colorClass = 'bg-danger';
         else if (percentage >= 80) colorClass = 'bg-warning';
 
-        return `
+        itemsHtml += `
         <div class="budget-summary-item">
             <div class="budget-header">
                 <span>${b.category}</span>
@@ -253,5 +258,6 @@ function renderBudgetListSummary() {
             </div>
         </div>
         `;
-    }).join('');
+    }
+    container.innerHTML = itemsHtml;
 }

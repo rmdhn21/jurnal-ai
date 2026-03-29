@@ -6,27 +6,33 @@ function showLoginScreen() {
     document.getElementById('main-app').classList.add('hidden');
 }
 
-function showMainApp() {
+async function showMainApp() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
+
+    // Initialize Database and Migration
+    if (typeof initDB === 'function') await initDB();
+    if (typeof migrateFromLocalStorageToIDB === 'function') await migrateFromLocalStorageToIDB();
 
     // Initialize all modules
     initNavigation();
     initSettings();
-    initDashboard();
-    initJournalUI();
-    initPlannerUI();
-    initGoalsUI();
+    if (typeof initDashboardWidgets === 'function') await initDashboardWidgets();
+    // initDashboard is now partly handled by widgets, but we keep it for intervals if needed
+    // or we can refactor initDashboard to not repeat work.
+    if (typeof initJournalUI === 'function') await initJournalUI();
+    if (typeof initPlannerUI === 'function') await initPlannerUI();
+    if (typeof initGoalsUI === 'function') await initGoalsUI();
 
     try {
         if (typeof initPrayerTimes === 'function') {
-            initPrayerTimes();
+            await initPrayerTimes();
         }
     } catch (e) {
         console.error('Failed to init Prayer Times:', e);
     }
 
-    initFinanceUI();
+    if (typeof initFinanceUI === 'function') await initFinanceUI();
     initHabitsUI();
     initGlobalSearch();
     initAIAnalysis();
@@ -35,7 +41,8 @@ function showMainApp() {
     if (typeof initHadithCard === 'function') initHadithCard();
     if (typeof initGamification === 'function') initGamification();
     if (typeof initMotivation === 'function') initMotivation();
-    if (typeof initIslamTrackerUI === 'function') initIslamTrackerUI();
+    if (typeof initIslamTrackerUI === 'function') await initIslamTrackerUI();
+    if (typeof initAIAssistant === 'function') await initAIAssistant();
 
     // Check if Onboarding is needed
     if (typeof initOnboarding === 'function') initOnboarding();
@@ -102,18 +109,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Delayed init for secondary features
-    setTimeout(() => {
+    setTimeout(async () => {
         if (typeof initBackupRestore === 'function') initBackupRestore();
         if (typeof initTheme === 'function') initTheme();
         if (typeof initVoiceInput === 'function') initVoiceInput();
         if (typeof initSecurity === 'function') initSecurity();
         if (typeof initExportCSV === 'function') initExportCSV();
-        if (typeof renderCalendar === 'function') renderCalendar();
-        if (typeof initFinanceUpgrades === 'function') initFinanceUpgrades();
-        if (typeof initWalletUI === 'function') initWalletUI();
-        if (typeof initBudgetUI === 'function') initBudgetUI();
-        if (typeof initGlobalBudgetUI === 'function') initGlobalBudgetUI();
-        if (typeof initInsightUI === 'function') initInsightUI();
+        if (typeof renderCalendar === 'function') await renderCalendar();
+        if (typeof initFinanceUpgrades === 'function') await initFinanceUpgrades();
+        if (typeof initWalletUI === 'function') await initWalletUI();
+        if (typeof initBudgetUI === 'function') await initBudgetUI();
+        if (typeof initGlobalBudgetUI === 'function') await initGlobalBudgetUI();
+        if (typeof initInsightUI === 'function') await initInsightUI();
 
     }, 1000);
 });

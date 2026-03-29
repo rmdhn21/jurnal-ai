@@ -506,7 +506,7 @@ window.extractQuizAndCleanText = function(text) {
 };
 
 // Global helper to save ANY AI-generated view to the library
-window.saveCurrentViewToLibrary = function(title, selector, category) {
+window.saveCurrentViewToLibrary = async function(title, selector, category) {
     const element = document.querySelector(selector);
     if (!element) {
         alert("Gagal menemukan konten untuk disimpan.");
@@ -523,7 +523,7 @@ window.saveCurrentViewToLibrary = function(title, selector, category) {
     };
 
     if (typeof saveGeneration === 'function') {
-        saveGeneration(item);
+        await saveGeneration(item);
         
         // Find the button to give feedback
         // Use a generic approach since this might be called from multiple places
@@ -554,7 +554,7 @@ window.saveCurrentViewToLibrary = function(title, selector, category) {
     }
 };
 
-window.saveMindmapToLibrary = function(title) {
+window.saveMindmapToLibrary = async function(title) {
     if (!window.currentMindmapMarkdown) return;
     
     const item = {
@@ -565,7 +565,7 @@ window.saveMindmapToLibrary = function(title) {
         timestamp: new Date().toISOString()
     };
     
-    saveGeneration(item);
+    await saveGeneration(item);
     const btn = document.getElementById('save-mindmap-btn');
     if (btn) {
         btn.innerHTML = '✅ Disimpan';
@@ -573,7 +573,7 @@ window.saveMindmapToLibrary = function(title) {
     }
 };
 
-window.saveFlashcardsToLibrary = function(title) {
+window.saveFlashcardsToLibrary = async function(title) {
     if (!window.currentFlashcardsData) return;
     
     const item = {
@@ -584,7 +584,7 @@ window.saveFlashcardsToLibrary = function(title) {
         timestamp: new Date().toISOString()
     };
     
-    saveGeneration(item);
+    await saveGeneration(item);
     const btn = document.getElementById('save-flashcards-btn');
     if (btn) {
         btn.innerHTML = '✅ Disimpan';

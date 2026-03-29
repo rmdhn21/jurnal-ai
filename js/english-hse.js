@@ -200,13 +200,13 @@ JANGAN TAMBAHKAN TEKS APAPUN SELAIN JSON TERSEBUT. PASTIKAN BISA DI-PARSE.`;
 }
 
 // Vocab Bank Logic
-function saveCurrentVocab() {
+async function saveCurrentVocab() {
     if (!window.currentGeneratedVocab) return;
 
     // Requires storage.js to have saveVocabToBank
     if (typeof saveVocabToBank === 'function') {
-        saveVocabToBank(window.currentGeneratedVocab);
-        renderVocabBank(); // Update UI
+        await saveVocabToBank(window.currentGeneratedVocab);
+        await renderVocabBank(); // Update UI
 
         // Visual feedback
         const saveBtn = document.getElementById('save-vocab-btn');
@@ -225,7 +225,7 @@ function saveCurrentVocab() {
     }
 }
 
-function renderVocabBank() {
+async function renderVocabBank() {
     const vocabListContainer = document.getElementById('vocab-bank-list');
     const vocabCountElem = document.getElementById('vocab-bank-count');
     const quizBtn = document.getElementById('start-vocab-quiz-btn');
@@ -234,7 +234,7 @@ function renderVocabBank() {
 
     let bank = [];
     if (typeof getVocabBank === 'function') {
-        bank = getVocabBank();
+        bank = await getVocabBank();
     }
 
     if (vocabCountElem) {
@@ -276,11 +276,11 @@ function renderVocabBank() {
     `).join('');
 }
 
-window.deleteVocabCard = function (id) {
+window.deleteVocabCard = async function (id) {
     if (confirm('Hapus kosakata ini dari bank?')) {
         if (typeof deleteVocabFromBank === 'function') {
-            deleteVocabFromBank(id);
-            renderVocabBank();
+            await deleteVocabFromBank(id);
+            await renderVocabBank();
         }
     }
 };
@@ -290,8 +290,8 @@ let quizQuestions = [];
 let currentQuizIndex = 0;
 let score = 0;
 
-function startVocabQuiz() {
-    let bank = typeof getVocabBank === 'function' ? getVocabBank() : [];
+async function startVocabQuiz() {
+    let bank = typeof getVocabBank === 'function' ? await getVocabBank() : [];
     if (bank.length < 3) {
         alert("Minimal butuh 3 kosakata tersimpan untuk mulai kuis.");
         return;

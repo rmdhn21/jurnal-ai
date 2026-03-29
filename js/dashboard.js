@@ -1,8 +1,8 @@
 // ===== DASHBOARD MODULE =====
-function initDashboard() {
-    updateDashboardStats();
-    updateDashboardReminders();
-    initMoodChart();
+async function initDashboard() {
+    await updateDashboardStats();
+    await updateDashboardReminders();
+    if (typeof initMoodChart === 'function') await initMoodChart();
 
     updateDashboardPrayerCard(); // Initial render
     setInterval(updateDashboardPrayerCard, 60000); // Update every minute for next prayer check
@@ -122,9 +122,10 @@ function startPrayerCountdown() {
 }
 
 
-function updateDashboardStats() {
-    const journals = getJournals();
-    document.getElementById('stat-journals').textContent = journals.length;
+async function updateDashboardStats() {
+    const journals = await getJournals();
+    const statJournals = document.getElementById('stat-journals');
+    if (statJournals) statJournals.textContent = journals.length;
 
     // Aggregate Pending Items (Belum Dilakukan)
     let totalPending = 0;
@@ -132,11 +133,11 @@ function updateDashboardStats() {
     const todayStr = getTodayString();
 
     // 1. Kanban Pending
-    const tasks = getTasks();
+    const tasks = await getTasks();
     totalPending += tasks.filter(t => !t.done && t.status !== 'done').length;
 
     // 2. Habits Pending Today
-    const habits = getHabits();
+    const habits = await getHabits();
     totalPending += habits.filter(h => {
         if (h.completions && h.completions[todayStr]) return false;
         if (h.completedDates && h.completedDates.includes(todayStr)) return false;
@@ -153,21 +154,28 @@ function updateDashboardStats() {
     }
 
     // 4. Upcoming Schedules (Planner)
-    const schedules = getSchedules();
+    const schedules = await getSchedules();
     totalPending += schedules.filter(s => new Date(s.datetime) > now).length;
 
-    document.getElementById('stat-tasks').textContent = totalPending;
+    const statTasks = document.getElementById('stat-tasks');
+    if (statTasks) statTasks.textContent = totalPending;
 
-    const transactions = getTransactions();
+    const transactions = await getTransactions();
     const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-    document.getElementById('stat-balance').textContent = formatCurrency(income - expense);
+    
+    const wallets = await getWallets();
+    const totalBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
+    
+    const statBalance = document.getElementById('stat-balance');
+    if (statBalance) statBalance.textContent = formatCurrency(totalBalance);
 
     const bestStreak = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
-    document.getElementById('current-streak').textContent = bestStreak;
+    const currentStreak = document.getElementById('current-streak');
+    if (currentStreak) currentStreak.textContent = bestStreak;
 }
 
-function updateDashboardReminders() {
+async function updateDashboardReminders() {
     const container = document.getElementById('dashboard-reminders');
     if (!container) return;
 
@@ -183,7 +191,7 @@ function updateDashboardReminders() {
     };
 
     // 1. Schedules (Upcoming)
-    const schedules = getSchedules();
+    const schedules = await getSchedules();
     const upcomingSchedules = schedules
         .filter(s => new Date(s.datetime) > now)
         .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))
@@ -198,7 +206,8 @@ function updateDashboardReminders() {
             icon: '📅',
             title: s.title,
             timeLabel: `${timeStr} - ${dateStr}`,
-            sortWeight: date.getTime()
+            sortWeight: date.getTime(),
+            targetScreen: 'planner'
         });
     });
 
@@ -219,14 +228,15 @@ function updateDashboardReminders() {
                     icon: '✅',
                     title: t.text,
                     timeLabel: `To-Do: ${priorityLabel}`,
-                    sortWeight: now.getTime() + extraWeight
+                    sortWeight: now.getTime() + extraWeight,
+                    targetScreen: 'todo-today'
                 });
             });
         } catch (e) { }
     }
 
     // 3. Kanban
-    const tasks = getTasks();
+    const tasks = await getTasks();
     const pendingTasks = tasks.filter(t => !t.done && t.status !== 'done');
     pendingTasks.forEach(t => {
         allReminders.push({
@@ -234,12 +244,13 @@ function updateDashboardReminders() {
             icon: '📋',
             title: t.title,
             timeLabel: 'Kanban',
-            sortWeight: now.getTime() + 1000
+            sortWeight: now.getTime() + 1000,
+            targetScreen: 'kanban'
         });
     });
 
     // 4. Habits
-    const habits = getHabits();
+    const habits = await getHabits();
     const undoneHabits = habits.filter(h => {
         if (h.completions && h.completions[todayStr]) return false;
         if (h.completedDates && h.completedDates.includes(todayStr)) return false;
@@ -252,7 +263,8 @@ function updateDashboardReminders() {
             icon: '🌱',
             title: h.name,
             timeLabel: 'Habit',
-            sortWeight: now.getTime() + 2000
+            sortWeight: now.getTime() + 2000,
+            targetScreen: 'habits'
         });
     });
 
@@ -266,7 +278,9 @@ function updateDashboardReminders() {
 
     // Limit to 10 max
     container.innerHTML = allReminders.slice(0, 10).map(r => `
-        <div class="reminder-item" style="display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+        <div class="reminder-item" 
+             style="display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer;"
+             onclick="navigateToScreen('${r.targetScreen}')">
             <div style="font-size: 1.5rem; background: var(--bg-color); padding: 8px; border-radius: 8px; border: 1px solid var(--border);">${r.icon}</div>
             <div style="display: flex; flex-direction: column;">
                 <span class="reminder-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-color);">${r.title}</span>
@@ -287,11 +301,11 @@ async function getDailyInsight() {
     const insightBox = document.getElementById('quick-insight');
     insightBox.innerHTML = '<p class="text-muted">Menganalisis data Anda...</p>';
 
-    const journals = getJournals();
-    const tasks = getTasks();
-    const habits = getHabits();
+    const journals = await getJournals();
+    const tasks = await getTasks();
+    const habits = await getHabits();
 
-    const prompt = `Berdasarkan data pengguna: ${journals.length} jurnal, ${tasks.filter(t => t.completed).length}/${tasks.length} task selesai, ${habits.length} habits.
+    const prompt = `Berdasarkan data pengguna: ${journals.length} jurnal, ${tasks.filter(t => t.completed || t.done || t.status === 'done').length}/${tasks.length} task selesai, ${habits.length} habits.
 
 Tulis TEPAT 2 kalimat motivasi singkat dalam bahasa Indonesia. Maksimal 50 kata total. Langsung tulis kalimatnya tanpa pembuka.`;
 
@@ -353,7 +367,7 @@ async function analyzeWithAI(type) {
     switch (type) {
         case 'planner':
             title = '🧠 Analisis Produktivitas';
-            data = { tasks: getTasks(), schedules: getSchedules() };
+            data = { tasks: await getTasks(), schedules: await getSchedules() };
             prompt = `Analisis data produktivitas berikut dan berikan insight:
             
 Tasks: ${JSON.stringify(data.tasks)}
@@ -374,33 +388,46 @@ Gunakan bahasa Indonesia yang hangat dan memotivasi.`;
 
         case 'finance':
             title = '🧠 Analisis Keuangan';
-            data = getTransactions();
+            data = await getTransactions();
             const income = data.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
             const expense = data.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
-            prompt = `Analisis data keuangan berikut:
+            const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
+            const budgets = await getBudgets();
 
-Transactions: ${JSON.stringify(data)}
-Total Income: ${income}
-Total Expense: ${expense}
-Balance: ${income - expense}
+            prompt = `Anda adalah CFO/Penasihat Keuangan Profesional. Berikan analisis mendalam terhadap data keuangan berikut:
 
-Berikan analisis dalam format HTML dengan struktur:
-<h4>📊 Ringkasan Keuangan</h4>
-<p>overview singkat</p>
-<h4>📈 Pola Pengeluaran</h4>
-<ul><li>kategori terbesar</li></ul>
-<h4>💰 Tips Penghematan</h4>
-<ul><li>tips praktis</li></ul>
-<h4>🎯 Target Bulan Depan</h4>
-<p>rekomendasi target</p>
+            Pemasukan: ${formatCurrency(income)}
+            Pengeluaran: ${formatCurrency(expense)}
+            Arus Kas Bersih: ${formatCurrency(income - expense)}
+            Savings Rate: ${Math.round(savingsRate)}%
+            Batas Anggaran (Budget): ${JSON.stringify(budgets)}
+            Daftar Transaksi: ${JSON.stringify(data.slice(-20))}
 
-Gunakan bahasa Indonesia dan format currency IDR.`;
+            Berikan laporan profesional dalam format HTML:
+            <div class="pro-analysis">
+                <h4>📊 Executive Summary</h4>
+                <p>Analisis kondisi kesehatan finansial saat ini menggunakan metrik standar industri.</p>
+                
+                <h4>🔍 Breakdown & Efisiensi</h4>
+                <p>Evaluasi efisiensi pengeluaran. Identifikasi kategori yang melebihi budget atau menunjukkan anomali.</p>
+                
+                <h4>💡 Strategi Wealth Management</h4>
+                <ul>
+                    <li>Actionable step 1: Penghematan/Optimasi.</li>
+                    <li>Actionable step 2: Alokasi surplus (jika ada) ke instrumen investasi/dana darurat.</li>
+                </ul>
+                
+                <h4>🎯 KPI & Target</h4>
+                <p>Rekomendasi target finansial spesifik untuk periode berikutnya untuk mencapai kebebasan finansial.</p>
+            </div>
+
+            Gunakan bahasa Indonesia yang formal namun elegan, layaknya laporan dari bank prioritas atau firma konsultasi keuangan.`;
             break;
 
         case 'habits':
             title = '🧠 Analisis Kebiasaan';
-            data = getHabits();
+            data = await getHabits();
 
             prompt = `Analisis data kebiasaan/habits berikut:
 
@@ -522,12 +549,12 @@ function saveReminderSettingsHandler() {
 function checkAndTriggerReminders() {
     const settings = getReminderSettings();
 
-    setInterval(() => {
+    setInterval(async () => {
         const now = new Date();
         const currentTime = now.toTimeString().slice(0, 5);
 
         if (settings.habitsEnabled && currentTime === settings.habitsTime) {
-            const habits = getHabits();
+            const habits = await getHabits();
             const today = getTodayString();
             const undone = habits.filter(h => !h.completedDates?.includes(today));
 
@@ -537,7 +564,7 @@ function checkAndTriggerReminders() {
         }
 
         if (settings.scheduleEnabled) {
-            const schedules = getSchedules();
+            const schedules = await getSchedules();
             const in15Min = new Date(now.getTime() + 15 * 60000);
 
             schedules.forEach(s => {

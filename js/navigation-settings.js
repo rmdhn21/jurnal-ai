@@ -285,8 +285,8 @@ function initGlobalSearch() {
             return;
         }
 
-        searchTimeout = setTimeout(() => {
-            performSearch(query);
+        searchTimeout = setTimeout(async () => {
+            await performSearch(query);
         }, 300);
     });
 
@@ -296,19 +296,19 @@ function initGlobalSearch() {
         }
     });
 
-    searchInput.addEventListener('focus', () => {
+    searchInput.addEventListener('focus', async () => {
         if (searchInput.value.trim().length >= 2) {
-            performSearch(searchInput.value.trim());
+            await performSearch(searchInput.value.trim());
         }
     });
 }
 
-function performSearch(query) {
+async function performSearch(query) {
     const searchResults = document.getElementById('search-results');
     const queryLower = query.toLowerCase();
     let results = [];
 
-    const journals = getJournals();
+    const journals = await getJournals();
     journals.forEach(journal => {
         if (journal.text.toLowerCase().includes(queryLower)) {
             results.push({
@@ -320,7 +320,7 @@ function performSearch(query) {
         }
     });
 
-    const goals = getGoals();
+    const goals = await getGoals();
     goals.forEach(goal => {
         if (goal.title.toLowerCase().includes(queryLower) ||
             (goal.notes && goal.notes.toLowerCase().includes(queryLower))) {
@@ -333,7 +333,7 @@ function performSearch(query) {
         }
     });
 
-    const tasks = getTasks();
+    const tasks = await getTasks();
     tasks.forEach(task => {
         if (task.title.toLowerCase().includes(queryLower)) {
             results.push({
@@ -345,7 +345,7 @@ function performSearch(query) {
         }
     });
 
-    const schedules = getSchedules();
+    const schedules = await getSchedules();
     schedules.forEach(schedule => {
         if (schedule.title.toLowerCase().includes(queryLower)) {
             results.push({
@@ -357,7 +357,7 @@ function performSearch(query) {
         }
     });
 
-    const habits = getHabits();
+    const habits = await getHabits();
     habits.forEach(habit => {
         if (habit.name.toLowerCase().includes(queryLower)) {
             results.push({
@@ -394,8 +394,28 @@ function performSearch(query) {
 }
 
 function navigateToScreen(screenName) {
-    const navBtn = document.querySelector(`.nav-btn[data-screen="${screenName}"]`);
-    if (navBtn) {
-        navBtn.click();
+    // 1. Show the screen
+    showScreen(screenName);
+
+    // 2. Sync Bottom Nav (if it's a main hub)
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.screen === screenName);
+    });
+
+    // 3. Handle Back Button visibility
+    const backBtn = document.getElementById('header-back-btn');
+    const mainHubs = ['activity-hub', 'learning-hub', 'finance', 'workout-tracker', 'dashboard'];
+    
+    if (backBtn) {
+        if (!mainHubs.includes(screenName)) {
+            // It's a sub-screen, show back button
+            backBtn.classList.remove('hidden');
+            backBtn.style.display = 'flex';
+        } else {
+            // It's a main hub, hide back button
+            backBtn.classList.add('hidden');
+            backBtn.style.display = 'none';
+        }
     }
 }

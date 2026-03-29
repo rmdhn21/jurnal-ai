@@ -21,16 +21,16 @@ function initBackupRestore() {
     }
 }
 
-function exportData() {
+async function exportData() {
     const data = {
-        journals: getJournals(),
-        goals: getGoals(),
-        tasks: getTasks(),
-        schedules: getSchedules(),
-        habits: getHabits(),
-        wallets: getWallets(),
-        transactions: getTransactions(),
-        settings: getSettings(),
+        journals: await getJournals(),
+        goals: await getGoals(),
+        tasks: await getTasks(),
+        schedules: await getSchedules(),
+        habits: await getHabits(),
+        wallets: await getWallets(),
+        transactions: await getTransactions(),
+        settings: await getSettings(),
         exportedAt: new Date().toISOString(),
         version: '1.0'
     };
@@ -83,7 +83,7 @@ let currentTags = [];
 let activeTagFilter = 'all';
 let activeMoodFilter = 'all';
 
-function initTagInput() {
+async function initTagInput() {
     const tagInput = document.getElementById('tag-input');
     const tagList = document.getElementById('journal-tags');
 
@@ -113,22 +113,22 @@ function initTagInput() {
     const moodFilter = document.getElementById('mood-filter');
 
     if (tagFilter) {
-        tagFilter.addEventListener('change', (e) => {
+        tagFilter.addEventListener('change', async (e) => {
             activeTagFilter = e.target.value;
             renderActiveFilters();
-            renderJournalHistory();
+            await renderJournalHistory();
         });
     }
 
     if (moodFilter) {
-        moodFilter.addEventListener('change', (e) => {
+        moodFilter.addEventListener('change', async (e) => {
             activeMoodFilter = e.target.value;
             renderActiveFilters();
-            renderJournalHistory();
+            await renderJournalHistory();
         });
     }
 
-    updateTagFilterOptions();
+    await updateTagFilterOptions();
 }
 
 function renderTags() {
@@ -143,11 +143,11 @@ function renderTags() {
     `).join('');
 }
 
-function updateTagFilterOptions() {
+async function updateTagFilterOptions() {
     const tagFilter = document.getElementById('tag-filter');
     if (!tagFilter) return;
 
-    const journals = getJournals();
+    const journals = await getJournals();
     const allTags = new Set();
     journals.forEach(j => {
         if (j.tags && Array.isArray(j.tags)) {

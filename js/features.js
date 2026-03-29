@@ -1,6 +1,7 @@
 // ===== VOICE INPUT MODULE =====
 let recognition;
 let isRecording = false;
+let speechMode = 'journal'; // 'journal' or 'jarvis' (universal)
 
 function initVoiceInput() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -12,7 +13,7 @@ function initVoiceInput() {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = false; // Set to false to auto-stop after speaking
     recognition.interimResults = true;
     recognition.lang = 'id-ID';
 
@@ -28,19 +29,14 @@ function initVoiceInput() {
 
     recognition.onresult = function (event) {
         let finalTranscript = '';
-
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
                 finalTranscript += event.results[i][0].transcript;
             }
         }
 
-        const journalInput = document.getElementById('journal-input');
-        if (journalInput && finalTranscript) {
-            const currentText = journalInput.value;
-            const separator = currentText.length > 0 && !currentText.endsWith(' ') ? ' ' : '';
-            journalInput.value = currentText + separator + finalTranscript;
-            journalInput.dispatchEvent(new Event('input'));
+        if (finalTranscript) {
+            handleSpeechResult(finalTranscript);
         }
     };
 
@@ -54,8 +50,40 @@ function initVoiceInput() {
 
     const micBtn = document.getElementById('mic-btn');
     if (micBtn) {
-        micBtn.addEventListener('click', toggleRecording);
+        micBtn.addEventListener('click', () => {
+            speechMode = 'journal';
+            toggleRecording();
+        });
     }
+}
+
+function handleSpeechResult(transcript) {
+    if (speechMode === 'journal') {
+        const journalInput = document.getElementById('journal-input');
+        if (journalInput) {
+            const currentText = journalInput.value;
+            const separator = currentText.length > 0 && !currentText.endsWith(' ') ? ' ' : '';
+            journalInput.value = currentText + separator + transcript;
+            journalInput.dispatchEvent(new Event('input'));
+        }
+    } else if (speechMode === 'jarvis') {
+        renderAssistantMessage(`"${transcript}"...`, 'user');
+        if (typeof processAICommand === 'function') {
+            processAICommand(transcript);
+        }
+    }
+}
+
+function startJarvisVoice() {
+    const drawer = document.getElementById('ai-assistant-drawer');
+    if (drawer && drawer.classList.contains('hidden')) {
+        drawer.classList.remove('hidden');
+        if (typeof positionAIDrawer === 'function') positionAIDrawer();
+    }
+
+    speechMode = 'jarvis';
+    startRecording();
+    renderAssistantMessage('Silakan sebutkan perintah Anda ke Jarvis...', 'bot');
 }
 
 function toggleRecording() {
@@ -78,24 +106,19 @@ function updateMicUI(recording) {
     const micBtn = document.getElementById('mic-btn');
     const statusText = document.getElementById('recording-status');
 
-    if (micBtn) {
-        if (recording) {
-            micBtn.classList.add('mic-active');
-            micBtn.innerHTML = '⏹️';
-            micBtn.title = 'Stop Rekam';
-        } else {
-            micBtn.classList.remove('mic-active');
-            micBtn.innerHTML = '🎤';
-            micBtn.title = 'Rekam Suara';
-        }
+    if (micBtn && speechMode === 'journal') {
+        micBtn.innerHTML = recording ? '⏹️' : '🎤';
+        micBtn.classList.toggle('mic-active', recording);
+    }
+    
+    // Also visual indicator in AI drawer if in jarvis mode
+    const aiMicFeedback = document.getElementById('ai-mic-indicator');
+    if (aiMicFeedback) {
+        aiMicFeedback.classList.toggle('hidden', !recording);
     }
 
     if (statusText) {
-        if (recording) {
-            statusText.classList.remove('hidden');
-        } else {
-            statusText.classList.add('hidden');
-        }
+        statusText.classList.toggle('hidden', !recording);
     }
 }
 

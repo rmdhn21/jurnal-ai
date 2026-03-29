@@ -1,5 +1,5 @@
 // ===== HABITS UI =====
-function initHabitsUI() {
+async function initHabitsUI() {
     const addHabitBtn = document.getElementById('add-habit-btn');
 
     addHabitBtn.addEventListener('click', handleAddHabit);
@@ -27,12 +27,12 @@ function initHabitsUI() {
         });
     }
 
-    renderHabitsTodayList();
-    renderAllHabitsList();
-    initHabitsChart();
+    await renderHabitsTodayList();
+    await renderAllHabitsList();
+    if (typeof initHabitsChart === 'function') await initHabitsChart();
 }
 
-function handleAddHabit() {
+async function handleAddHabit() {
     const input = document.getElementById('new-habit-input');
     const name = input.value.trim();
     if (!name) return;
@@ -64,7 +64,7 @@ function handleAddHabit() {
         createdAt: new Date().toISOString()
     };
 
-    saveHabit(habit);
+    await saveHabit(habit);
     input.value = '';
     if (freqSelect) freqSelect.value = 'daily';
     const daysEl = document.getElementById('habit-freq-days');
@@ -72,9 +72,9 @@ function handleAddHabit() {
     if (daysEl) { daysEl.classList.add('hidden'); daysEl.querySelectorAll('input').forEach(c => c.checked = false); }
     if (intervalEl) intervalEl.classList.add('hidden');
 
-    renderHabitsTodayList();
-    renderAllHabitsList();
-    initHabitsChart();
+    await renderHabitsTodayList();
+    await renderAllHabitsList();
+    if (typeof initHabitsChart === 'function') await initHabitsChart();
 }
 
 function isHabitScheduledToday(habit) {
@@ -110,9 +110,10 @@ function getFrequencyLabel(habit) {
     return '';
 }
 
-function renderHabitsTodayList() {
+async function renderHabitsTodayList() {
     const listEl = document.getElementById('habits-today');
-    const habits = getHabits();
+    if (!listEl) return;
+    const habits = await getHabits();
     const today = getTodayString();
 
     const todaysHabits = habits.filter(h => isHabitScheduledToday(h));
@@ -136,8 +137,8 @@ function renderHabitsTodayList() {
 
     listEl.querySelectorAll('.habit-item').forEach(item => {
         const checkbox = item.querySelector('.habit-checkbox');
-        checkbox.addEventListener('change', () => {
-            const habit = toggleHabitCompletion(item.dataset.id, today);
+        checkbox.addEventListener('change', async () => {
+            const habit = await toggleHabitCompletion(item.dataset.id, today);
 
             // Gamification
             if (habit && habit.completions && habit.completions[today] && typeof addXP === 'function') {
@@ -147,15 +148,16 @@ function renderHabitsTodayList() {
                 }
             }
 
-            renderHabitsTodayList();
-            initHabitsChart();
+            await renderHabitsTodayList();
+            if (typeof initHabitsChart === 'function') await initHabitsChart();
         });
     });
 }
 
-function renderAllHabitsList() {
+async function renderAllHabitsList() {
     const listEl = document.getElementById('habits-list');
-    const habits = getHabits();
+    if (!listEl) return;
+    const habits = await getHabits();
 
     if (habits.length === 0) {
         listEl.innerHTML = '<div class="empty-state"><p>Belum ada habit</p></div>';
@@ -176,13 +178,13 @@ function renderAllHabitsList() {
     }).join('');
 
     listEl.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
             const item = btn.closest('.habit-item');
             if (confirm('Hapus habit ini?')) {
-                deleteHabit(item.dataset.id);
-                renderHabitsTodayList();
-                renderAllHabitsList();
-                initHabitsChart();
+                await deleteHabit(item.dataset.id);
+                await renderHabitsTodayList();
+                await renderAllHabitsList();
+                if (typeof initHabitsChart === 'function') await initHabitsChart();
             }
         });
     });
@@ -222,7 +224,7 @@ function calculateStreak(habit) {
 // ===== GOALS UI =====
 let goalsListenersAttached = false;
 
-function initGoalsUI() {
+async function initGoalsUI() {
     const addBtn = document.getElementById('add-goal-btn');
     if (addBtn) {
         addBtn.addEventListener('click', handleAddGoal);
@@ -237,11 +239,11 @@ function initGoalsUI() {
         goalsListenersAttached = true;
     }
 
-    renderGoalsList();
-    updateGoalsStats();
+    await renderGoalsList();
+    await updateGoalsStats();
 }
 
-function handleAddGoal() {
+async function handleAddGoal() {
     const title = document.getElementById('goal-title').value.trim();
     const type = document.getElementById('goal-type').value;
     const target = parseInt(document.getElementById('goal-target').value) || 0;
@@ -268,7 +270,7 @@ function handleAddGoal() {
         updatedAt: new Date().toISOString()
     };
 
-    saveGoal(goal);
+    await saveGoal(goal);
 
     document.getElementById('goal-title').value = '';
     document.getElementById('goal-target').value = '';
@@ -276,17 +278,17 @@ function handleAddGoal() {
     document.getElementById('goal-deadline').value = '';
     document.getElementById('goal-notes').value = '';
 
-    renderGoalsList();
-    updateGoalsStats();
+    await renderGoalsList();
+    await updateGoalsStats();
 }
 
-function renderGoalsList() {
+async function renderGoalsList() {
     const activeListEl = document.getElementById('active-goals-list');
     const completedListEl = document.getElementById('completed-goals-list');
 
     if (!activeListEl || !completedListEl) return;
 
-    const goals = getGoals();
+    const goals = await getGoals();
     const activeGoals = goals.filter(g => !g.completed);
     const completedGoals = goals.filter(g => g.completed);
 
@@ -347,7 +349,7 @@ function createGoalItem(goal, isCompleted = false) {
 }
 
 function attachGoalEventListeners(container) {
-    container.addEventListener('click', (e) => {
+    container.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
 
@@ -358,23 +360,23 @@ function attachGoalEventListeners(container) {
         e.stopPropagation();
 
         if (btn.classList.contains('increment-btn')) {
-            const goals = getGoals();
+            const goals = await getGoals();
             const goal = goals.find(g => g.id === goalId);
             if (goal) {
                 const progressInput = goalItem.querySelector('.progress-input');
                 const amount = progressInput ? parseInt(progressInput.value) || 1 : 1;
                 const newProgress = Math.min(goal.target, (goal.currentProgress || 0) + amount);
-                updateGoalProgress(goalId, newProgress);
-                renderGoalsList();
-                updateGoalsStats();
+                await updateGoalProgress(goalId, newProgress);
+                await renderGoalsList();
+                await updateGoalsStats();
             }
         }
 
         if (btn.classList.contains('complete-btn')) {
-            completeGoal(goalId);
+            await completeGoal(goalId);
             if (typeof addXP === 'function') addXP(50, 'Goal Tercapai!');
-            renderGoalsList();
-            updateGoalsStats();
+            await renderGoalsList();
+            await updateGoalsStats();
         }
 
         if (btn.classList.contains('edit-goal-btn')) {
@@ -383,16 +385,16 @@ function attachGoalEventListeners(container) {
 
         if (btn.classList.contains('delete-goal-btn')) {
             if (confirm('Hapus goal ini?')) {
-                deleteGoal(goalId);
-                renderGoalsList();
-                updateGoalsStats();
+                await deleteGoal(goalId);
+                await renderGoalsList();
+                await updateGoalsStats();
             }
         }
     });
 }
 
-function updateGoalsStats() {
-    const goals = getGoals();
+async function updateGoalsStats() {
+    const goals = await getGoals();
     const activeGoals = goals.filter(g => !g.completed);
     const completedGoals = goals.filter(g => g.completed);
 

@@ -22,23 +22,23 @@ function initLibrary() {
     // Handle Delete Button in Modal
     const deleteBtn = document.getElementById('lib-delete-btn');
     if (deleteBtn) {
-        deleteBtn.onclick = () => {
+        deleteBtn.onclick = async () => {
             const id = deleteBtn.getAttribute('data-id');
             if (id && confirm('Apakah Anda yakin ingin menghapus item ini dari perpustakaan?')) {
-                deleteSavedGeneration(id);
+                await deleteSavedGeneration(id);
                 document.getElementById('library-view-modal').classList.add('hidden');
                 const activeCategory = document.querySelector('#library-category-tabs .tab-btn.active')?.getAttribute('data-category') || 'all';
-                renderLibrary(activeCategory);
+                await renderLibrary(activeCategory);
             }
         };
     }
 }
 
-function renderLibrary(category = 'all') {
+async function renderLibrary(category = 'all') {
     const grid = document.getElementById('library-items-grid');
     if (!grid) return;
 
-    const items = getSavedGenerations();
+    const items = await getSavedGenerations();
     const filteredItems = category === 'all' ? items : items.filter(item => item.category === category);
 
     if (filteredItems.length === 0) {
@@ -81,8 +81,8 @@ function renderLibrary(category = 'all') {
     }).join('');
 }
 
-window.openLibraryItem = function(id) {
-    const items = getSavedGenerations();
+window.openLibraryItem = async function(id) {
+    const items = await getSavedGenerations();
     const item = items.find(it => it.id === id);
     if (!item) return;
 
@@ -138,9 +138,9 @@ window.openLibraryItem = function(id) {
 };
 
 // Expose renderLibrary globally so navigation can trigger it
-window.refreshLibraryUI = function() {
+window.refreshLibraryUI = async function() {
     const activeCategory = document.querySelector('#library-category-tabs .tab-btn.active')?.getAttribute('data-category') || 'all';
-    renderLibrary(activeCategory);
+    await renderLibrary(activeCategory);
 };
 
 window.exportLibraryPDF = function() {
