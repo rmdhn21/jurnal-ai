@@ -258,9 +258,12 @@ body::before {
     align-items: center;
     background: var(--bg-card);
     padding: 0.5rem 0.25rem;
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
     z-index: 1000;
     border-top: 1px solid var(--border);
     box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 
 /* Cleanup scrollbar styles (no longer needed) */
@@ -1583,6 +1586,12 @@ body::before {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
+}
+
+@media (max-width: 380px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .dashboard-card {

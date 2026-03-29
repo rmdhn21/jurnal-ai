@@ -4,6 +4,17 @@ const MIGRATION_KEY = 'jurnal_ai_idb_migrated';
 async function migrateFromLocalStorageToIDB() {
     if (localStorage.getItem(MIGRATION_KEY) === 'true') return;
 
+    // Safety: If IDB is not supported or failed to open, don't attempt migration
+    // We check if the DB structure is accessible
+    try {
+        if (!db || !db.isOpen()) {
+            console.warn('⚠️ IndexedDB not ready, skipping migration.');
+            return;
+        }
+    } catch(e) {
+        return;
+    }
+
     console.log('🔄 Starting data migration to IndexedDB...');
     const overlay = document.getElementById('migration-overlay');
     const fill = document.getElementById('migration-fill');
@@ -31,14 +42,21 @@ async function migrateFromLocalStorageToIDB() {
         if (raw) {
             try {
                 const data = JSON.parse(raw);
-                if (Array.isArray(data)) {
-                    status.textContent = `Memindahkan ${tableName}...`;
-                    fill.style.width = `${((i + 1) / keys.length) * 100}%`;
-                    await idbBulkSave(tableName, data);
+                if (Array.isArray(data) && data.length > 0) {
+                    if (status) status.textContent = `Memindahkan ${tableName}...`;
+                    if (fill) fill.style.width = `${((i + 1) / keys.length) * 100}%`;
+                    
+                    // Use a race to avoid hanging on slow IDB write
+                    await Promise.race([
+                        idbBulkSave(tableName, data),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('IDB timeout')), 10000))
+                    ]);
+                    
                     console.log(`✅ Migrated ${data.length} items to ${tableName}`);
                 }
             } catch (e) {
                 console.error(`Failed to migrate ${lsKey}:`, e);
+                // Continue to next table even if one fails
             }
         }
     }
@@ -49,12 +67,14 @@ async function migrateFromLocalStorageToIDB() {
         try {
             const tracks = JSON.parse(rawTracks);
             const trackEntries = Object.values(tracks);
-            await idbBulkSave('islamic_tracks', trackEntries);
+            if (trackEntries.length > 0) {
+                await idbBulkSave('islamic_tracks', trackEntries);
+            }
         } catch (e) {}
     }
 
     localStorage.setItem(MIGRATION_KEY, 'true');
-    status.textContent = 'Migrasi Selesai! Memuat aplikasi...';
+    if (status) status.textContent = 'Migrasi Selesai! Memuat aplikasi...';
     setTimeout(() => { if (overlay) overlay.classList.add('hidden'); }, 1000);
 }
 

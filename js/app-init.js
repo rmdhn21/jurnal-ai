@@ -10,39 +10,54 @@ async function showMainApp() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
 
-    // Initialize Database and Migration
-    if (typeof initDB === 'function') await initDB();
-    if (typeof migrateFromLocalStorageToIDB === 'function') await migrateFromLocalStorageToIDB();
+    // Initialize Database and Migration with timeout
+    try {
+        if (typeof initDB === 'function') {
+            const dbReady = await Promise.race([
+                initDB(),
+                new Promise(resolve => setTimeout(() => resolve(false), 5000))
+            ]);
+            if (dbReady && typeof migrateFromLocalStorageToIDB === 'function') {
+                await migrateFromLocalStorageToIDB();
+            }
+        }
+    } catch (e) {
+        console.error('Core init failed:', e);
+    }
 
     // Initialize all modules
     initNavigation();
     initSettings();
-    if (typeof initDashboardWidgets === 'function') await initDashboardWidgets();
-    // initDashboard is now partly handled by widgets, but we keep it for intervals if needed
-    // or we can refactor initDashboard to not repeat work.
-    if (typeof initJournalUI === 'function') await initJournalUI();
-    if (typeof initPlannerUI === 'function') await initPlannerUI();
-    if (typeof initGoalsUI === 'function') await initGoalsUI();
-
+    
+    // Critical: Dashboard must load
     try {
-        if (typeof initPrayerTimes === 'function') {
-            await initPrayerTimes();
-        }
-    } catch (e) {
-        console.error('Failed to init Prayer Times:', e);
-    }
+        if (typeof initDashboardWidgets === 'function') await initDashboardWidgets();
+    } catch (e) { console.error('Dashboard init failed:', e); }
 
-    if (typeof initFinanceUI === 'function') await initFinanceUI();
-    initHabitsUI();
+    // Other non-critical modules
+    const safelyInit = async (fnName, ...args) => {
+        try {
+            if (typeof window[fnName] === 'function') await window[fnName](...args);
+        } catch (e) { console.error(`Failed to init ${fnName}:`, e); }
+    };
+
+    await safelyInit('initJournalUI');
+    await safelyInit('initPlannerUI');
+    await safelyInit('initGoalsUI');
+    await safelyInit('initPrayerTimes');
+    await safelyInit('initFinanceUI');
+    await safelyInit('initHabitsUI');
+    
     initGlobalSearch();
     initAIAnalysis();
     initReminder();
-    if (typeof initBrainBoost === 'function') initBrainBoost();
-    if (typeof initHadithCard === 'function') initHadithCard();
-    if (typeof initGamification === 'function') initGamification();
-    if (typeof initMotivation === 'function') initMotivation();
-    if (typeof initIslamTrackerUI === 'function') await initIslamTrackerUI();
-    if (typeof initAIAssistant === 'function') await initAIAssistant();
+    
+    safelyInit('initBrainBoost');
+    safelyInit('initHadithCard');
+    safelyInit('initGamification');
+    safelyInit('initMotivation');
+    await safelyInit('initIslamTrackerUI');
+    await safelyInit('initAIAssistant');
 
     // Check if Onboarding is needed
     if (typeof initOnboarding === 'function') initOnboarding();

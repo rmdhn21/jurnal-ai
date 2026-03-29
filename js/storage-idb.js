@@ -23,10 +23,22 @@ db.version(2).stores({
 // Initialize Database
 async function initDB() {
     try {
+        // Check if IndexedDB is available
+        if (!window.indexedDB) {
+            console.warn('⚠️ IndexedDB is not supported in this browser.');
+            return false;
+        }
+
         await db.open();
         console.log('✅ IndexedDB (Dexie) opened successfully');
+        return true;
     } catch (err) {
         console.error('❌ Failed to open IDB:', err);
+        // Safari Private Mode or other storage restrictions
+        if (err.name === 'SecurityError' || err.name === 'QuotaExceededError') {
+            console.warn('⚠️ Storage restriction detected (Safari Private Mode?). Falling back to LocalStorage.');
+        }
+        return false;
     }
 }
 

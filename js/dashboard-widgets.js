@@ -178,7 +178,15 @@ async function initDashboardWidgets() {
     const container = document.getElementById('dashboard-widgets-container');
     if (!container) return;
 
-    const userOrder = JSON.parse(localStorage.getItem('jurnal_ai_dashboard_widgets') || JSON.stringify(DEFAULT_WIDGET_ORDER));
+    let userOrder;
+    try {
+        const storedOrder = localStorage.getItem('jurnal_ai_dashboard_widgets');
+        userOrder = storedOrder ? JSON.parse(storedOrder) : DEFAULT_WIDGET_ORDER;
+        if (!Array.isArray(userOrder)) userOrder = DEFAULT_WIDGET_ORDER;
+    } catch (e) {
+        console.error('Failed to parse widget order:', e);
+        userOrder = DEFAULT_WIDGET_ORDER;
+    }
     
     // Clear and render
     container.innerHTML = '';
@@ -196,15 +204,24 @@ async function initDashboardWidgets() {
     }
 
     // After all widgets are in DOM, initialize them
+    // Use Promise.allSetled or individual try-catch to ensure one doesn't block others
     for (const widgetId of userOrder) {
         if (WIDGET_REGISTRY[widgetId] && WIDGET_REGISTRY[widgetId].init) {
             try {
-                await WIDGET_REGISTRY[widgetId].init();
+                // Use a small timeout for each widget init to prevent total hang
+                await Promise.race([
+                    Promise.resolve(WIDGET_REGISTRY[widgetId].init()),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Widget Timeout')), 5000))
+                ]);
             } catch (e) {
                 console.error(`Error initializing widget ${widgetId}:`, e);
             }
         }
     }
+
+    // Final safety: ensure loading spinner is gone if it somehow persisted
+    const spinner = container.querySelector('.loading-spinner-container');
+    if (spinner) spinner.remove();
 }
 
 // Add UI for customization
