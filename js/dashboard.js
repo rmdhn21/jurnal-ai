@@ -10,8 +10,12 @@ async function initDashboard() {
     // Start distinct countdown interval
     startPrayerCountdown();
 
-    document.getElementById('get-daily-insight-btn').addEventListener('click', getDailyInsight);
+    const dailyInsightBtn = document.getElementById('get-daily-insight-btn');
+    if (dailyInsightBtn) {
+        dailyInsightBtn.addEventListener('click', getDailyInsight);
+    }
 }
+
 
 // Global variable for countdown interval
 let prayerCountdownInterval;

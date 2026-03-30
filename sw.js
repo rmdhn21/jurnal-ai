@@ -1,16 +1,22 @@
 // Service Worker for Jurnal AI PWA
-const CACHE_NAME = 'jurnal-ai-v15';
+const CACHE_NAME = 'jurnal-ai-v16';
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
     './manifest.json',
-    './icons/icon-192.png',
+    './icons/apple-touch-icon.png',
     './icons/icon-512.png',
+    './icons/icon.svg',
     // Core / Data Layer
     './js/storage.js',
+    './js/storage-idb.js',
     './js/cloud-sync.js',
     './js/ai.js',
+    './js/ai-assistant.js',
+    './js/ai-commands.js',
+    './js/ai-finance.js',
+    './js/ai-tutors.js',
     './js/theme.js',
     './js/encryption.js',
     './js/auth.js',
@@ -23,7 +29,9 @@ const urlsToCache = [
     './js/habits-goals-ui.js',
     './js/navigation-settings.js',
     './js/dashboard.js',
+    './js/dashboard-widgets.js',
     './js/wallet-budget-ui.js',
+    './js/library-ui.js',
     // Feature Modules
     './js/features.js',
     './js/extras.js',
@@ -36,13 +44,32 @@ const urlsToCache = [
     './js/journal-templates.js',
     './js/motivation.js',
     './js/islam-tracker.js',
-    './js/ai-tutors.js',
     './js/todo-today.js',
     './js/english-hse.js',
+    './js/english-fluency.js',
     './js/hse-rig.js',
+    './js/epls.js',
+    './js/life-balance.js',
+    './js/nutrition-tracker.js',
+    './js/workout-tracker.js',
+    './js/lesson-tools.js',
+    // Learning Modules
+    './js/learn-shared.js',
+    './js/learn-automotive.js',
+    './js/learn-coding.js',
+    './js/learn-hsse.js',
+    './js/learn-investment.js',
+    './js/learn-pertamina.js',
+    './js/learn-physics.js',
+    './js/learn-psychology.js',
+    './js/mastery-dashboard.js',
+    // Experimental / Misc
+    './js/jarvis-ui.js',
+    './js/jarvis-voice.js',
     // App Initialization
     './js/app-init.js'
 ];
+
 
 // Install event - cache files
 self.addEventListener('install', (event) => {
