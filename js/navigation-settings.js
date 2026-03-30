@@ -136,20 +136,28 @@ function handleBackButton() {
     }
 }
 
-// ===== SETTINGS =====
+// ===== SETTINGS & UI SCALING =====
 function initSettings() {
     const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
     const closeSettingsBtn = document.getElementById('close-settings');
+
+    if (settingsBtn && settingsModal) {
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+        });
+        
+        closeSettingsBtn?.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+    }
+
+    // UI Scaling Logic
+    initUIScaling();
+
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     const apiKeyInput = document.getElementById('api-key-input');
     const modal = document.getElementById('settings-modal');
-
-    settingsBtn.addEventListener('click', showSettings);
-
-    closeSettingsBtn.addEventListener('click', hideSettings);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) hideSettings();
-    });
 
     // Save City Button
     const cityInput = document.getElementById('city-input');
@@ -267,6 +275,62 @@ function showSettings() {
 function hideSettings() {
     document.getElementById('settings-modal').classList.add('hidden');
 }
+
+/**
+ * UI SCALING - "Ctrl +/-" for your App
+ */
+let appScale = 1.0;
+
+function initUIScaling() {
+    const scaleDownBtn = document.getElementById('ui-scale-down-btn');
+    const scaleUpBtn = document.getElementById('ui-scale-up-btn');
+    const scaleLabel = document.getElementById('ui-scale-label');
+
+    // Load saved scale
+    const savedScale = localStorage.getItem('app-ui-scale');
+    if (savedScale) {
+        appScale = parseFloat(savedScale);
+        applyUIScale();
+    }
+
+    if (scaleDownBtn && scaleUpBtn) {
+        scaleDownBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (appScale > 0.7) {
+                appScale -= 0.1;
+                applyUIScale();
+                saveUIScale();
+            }
+        });
+
+        scaleUpBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (appScale < 1.5) {
+                appScale += 0.1;
+                applyUIScale();
+                saveUIScale();
+            }
+        });
+    }
+}
+
+function applyUIScale() {
+    // 1. Set CSS Variable
+    document.documentElement.style.setProperty('--app-scale', appScale);
+    
+    // 2. Update Label
+    const scaleLabel = document.getElementById('ui-scale-label');
+    if (scaleLabel) {
+        scaleLabel.innerText = Math.round(appScale * 100) + '%';
+    }
+    
+    console.log(`📏 UI Scale applied: ${appScale}`);
+}
+
+function saveUIScale() {
+    localStorage.setItem('app-ui-scale', appScale.toFixed(1));
+}
+
 
 // ===== GLOBAL SEARCH =====
 function initGlobalSearch() {

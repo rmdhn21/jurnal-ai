@@ -55,6 +55,7 @@
 
     /* Typography */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --app-scale: 1; /* Default scale */
     --font-size-xs: 0.75rem;
     --font-size-sm: 0.875rem;
     --font-size-md: 1rem;
@@ -80,9 +81,28 @@
 }
 
 html {
-    font-size: 16px;
+    font-size: calc(16px * var(--app-scale, 1));
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%; /* Prevent automatic adjustments */
 }
+
+/* Ensure modal close buttons have a large tap target even at low scales */
+.modal .icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* iOS/Mobile Auto-Zoom Fix */
+@media (max-width: 768px) {
+    input, textarea, select {
+        font-size: 16px !important; /* Force 16px to prevent iOS auto-zoom */
+    }
+}
+
 
 body {
     font-family: var(--font-family);

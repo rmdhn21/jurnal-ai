@@ -81,6 +81,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.classList.add('dark-mode');
     }
 
+    // Apply UI Scale ASAP
+    const savedScale = localStorage.getItem('app-ui-scale');
+    if (savedScale) {
+        document.documentElement.style.setProperty('--app-scale', savedScale);
+    }
+
+
     // Initialize Auth UI
     if (typeof initLoginUI === 'function') initLoginUI();
 
@@ -126,6 +133,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Delayed init for secondary features
     setTimeout(async () => {
         if (typeof initBackupRestore === 'function') initBackupRestore();
+        
+        // Force Update Listener for the Refresh Button
+        const reloadBtn = document.getElementById('reload-app-btn');
+        if (reloadBtn) {
+            reloadBtn.addEventListener('click', async () => {
+                console.log('🔄 Performing Force Update...');
+                
+                // 1. Unregister Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                        console.log('SW Unregistered');
+                    }
+                }
+
+                // 2. Clear Caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const name of cacheNames) {
+                        await caches.delete(name);
+                        console.log('Cache Deleted:', name);
+                    }
+                }
+
+                // 3. Force Reload with Cache-Busting Timestamp
+                const url = new URL(window.location.href);
+                url.searchParams.set('v', Date.now());
+                window.location.href = url.toString();
+            });
+        }
+
         if (typeof initTheme === 'function') initTheme();
         if (typeof initVoiceInput === 'function') initVoiceInput();
         if (typeof initSecurity === 'function') initSecurity();
@@ -139,3 +178,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     }, 1000);
 });
+
