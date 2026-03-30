@@ -361,13 +361,65 @@ async function performSearch(query) {
     habits.forEach(habit => {
         if (habit.name.toLowerCase().includes(queryLower)) {
             results.push({
-                type: 'Habit', icon: '✅',
+                type: 'Habit', icon: '🌱',
                 title: habit.name,
                 preview: `🔥 ${habit.streak || 0} hari streak`,
                 screen: 'habits', id: habit.id
             });
         }
     });
+
+    const transactions = await getTransactions();
+    transactions.forEach(t => {
+        if ((t.description && t.description.toLowerCase().includes(queryLower)) || 
+            (t.category && t.category.toLowerCase().includes(queryLower))) {
+            results.push({
+                type: 'Transaksi', icon: t.type === 'income' ? '💰' : '💸',
+                title: t.description || t.category,
+                preview: `${t.type === 'income' ? '+' : '-'} Rp ${Number(t.amount).toLocaleString()}`,
+                screen: 'finance', id: t.id
+            });
+        }
+    });
+
+    const wallets = await getWallets();
+    wallets.forEach(w => {
+        if (w.name.toLowerCase().includes(queryLower)) {
+            results.push({
+                type: 'Dompet', icon: '💳',
+                title: w.name,
+                preview: `Saldo: Rp ${Number(w.balance).toLocaleString()}`,
+                screen: 'finance', id: w.id
+            });
+        }
+    });
+
+    const libraryItems = await getSavedGenerations();
+    libraryItems.forEach(item => {
+        if ((item.title && item.title.toLowerCase().includes(queryLower)) || 
+            (item.type && item.type.toLowerCase().includes(queryLower))) {
+            results.push({
+                type: 'Library', icon: '📚',
+                title: item.title,
+                preview: `Tipe: ${item.type}`,
+                screen: 'library', id: item.id
+            });
+        }
+    });
+
+    const vocab = await getVocabBank();
+    vocab.forEach(v => {
+        if (v.word.toLowerCase().includes(queryLower) || 
+            v.meaning.toLowerCase().includes(queryLower)) {
+            results.push({
+                type: 'Vocab', icon: '📖',
+                title: v.word,
+                preview: v.meaning,
+                screen: 'english-hse', id: v.id
+            });
+        }
+    });
+
 
     if (results.length === 0) {
         searchResults.innerHTML = '<div class="search-no-results">Tidak ada hasil untuk "' + query + '"</div>';
@@ -405,7 +457,7 @@ function navigateToScreen(screenName) {
 
     // 3. Handle Back Button visibility
     const backBtn = document.getElementById('header-back-btn');
-    const mainHubs = ['activity-hub', 'learning-hub', 'finance', 'workout-tracker', 'dashboard'];
+    const mainHubs = ['activity-hub', 'learning-hub', 'finance', 'workout-tracker', 'dashboard', 'jarvis'];
     
     if (backBtn) {
         if (!mainHubs.includes(screenName)) {

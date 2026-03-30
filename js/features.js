@@ -75,10 +75,9 @@ function handleSpeechResult(transcript) {
 }
 
 function startJarvisVoice() {
-    const drawer = document.getElementById('ai-assistant-drawer');
-    if (drawer && drawer.classList.contains('hidden')) {
-        drawer.classList.remove('hidden');
-        if (typeof positionAIDrawer === 'function') positionAIDrawer();
+    // Navigate to Jarvis screen if not already there
+    if (typeof navigateToScreen === 'function') {
+        navigateToScreen('jarvis');
     }
 
     speechMode = 'jarvis';

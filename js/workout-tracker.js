@@ -136,32 +136,31 @@ function renderMotivationDashboard() {
     const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
     return `
-        <div class="motivation-dashboard" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px; padding: 15px; margin-bottom: 20px; border: 1px solid rgba(129, 140, 248, 0.3); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div class="card motivation-dashboard" style="position: relative; overflow: hidden; margin-bottom: 20px; border-left: 4px solid #818cf8;">
+            <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 5rem; pointer-events: none;">🔥</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; position: relative; z-index: 1;">
                 <div>
-                    <h4 style="color: #c7d2fe; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">Consistency Tracker</h4>
-                    <div style="display: flex; align-items: baseline; gap: 5px; margin-top: 2px;">
+                    <h4 style="color: #818cf8; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; margin-bottom: 4px;">Consistency Tracker</h4>
+                    <div style="display: flex; align-items: baseline; gap: 5px;">
                         <span style="font-size: 1.8rem; font-weight: 900; color: white;">${streak}</span>
-                        <span style="font-size: 0.8rem; font-weight: 600; color: #818cf8;">Hari Streak 🔥</span>
+                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Hari Streak 🔥</span>
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="background: rgba(99, 102, 241, 0.2); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(99, 102, 241, 0.4);">
-                        <span style="font-size: 0.7rem; font-weight: 700; color: #818cf8;">XP GAIN READY ✨</span>
-                    </div>
+                    <span style="font-size: 0.65rem; font-weight: 800; color: #818cf8; background: rgba(129, 140, 248, 0.15); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(129, 140, 248, 0.3); text-transform: uppercase;">XP Ready ✨</span>
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; padding: 10px 5px; background: rgba(0,0,0,0.2); border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; padding: 12px 8px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); position: relative; z-index: 1;">
                 ${last7Days.map(date => {
                     const d = new Date(date);
                     const isToday = date === today.toISOString().split('T')[0];
                     const isActive = workoutState.history[date];
                     return `
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1;">
                             <span style="font-size: 0.6rem; color: ${isToday ? '#818cf8' : '#6366f1'}; font-weight: ${isToday ? '800' : '500'}">${dayNames[d.getDay()]}</span>
-                            <div style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid ${isActive ? '#818cf8' : 'rgba(129, 140, 248, 0.1)'}; background: ${isActive ? '#818cf8' : 'transparent'}; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
-                                ${isActive ? '<span style="font-size: 0.7rem;">✓</span>' : ''}
+                            <div style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid ${isActive ? '#818cf8' : 'rgba(129, 140, 248, 0.1)'}; background: ${isActive ? '#818cf8' : 'transparent'}; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+                                ${isActive ? '<span style="font-size: 0.7rem; color:white;">✓</span>' : ''}
                             </div>
                         </div>
                     `;
@@ -256,20 +255,23 @@ function renderWorkoutCategory(container, category) {
     const colorHex = getCategoryColorHex(category);
 
     let html = `
-        <div class="workout-header" style="display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 15px; border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 15px;">
-            <div style="flex: 1;">
-                <h3 style="color: ${colorHex}; margin-bottom: 5px; font-weight: 800;">${getCategoryTitle(category)}</h3>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 100px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
-                        <div style="width: ${progressPct}%; height: 100%; background: ${colorHex}; transition: width 0.3s ease;"></div>
+        <div class="card workout-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; position: relative; overflow: hidden; margin-bottom: 20px;">
+            <div style="position: absolute; top: -5px; right: -5px; opacity: 0.02; font-size: 5rem; pointer-events: none;">🚀</div>
+            <div style="flex: 1; position: relative; z-index: 1;">
+                <h3 style="color: ${colorHex}; margin-bottom: 8px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                    ${getCategoryTitle(category)}
+                </h3>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 120px; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
+                        <div style="width: ${progressPct}%; height: 100%; background: ${colorHex}; transition: width 0.5s ease;"></div>
                     </div>
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">${progressPct}%</span>
+                    <span style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); opacity: 0.8;">${progressPct}% COMPLETED</span>
                 </div>
             </div>
-            <button onclick="resetWorkoutCategory('${category}')" style="background: rgba(255,255,255,0.05); border: none; width: 32px; height: 32px; border-radius: 50%; color: var(--text-muted); cursor: pointer;">🔄</button>
+            <button onclick="resetWorkoutCategory('${category}')" class="icon-btn" style="width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); cursor: pointer; position: relative; z-index: 1;">🔄</button>
         </div>
 
-        <div class="workout-task-list" style="display: flex; flex-direction: column; gap: 10px;">
+        <div class="workout-task-list" style="display: flex; flex-direction: column; gap: 12px;">
     `;
 
     list.forEach(task => {

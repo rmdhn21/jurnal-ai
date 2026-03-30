@@ -72,7 +72,12 @@ async function initMotivation() {
 
     // 1. Loading State (Animasi Saat Realtime Fetch)
     container.innerHTML = `
-        <div class="motivation-content" style="text-align: center; padding: 15px;">
+        <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">💡</div>
+        <div style="position: relative; z-index: 1; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;"><span>💡</span> Motivasi Harian</h3>
+            <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); text-transform: uppercase;">MINDSET</span>
+        </div>
+        <div class="motivation-content" style="position: relative; z-index: 1; text-align: center; padding: 15px;">
             <div class="loading-spinner" style="display: inline-block; margin-bottom: 15px;"></div>
             <p class="text-muted" style="margin: 0; font-size: 0.9em; animation: pulse 1.5s infinite;">Mencari kutipan penuh makna...</p>
         </div>
@@ -113,10 +118,16 @@ function renderMotivation(container, quote) {
     const icon = quote.category === 'islamic' ? '☪️' : '🔥';
 
     container.innerHTML = `
-        <div class="motivation-content">
-            <div class="motivation-icon">${icon}</div>
-            <p class="motivation-text">"${quote.text}"</p>
-            <p class="motivation-author">— ${quote.author}</p>
+        <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">${icon}</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                <span>${icon}</span> Motivasi Harian
+            </h3>
+            <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); text-transform: uppercase;">MINDSET</span>
+        </div>
+        <div class="motivation-content" style="position: relative; z-index: 1;">
+            <p class="motivation-text" style="font-style: italic; margin-bottom: 8px;">"${quote.text}"</p>
+            <p class="motivation-author" style="font-weight: bold; color: var(--primary);">— ${quote.author}</p>
         </div>
     `;
 }

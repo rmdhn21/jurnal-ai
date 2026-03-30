@@ -20,11 +20,62 @@ async function processAICommand(transcript) {
         userContext = await aggregateUserContext();
     }
 
+    // --- OMNIPOTENT CONTROLLER CONTEXT ---
+    const todayTodos = Array.isArray(dailyTodos) ? dailyTodos.filter(t => !t.completed) : [];
+    const todoContext = todayTodos.map(t => `- ID: ${t.id} | Teks: ${t.text}`).join('\n') || 'Tidak ada todo';
+    
+    let kanbanContext = 'Tidak ada kanban';
+    if (typeof getTasks === 'function') {
+        const allKanbanTasks = await getTasks();
+        const activeKanban = allKanbanTasks.filter(t => !t.done);
+        kanbanContext = activeKanban.map(t => `- ID: ${t.id} | Judul: ${t.title}`).join('\n') || 'Tidak ada kanban';
+    }
+    
+    let islamTrackText = 'Belum ada data hari ini';
+    if (typeof getIslamicTrackByDate === 'function') {
+        const todayTrack = await getIslamicTrackByDate(getTodayString());
+        islamTrackText = `- Subuh: ${todayTrack.prayers?.subuh ? 'Sudah' : 'Belum'}
+- Dzuhur: ${todayTrack.prayers?.dzuhur ? 'Sudah' : 'Belum'}
+- Ashar: ${todayTrack.prayers?.ashar ? 'Sudah' : 'Belum'}
+- Maghrib: ${todayTrack.prayers?.maghrib ? 'Sudah' : 'Belum'}
+- Isya: ${todayTrack.prayers?.isya ? 'Sudah' : 'Belum'}
+- Qobliyah/Badiyah: ${todayTrack.qobliyah ? 'Sudah' : 'Belum'}
+- Sedekah: ${todayTrack.sedekah ? 'Sudah' : 'Belum'}`;
+    }
+
+    // --- NEW EXTENDED CONTEXT ---
+    let habitContext = 'Tidak ada habit';
+    if (typeof getHabits === 'function') {
+        const allHabits = await getHabits();
+        const undoneHabits = allHabits.filter(h => !h.completedDates?.includes(getTodayString()));
+        habitContext = undoneHabits.map(h => `- ID: ${h.id} | Nama: ${h.name}`).join('\n') || 'Semua habit selesai/kosong';
+    }
+
+    const workoutContext = 'Kategori Workout: gym1 (Leg), gym2 (Upper), home1 (Endurance), home2 (Band mobility).';
+    const nutritionContext = 'Kategori Nutrisi: pagi, siang, preWorkout, postWorkout, malam, opsional.';
+
     const prompt = `Kamu adalah "Jarvis", asisten cerdas untuk aplikasi Jurnal AI. 
 ${currentTimeContext}
 
 KONTEKS DATA PENGGUNA (14 HARI TERAKHIR):
 ${userContext}
+
+KONTEKS OPERASIONAL SAAT INI (STATUS BELUM SELESAI):
+- Todo Hari Ini (Pilih ID di sini):
+${todoContext}
+
+- Kanban Board (Pilih ID di sini):
+${kanbanContext}
+
+- Status Ibadah Hari ini (Pilih field di sini):
+${islamTrackText}
+
+- Habit Hari Ini (Pilih ID di sini):
+${habitContext}
+
+- Workout & Nutrisi:
+${workoutContext}
+${nutritionContext}
 
 TUGASMU:
 Analisis kalimat pengguna: "${transcript}" dan:
@@ -34,10 +85,18 @@ Analisis kalimat pengguna: "${transcript}" dan:
 INTENT PERINTAH YANG DIDUKUNG:
 1. "SAVE_TRANSACTION": Catat uang (pengeluaran/pemasukan).
 2. "SAVE_SCHEDULE": Acara/Janji temu (HARUS ADA JAM/WAKTU SPESIFIK).
-3. "SAVE_TASK_TODAY": Tugas harian (To-Do List Hari Ini).
-4. "SAVE_TASK_KANBAN": Tugas umum, ide, atau proyek (Kanban Board).
+3. "SAVE_TASK_TODAY": Tugas harian BARU (To-Do List Hari Ini).
+4. "SAVE_TASK_KANBAN": Tugas umum BARU, ide, atau proyek (Kanban Board).
 5. "NAVIGATE": Berpindah halaman.
 6. "CHAT": Percakapan umum atau konsultasi data (Tanpa aksi otomatis).
+7. "UPDATE_TODO": Menceklis status Todo Hari Ini (Wajib kirim { id }).
+8. "UPDATE_KANBAN": Memindahkan kartu Kanban menjadi selesai (Wajib kirim { id }).
+9. "UPDATE_ISLAMIC": Memperbarui status ibadah harian.
+10. "SAVE_HABIT": Buat Target Habit Baru (Targetkan name dan frequency harian).
+11. "UPDATE_HABIT": Menceklis Habit hari ini (Wajib kirim { id }).
+12. "SAVE_JOURNAL": Simpan Jurnal Rahasia (Wajib kirim { content, mood }).
+13. "UPDATE_WORKOUT": Menceklis kategori workout (Wajib kirim { category }).
+14. "UPDATE_NUTRITION": Menceklis nutrisi harian (Wajib kirim { category }).
 
 ATURAN OUTPUT:
 KEMBALIKAN HANYA JSON dengan struktur:
@@ -45,13 +104,19 @@ KEMBALIKAN HANYA JSON dengan struktur:
   "textResponse": "Kalimat respon verbal dari Jarvis (Gunakan format markdown-ish)",
   "commands": [
     {
-      "intent": "SAVE_TRANSACTION" | "SAVE_SCHEDULE" | "SAVE_TASK_TODAY" | "SAVE_TASK_KANBAN" | "NAVIGATE",
+      "intent": "SAVE_TRANSACTION" | "SAVE_SCHEDULE" | "SAVE_TASK_TODAY" | "SAVE_TASK_KANBAN" | "NAVIGATE" | "UPDATE_TODO" | "UPDATE_KANBAN" | "UPDATE_ISLAMIC" | "SAVE_HABIT" | "UPDATE_HABIT" | "SAVE_JOURNAL" | "UPDATE_WORKOUT" | "UPDATE_NUTRITION",
       "data": { 
          // Jika SAVE_TRANSACTION: { amount, type, category, description, walletId }
          // Jika SAVE_SCHEDULE: { title, datetime, priority }
          // Jika SAVE_TASK_TODAY: { text, priority }
          // Jika SAVE_TASK_KANBAN: { title, priority }
          // Jika NAVIGATE: { targetScreen }
+         // Jika UPDATE_TODO / UPDATE_KANBAN / UPDATE_HABIT: { id: "string", title_context: "Nama untuk ditampilkan" }
+         // Jika UPDATE_ISLAMIC: { field: "subuh" | "dzuhur" | "ashar" | "maghrib" | "isya" | "qobliyah" | "sedekah" }
+         // Jika SAVE_HABIT: { name: "Nama habit baru" }
+         // Jika SAVE_JOURNAL: { content: "Catatan jurnalnya", mood: "senang" | "biasa" | "sedih" | "marah" | "lelah" }
+         // Jika UPDATE_WORKOUT: { category: "gym1" | "gym2" | "home1" | "home2" | "game" }
+         // Jika UPDATE_NUTRITION: { category: "pagi" | "siang" | "preWorkout" | "postWorkout" | "malam" | "opsional" | "water" }
       },
       "message": "Konfirmasi singkat u/ kartu"
     }
@@ -170,6 +235,57 @@ function showUniversalConfirmCard(cmd) {
         detailsHtml = `
             <div class="confirm-row"><span>Tugas:</span><strong>${data.title || 'Tanpa Nama'}</strong></div>
         `;
+    } else if (intent === 'UPDATE_TODO') {
+        icon = '✅';
+        confirmTitle = 'Ceklis Todo Hari Ini';
+        detailsHtml = `
+            <div class="confirm-row"><span>Selesaikan:</span><strong>${data.title_context || 'Tugas Terpilih'}</strong></div>
+        `;
+    } else if (intent === 'UPDATE_KANBAN') {
+        icon = '✅';
+        confirmTitle = 'Selesaikan Kanban';
+        detailsHtml = `
+            <div class="confirm-row"><span>Selesaikan:</span><strong>${data.title_context || 'Tugas Terpilih'}</strong></div>
+        `;
+    } else if (intent === 'UPDATE_ISLAMIC') {
+        icon = '🕌';
+        confirmTitle = 'Ceklis Ibadah';
+        detailsHtml = `
+            <div class="confirm-row"><span>Ibadah:</span><strong style="text-transform: capitalize;">${data.field || 'Ibadah Terpilih'}</strong></div>
+        `;
+    } else if (intent === 'SAVE_HABIT') {
+        icon = '🌱';
+        confirmTitle = 'Target Habit Baru';
+        detailsHtml = `
+            <div class="confirm-row"><span>Nama:</span><strong>${data.name || 'Habit Baru'}</strong></div>
+        `;
+    } else if (intent === 'UPDATE_HABIT') {
+        icon = '✅';
+        confirmTitle = 'Ceklis Habit';
+        detailsHtml = `
+            <div class="confirm-row"><span>Selesaikan:</span><strong>${data.title_context || 'Habit Terpilih'}</strong></div>
+        `;
+    } else if (intent === 'SAVE_JOURNAL') {
+        icon = '📖';
+        confirmTitle = 'Tulis Jurnal';
+        const m = data.mood || 'biasa';
+        const txt = (data.content || '').substring(0, 40) + '...';
+        detailsHtml = `
+            <div class="confirm-row"><span>Cerita:</span><strong>${txt}</strong></div>
+            <div class="confirm-row"><span>Mood:</span><strong style="text-transform: capitalize;">${m}</strong></div>
+        `;
+    } else if (intent === 'UPDATE_WORKOUT') {
+        icon = '💪';
+        confirmTitle = 'Ceklis Workout';
+        detailsHtml = `
+            <div class="confirm-row"><span>Kategori:</span><strong style="text-transform: uppercase;">${data.category || 'Workout'}</strong></div>
+        `;
+    } else if (intent === 'UPDATE_NUTRITION') {
+        icon = '🥗';
+        confirmTitle = 'Ceklis Nutrisi';
+        detailsHtml = `
+            <div class="confirm-row"><span>Kategori:</span><strong style="text-transform: capitalize;">${data.category || 'Nutrisi'}</strong></div>
+        `;
     }
 
     const cardHtml = `
@@ -233,6 +349,69 @@ async function executeSingleCommand(cmd) {
         } else if (intent === 'SAVE_TASK_KANBAN') {
             const task = { ...data, id: generateId(), done: false, createdAt: new Date().toISOString(), createdFrom: 'jarvis_unified' };
             await saveTask(task);
+        } else if (intent === 'UPDATE_TODO') {
+            if (data.id && typeof toggleDailyTodo === 'function') {
+                const todoTarget = dailyTodos.find(t => t.id === data.id);
+                if (todoTarget && !todoTarget.completed) toggleDailyTodo(data.id);
+            }
+        } else if (intent === 'UPDATE_KANBAN') {
+            if (data.id && typeof toggleTask === 'function') {
+                const kanbanTasks = await getTasks();
+                const kbTarget = kanbanTasks.find(t => t.id === data.id);
+                if (kbTarget && !kbTarget.done) await toggleTask(data.id);
+            }
+        } else if (intent === 'UPDATE_ISLAMIC') {
+            if (data.field && typeof getIslamicTrackByDate === 'function' && typeof saveIslamicTrack === 'function') {
+                const todayStr = getTodayString();
+                const todayTrack = await getIslamicTrackByDate(todayStr);
+                const pr = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+                if (pr.includes(data.field)) {
+                    todayTrack.prayers[data.field] = true;
+                } else {
+                    todayTrack[data.field] = true;
+                }
+                await saveIslamicTrack(todayStr, todayTrack);
+                if (typeof renderIslamicDashboard === 'function') renderIslamicDashboard();
+            }
+        } else if (intent === 'SAVE_HABIT') {
+            if (data.name && typeof saveHabit === 'function') {
+                const hb = { id: generateId(), name: data.name, createdAt: new Date().toISOString() };
+                await saveHabit(hb);
+                if (typeof renderHabits === 'function') renderHabits();
+            }
+        } else if (intent === 'UPDATE_HABIT') {
+            if (data.id && typeof toggleHabitCompletion === 'function') {
+                await toggleHabitCompletion(data.id, getTodayString());
+                if (typeof renderHabits === 'function') renderHabits();
+            }
+        } else if (intent === 'SAVE_JOURNAL') {
+            if (data.content && typeof saveJournal === 'function') {
+                const txtHtml = `<p>${data.content}</p>`;
+                const jr = { id: generateId(), content: txtHtml, plainText: data.content, mood: data.mood || 'biasa', createdAt: new Date().toISOString() };
+                await saveJournal(jr);
+                if (typeof renderJournals === 'function') renderJournals();
+            }
+        } else if (intent === 'UPDATE_WORKOUT') {
+            const cat = data.category;
+            if (cat && typeof workoutData !== 'undefined' && workoutData[cat] && typeof toggleWorkoutTask === 'function') {
+                workoutData[cat].forEach(task => {
+                    if (!workoutState.progress[cat] || !workoutState.progress[cat].includes(task.id)) {
+                        toggleWorkoutTask(cat, task.id);
+                    }
+                });
+            }
+        } else if (intent === 'UPDATE_NUTRITION') {
+            if (data.category && typeof nutritionData !== 'undefined' && typeof toggleNutritionTask === 'function') {
+                if (data.category === 'water') {
+                    if (typeof changeWater === 'function') changeWater(1);
+                } else if (nutritionData[data.category]) {
+                    nutritionData[data.category].forEach(task => {
+                        if (!workoutState.nutritionProgress || !workoutState.nutritionProgress[data.category] || !workoutState.nutritionProgress[data.category].includes(task.id)) {
+                            toggleNutritionTask(data.category, task.id);
+                        }
+                    });
+                }
+            }
         }
         
         if (typeof updateGlobalBudgetUI === 'function') updateGlobalBudgetUI();

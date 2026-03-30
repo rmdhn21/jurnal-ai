@@ -13,25 +13,29 @@ const WIDGET_REGISTRY = {
         title: 'Ringkasan Stats',
         icon: '📊',
         html: `<div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <div class="dashboard-icon">📝</div>
-                        <div class="dashboard-stat" id="stat-journals">0</div>
-                        <div class="dashboard-label">Total Jurnal</div>
+                    <div class="dashboard-card" style="position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: -5px; right: -10px; opacity: 0.05; font-size: 3.5rem; pointer-events: none;">📝</div>
+                        <div class="dashboard-icon" style="position: relative; z-index: 1;">📝</div>
+                        <div class="dashboard-stat" id="stat-journals" style="position: relative; z-index: 1;">0</div>
+                        <div class="dashboard-label" style="position: relative; z-index: 1;">Total Jurnal</div>
                     </div>
-                    <div class="dashboard-card">
-                        <div class="dashboard-icon">⏳</div>
-                        <div class="dashboard-stat" id="stat-tasks">0</div>
-                        <div class="dashboard-label">Belum Dilakukan</div>
+                    <div class="dashboard-card" style="position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: -5px; right: -10px; opacity: 0.05; font-size: 3.5rem; pointer-events: none;">⏳</div>
+                        <div class="dashboard-icon" style="position: relative; z-index: 1;">⏳</div>
+                        <div class="dashboard-stat" id="stat-tasks" style="position: relative; z-index: 1;">0</div>
+                        <div class="dashboard-label" style="position: relative; z-index: 1;">Belum Dilakukan</div>
                     </div>
-                    <div class="dashboard-card">
-                        <div class="dashboard-icon">💰</div>
-                        <div class="dashboard-stat" id="stat-balance">Rp 0</div>
-                        <div class="dashboard-label">Saldo</div>
+                    <div class="dashboard-card" style="position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: -5px; right: -10px; opacity: 0.05; font-size: 3.5rem; pointer-events: none;">💰</div>
+                        <div class="dashboard-icon" style="position: relative; z-index: 1;">💰</div>
+                        <div class="dashboard-stat" id="stat-balance" style="position: relative; z-index: 1;">Rp 0</div>
+                        <div class="dashboard-label" style="position: relative; z-index: 1;">Saldo</div>
                     </div>
-                    <div class="dashboard-card" id="streak-card">
-                        <div class="dashboard-icon">🔥</div>
-                        <div class="dashboard-stat" id="current-streak">0</div>
-                        <div class="dashboard-label">Best Streak</div>
+                    <div class="dashboard-card" id="streak-card" style="position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: -5px; right: -10px; opacity: 0.05; font-size: 3.5rem; pointer-events: none;">🔥</div>
+                        <div class="dashboard-icon" style="position: relative; z-index: 1;">🔥</div>
+                        <div class="dashboard-stat" id="current-streak" style="position: relative; z-index: 1;">0</div>
+                        <div class="dashboard-label" style="position: relative; z-index: 1;">Best Streak</div>
                     </div>
                </div>`,
         init: () => { if (typeof updateDashboardStats === 'function') updateDashboardStats(); }
@@ -40,8 +44,9 @@ const WIDGET_REGISTRY = {
         id: 'prayer',
         title: 'Jadwal Sholat',
         icon: '🕌',
-        html: `<div class="dashboard-card" id="prayer-card" style="grid-column: span 2;">
-                    <div class="prayer-card-header">
+        html: `<div class="dashboard-card" id="prayer-card" style="grid-column: span 2; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -15px; right: -25px; opacity: 0.03; font-size: 9rem; pointer-events: none;">🕌</div>
+                    <div class="prayer-card-header" style="position: relative; z-index: 1;">
                         <div class="prayer-card-left">
                             <span class="prayer-card-icon">🕌</span>
                             <div>
@@ -54,7 +59,7 @@ const WIDGET_REGISTRY = {
                             <div class="prayer-card-countdown" id="next-prayer-countdown">...</div>
                         </div>
                     </div>
-                    <div class="prayer-list-mini" id="prayer-list-mini"></div>
+                    <div class="prayer-list-mini" id="prayer-list-mini" style="position: relative; z-index: 1;"></div>
                </div>`,
         init: () => { 
             if (typeof updateDashboardPrayerCard === 'function') {
@@ -68,26 +73,34 @@ const WIDGET_REGISTRY = {
         id: 'motivation',
         title: 'Motivasi Harian',
         icon: '💡',
-        html: `<div class="card mt-md" id="motivation-card"><p class="text-muted">Memuat...</p></div>`,
+        html: `<div class="card mt-md" id="motivation-card" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">💡</div>
+                    <div style="position: relative; z-index: 1;">
+                        <p class="text-muted">Memuat...</p>
+                    </div>
+               </div>`,
         init: () => { if (typeof initMotivation === 'function') initMotivation(); }
     },
     'brain-boost': {
         id: 'brain-boost',
         title: 'Brain Boost',
         icon: '🧠',
-        html: `<div class="card mt-md" id="brain-boost-card">
-                    <div class="brain-header-row">
-                        <h3>🧠 Brain Boost</h3>
-                        <span class="badge-ai">Daily XP</span>
+        html: `<div class="card mt-md" id="brain-boost-card" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">🧠</div>
+                    <div class="brain-header-row" style="position: relative; z-index: 1; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🧠</span> Brain Boost
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #fbbf24; background: rgba(251, 191, 36, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(251, 191, 36, 0.3); text-transform: uppercase;">DAILY XP</span>
                     </div>
-                    <div class="brain-tabs">
+                    <div class="brain-tabs" style="position: relative; z-index: 1;">
                         <button class="brain-tab active" onclick="switchTab('fact')">💡 Fakta</button>
                         <button class="brain-tab" onclick="switchTab('vocab')">🇬🇧 Vocab</button>
                         <button class="brain-tab" onclick="switchTab('math')">🧮 Math</button>
                         <button class="brain-tab" onclick="switchTab('logic')">🧩 Logic</button>
                         <button class="brain-tab" onclick="switchTab('myth')">🕵️ Mitos</button>
                     </div>
-                    <div id="brain-content" class="brain-content mt-sm"></div>
+                    <div id="brain-content" class="brain-content mt-sm" style="position: relative; z-index: 1;"></div>
                </div>`,
         init: () => { if (typeof initBrainBoost === 'function') initBrainBoost(); }
     },
@@ -95,9 +108,15 @@ const WIDGET_REGISTRY = {
         id: 'hadith',
         title: 'Hadits Harian',
         icon: '✨',
-        html: `<div class="card mt-md hadith-card-container">
-                    <h3>✨ Hadits Harian</h3>
-                    <div id="hadith-content" class="hadith-content"></div>
+        html: `<div class="card mt-md hadith-card-container" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">✨</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>✨</span> Hadits Harian
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); text-transform: uppercase;">ISLAMIC</span>
+                    </div>
+                    <div id="hadith-content" class="hadith-content" style="position: relative; z-index: 1;"></div>
                </div>`,
         init: () => { if (typeof initHadithCard === 'function') initHadithCard(); }
     },
@@ -105,15 +124,18 @@ const WIDGET_REGISTRY = {
         id: 'finance-budget',
         title: 'Budget & Arus Kas',
         icon: '📉',
-        html: `<div class="card mt-md" id="global-budget-card">
-                    <div class="budget-card-header">
-                        <h3>📉 Budget Harian</h3>
-                        <span id="global-budget-text" class="text-muted">...</span>
+        html: `<div class="card mt-md" id="global-budget-card" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">📉</div>
+                    <div class="budget-card-header" style="position: relative; z-index: 1; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>📉</span> Budget Harian
+                        </h3>
+                        <span id="global-budget-text" class="text-muted" style="font-weight:bold; font-size: 0.9rem;">...</span>
                     </div>
-                    <div class="progress-bar">
+                    <div class="progress-bar" style="position: relative; z-index: 1; margin: 15px 0;">
                         <div id="global-budget-progress" class="progress-fill" style="width: 0%"></div>
                     </div>
-                    <small class="text-muted budget-card-hint">Total pengeluaran hari ini dari semua wallet.</small>
+                    <small class="text-muted budget-card-hint" style="position: relative; z-index: 1;">Total pengeluaran hari ini dari semua wallet.</small>
                </div>`,
         init: () => { if (typeof initGlobalBudgetUI === 'function') initGlobalBudgetUI(); }
     },
@@ -121,58 +143,114 @@ const WIDGET_REGISTRY = {
         id: 'reminders',
         title: 'Reminder & Jadwal',
         icon: '🔔',
-        html: `<div class="card">
-                    <h3>🔔 Reminder & Jadwal</h3>
-                    <div id="dashboard-reminders" class="reminder-list"></div>
+        html: `<div class="card" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">🔔</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🔔</span> Reminder & Jadwal
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); text-transform: uppercase;">AGENDA</span>
+                    </div>
+                    <div id="dashboard-reminders" class="reminder-list" style="position: relative; z-index: 1;"></div>
                </div>`,
         init: () => { if (typeof updateDashboardReminders === 'function') updateDashboardReminders(); }
     },
-    'mood-chart': {
-        id: 'mood-chart',
-        title: 'Mood Tracker (Visual)',
-        icon: '🎭',
-        html: `<div class="card">
-                    <h3>🎭 Mood Minggu Ini</h3>
-                    <div class="mood-chart-container">
-                        <canvas id="mood-chart-canvas" height="150"></canvas>
-                    </div>
-               </div>`,
-        init: () => { if (typeof initMoodChart === 'function') initMoodChart(); }
-    },
+
     'calendar': {
         id: 'calendar',
         title: 'Kalender & Event',
         icon: '📅',
-        html: `<div class="card calendar-card">
-                    <div class="calendar-view">
-                        <div class="calendar-header">
-                            <h3 id="dashboard-calendar-month-year">...</h3>
+        html: `<div class="card calendar-card" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">📅</div>
+                    <div class="calendar-view" style="position: relative; z-index: 1;">
+                        <div class="calendar-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                            <h3 id="dashboard-calendar-month-year" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <span>📅</span> ...
+                            </h3>
+                            <span style="font-size: 0.65rem; font-weight: 800; color: #818cf8; background: rgba(99, 102, 241, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.3); text-transform: uppercase;">PLANNER</span>
                         </div>
                         <div class="calendar-grid" id="dashboard-calendar-grid"></div>
+                        <div id="dashboard-selected-date-events" class="selected-date-events" style="display: none; margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
+                            <h4 id="dashboard-selected-date-label" style="font-size: 0.8rem; margin: 0 0 10px 0; color: var(--text-muted);">Events</h4>
+                            <ul id="dashboard-selected-date-list" class="date-events-list" style="list-style: none; padding: 0; margin: 0;">
+                                <!-- Injected by JS -->
+                            </ul>
+                        </div>
                     </div>
+
                </div>`,
         init: () => { if (typeof renderCalendar === 'function') renderCalendar(); }
     },
-    'ai-insight': {
-        id: 'ai-insight',
-        title: 'AI Quick Insight',
-        icon: '✨',
-        html: `<div class="card">
-                    <h3>🧠 Quick AI Insight</h3>
-                    <div id="quick-insight" class="insight-box">
-                        <p class="text-muted">Klik tombol di bawah untuk insight harian</p>
+    'daily-schedule': {
+        id: 'daily-schedule',
+        title: 'Timeline Jadwal Harian',
+        icon: '🕒',
+        html: `<div class="card p-0 mt-md" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">🕒</div>
+                    <div class="p-4" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); position: relative; z-index: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <span>🕒</span> Smart Day Timeline
+                            </h3>
+                            <span style="font-size: 0.65rem; font-weight: 800; color: #3b82f6; background: rgba(59, 130, 246, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.3); text-transform: uppercase;">LIVE SYNC</span>
+                        </div>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; margin-bottom: 0;">Jadwal otomatis & tersinkronisasi.</p>
                     </div>
-                    <button id="get-daily-insight-btn" class="btn btn-ai btn-full" onclick="getDailyInsight()">✨ Dapatkan Insight Harian</button>
+                    <div id="daily-schedule-list" style="padding: 15px; position: relative; z-index: 1;"></div>
+               </div>`,
+        init: () => { if (typeof updateDailyScheduleWidget === 'function') updateDailyScheduleWidget(); }
+    },
+    'life-balance': {
+        id: 'life-balance',
+        title: 'Life Balance Radar',
+        icon: '🕸️',
+        html: `<div class="card" style="position: relative; overflow: hidden; min-height: 280px; display: flex; flex-direction: column;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">🕸️</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🕸️</span> Life Balance Matrix
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); text-transform: uppercase;">ANALYSIS</span>
+                    </div>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 10px;">Visualisasi keseimbangan antar-pilar kehidupan.</p>
+                    <div style="flex: 1; min-height: 200px; position: relative;">
+                         <canvas id="life-balance-chart"></canvas>
+                    </div>
+               </div>`,
+        init: () => { 
+            if (typeof lifeBalance !== 'undefined' && lifeBalance.init) {
+                lifeBalance.init();
+            }
+        }
+    },
+    'weekly-report': {
+        id: 'weekly-report',
+        title: 'Weekly Executive Report',
+        icon: '📈',
+        html: `<div class="card mt-md" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #334155; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">📈</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h3 style="color: #f8fafc; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>📈</span> Executive AI Report
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #818cf8; background: rgba(99, 102, 241, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.3); text-transform: uppercase;">Weekly CEO</span>
+                    </div>
+                    <p style="color: #94a3b8; font-size: 0.8rem; line-height: 1.5; margin-bottom: 15px; position: relative; z-index: 1;">Evaluasi komprehensif 7 hari terakhir: Produktivitas, Keuangan, Kebugaran, Ibadah & Habit. Dilengkapi Rating (Grade) AI.</p>
+                    <button class="btn btn-primary btn-full" onclick="generateWeeklyExecutiveReport()" style="background: #4f46e5; border: none; font-weight: 700; border-radius: 8px; position: relative; z-index: 1; padding: 12px;">
+                        📊 Generate Laporan Mingguan
+                    </button>
                </div>`,
         init: () => {}
-    }
+    },
+
 };
 
 const DEFAULT_WIDGET_ORDER = [
-    'profile', 'overview', 'prayer', 'motivation', 
+    'profile', 'overview', 'life-balance', 'prayer', 'daily-schedule', 'motivation', 
     'brain-boost', 'hadith', 'finance-budget', 
-    'reminders', 'mood-chart', 'calendar', 'ai-insight'
+    'reminders', 'calendar', 'weekly-report'
 ];
+
 
 async function initDashboardWidgets() {
     const container = document.getElementById('dashboard-widgets-container');
@@ -181,11 +259,27 @@ async function initDashboardWidgets() {
     let userOrder;
     try {
         const storedOrder = localStorage.getItem('jurnal_ai_dashboard_widgets');
-        userOrder = storedOrder ? JSON.parse(storedOrder) : DEFAULT_WIDGET_ORDER;
-        if (!Array.isArray(userOrder)) userOrder = DEFAULT_WIDGET_ORDER;
+        userOrder = storedOrder ? JSON.parse(storedOrder) : [...DEFAULT_WIDGET_ORDER];
+        if (!Array.isArray(userOrder)) userOrder = [...DEFAULT_WIDGET_ORDER];
+        
+        // Remove deleted widgets dynamically
+        userOrder = userOrder.filter(w => w !== 'mood-chart' && w !== 'ai-insight');
+
+        // Auto-inject missing new widgets (like daily-schedule)
+        let orderChanged = false;
+        DEFAULT_WIDGET_ORDER.forEach((id, index) => {
+            if (!userOrder.includes(id)) {
+                if (index < userOrder.length) userOrder.splice(index, 0, id);
+                else userOrder.push(id);
+                orderChanged = true;
+            }
+        });
+        if (orderChanged) {
+            localStorage.setItem('jurnal_ai_dashboard_widgets', JSON.stringify(userOrder));
+        }
     } catch (e) {
         console.error('Failed to parse widget order:', e);
-        userOrder = DEFAULT_WIDGET_ORDER;
+        userOrder = [...DEFAULT_WIDGET_ORDER];
     }
     
     // Clear and render
@@ -227,7 +321,7 @@ async function initDashboardWidgets() {
 // Add UI for customization
 function openWidgetCustomizer() {
     const modalHtml = `
-        <div id="widget-settings-modal" class="mastery-modal">
+        <div id="widget-settings-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
                     <h2>⚙️ Atur Dashboard</h2>

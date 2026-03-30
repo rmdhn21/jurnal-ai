@@ -586,3 +586,288 @@ function showNotification(title, body) {
         });
     }
 }
+
+// ===== DAILY SCHEDULE WIDGET MODULE =====
+async function updateDailyScheduleWidget() {
+    const container = document.getElementById('daily-schedule-list');
+    if (!container) return;
+
+    let events = [];
+    const now = new Date();
+    const todayStr = getTodayString();
+    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const currentDayName = dayNames[now.getDay()];
+
+    // 1. Get Prayer Data
+    const prayerData = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRAYER_DATA) || '{}');
+    let timings = {};
+    if (prayerData.key && prayerData.key.includes(todayStr) && prayerData.timings) {
+        timings = prayerData.timings;
+    } else {
+        timings = { 'Fajr': '04:30', 'Dhuhr': '12:00', 'Asr': '15:15', 'Maghrib': '18:00', 'Isha': '19:15' };
+    }
+
+    const addMinutes = (timeStr, mins) => {
+        let [h, m] = timeStr.split(':').map(Number);
+        let date = new Date(2000, 1, 1, h, m);
+        date.setMinutes(date.getMinutes() + mins);
+        return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    };
+
+    // 2. Base Routines
+    events.push({ time: addMinutes(timings['Fajr'], -40), title: 'Bangun Tidur & Tahajud', icon: '⏰', type: 'routine' });
+    events.push({ time: addMinutes(timings['Fajr'], -10), title: 'Persiapan & Sedekah Subuh', icon: '💦', type: 'routine' });
+    events.push({ time: timings['Fajr'], title: 'Sholat Subuh', icon: '🕌', type: 'prayer' });
+    
+    events.push({ time: '06:30', title: 'Mandi Pagi & Persiapan', icon: '🚿', type: 'routine' });
+    events.push({ time: '07:00', title: 'Sarapan Pagi (Nutrisi)', icon: '🍳', type: 'routine' });
+    
+    events.push({ time: '08:00', title: 'Mulai Kerja / Selesaikan Todo', icon: '💼', type: 'routine' });
+    
+    events.push({ time: timings['Dhuhr'], title: 'Sholat Dzuhur', icon: '🕌', type: 'prayer' });
+    events.push({ time: addMinutes(timings['Dhuhr'], 30), title: 'Makan Siang (Nutrisi)', icon: '🍱', type: 'routine' });
+    
+    events.push({ time: timings['Asr'], title: 'Sholat Ashar', icon: '🕌', type: 'prayer' });
+    events.push({ time: timings['Maghrib'], title: 'Sholat Maghrib', icon: '🕌', type: 'prayer' });
+    events.push({ time: timings['Isha'], title: 'Sholat Isya', icon: '🕌', type: 'prayer' });
+    events.push({ time: addMinutes(timings['Isha'], 30), title: 'Makan Malam (Nutrisi)', icon: '🍽️', type: 'routine' });
+    events.push({ time: '22:00', title: 'Evaluasi Jurnal & Tidur', icon: '😴', type: 'routine' });
+
+    // 3. Workout Logic (Pagi jam 05:30)
+    if (typeof workoutSchedule !== 'undefined') {
+        const todayWorkout = workoutSchedule.find(w => w.day === currentDayName);
+        if (todayWorkout && todayWorkout.type !== 'rest') {
+            events.push({ time: '05:30', title: `Workout: ${todayWorkout.title}`, icon: '💪', type: 'workout' });
+        }
+    }
+
+    // 4. Planner/Schedules
+    const schedules = await getSchedules();
+    const todaySchedules = schedules.filter(s => s.datetime && s.datetime.startsWith(todayStr));
+    todaySchedules.forEach(s => {
+        const timeStr = s.datetime.split('T')[1].slice(0, 5);
+        events.push({ time: timeStr, title: s.title, icon: '📅', type: 'schedule' });
+    });
+
+    events.sort((a, b) => a.time.localeCompare(b.time));
+
+    container.innerHTML = events.map((e, index) => {
+        const isPast = e.time < now.toTimeString().slice(0, 5);
+        return `
+            <div class="timeline-item" style="display: flex; gap: 12px; align-items: stretch; position: relative;">
+                <div style="width: 45px; text-align: right; font-size: 0.85rem; font-weight: 700; color: ${isPast ? 'var(--text-muted)' : 'var(--primary)'}; padding-top: 14px; opacity: ${isPast ? '0.6' : '1'};">
+                    ${e.time}
+                </div>
+                <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 2px; height: 14px; background: ${index === 0 ? 'transparent' : 'var(--border)'};"></div>
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: ${isPast ? 'var(--bg-card)' : 'var(--surface)'}; border: 2px solid ${isPast ? 'var(--border)' : 'var(--primary)'}; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; z-index: 2; opacity: ${isPast ? '0.6' : '1'};">
+                        ${e.icon}
+                    </div>
+                    ${index !== events.length - 1 ? `<div style="width: 2px; flex: 1; background: var(--border);"></div>` : `<div style="width: 2px; height: 14px; background: transparent;"></div>`}
+                </div>
+                <div style="flex: 1; padding: 10px 0; margin-bottom: 2px; opacity: ${isPast ? '0.6' : '1'};">
+                    <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); text-decoration: ${e.type === 'routine' && isPast ? 'line-through' : 'none'};">${e.title}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ===== WEEKLY EXECUTIVE REPORT =====
+async function generateWeeklyExecutiveReport() {
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+    if (!apiKey) {
+        alert('Atur API key dulu di Settings!');
+        if (typeof showSettings === 'function') showSettings();
+        return;
+    }
+
+    if (typeof showAnalysisModal === 'function') {
+        showAnalysisModal('📈 Meracik Rapor Mingguan...');
+    }
+
+    const today = new Date();
+    const dates = [];
+    for(let i=6; i>=0; i--) {
+        let d = new Date();
+        d.setDate(today.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+    }
+
+    // 1. Finance
+    const txs = await getTransactions();
+    const recentTxs = txs.filter(t => dates.includes(t.date));
+    const income = recentTxs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+    const expense = recentTxs.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+
+    // 2. Habits
+    const habits = await getHabits();
+    let habitData = habits.map(h => {
+        const doneCount = (h.completedDates || []).filter(d => dates.includes(d)).length;
+        return { name: h.name, doneCount_out_of_7: doneCount };
+    });
+
+    // 3. Tasks
+    const tasks = await getTasks();
+    const doneRecent = tasks.filter(t => t.done && t.updatedAt && dates.includes(t.updatedAt.split('T')[0])).length;
+    const pendingCount = tasks.filter(t => !t.done).length;
+
+    // 4. Journals
+    const journals = await getJournals();
+    const recentJournals = journals.filter(j => dates.includes(j.createdAt.split('T')[0]));
+    const moodCounts = {};
+    recentJournals.forEach(j => {
+        let m = j.mood || 'biasa';
+        moodCounts[m] = (moodCounts[m] || 0) + 1;
+    });
+
+    // 5. Islamic
+    let subuhCount = 0;
+    if(typeof getIslamicTrackByDate === 'function') {
+        for(let d of dates) {
+            let tr = await getIslamicTrackByDate(d);
+            if (tr?.prayers?.subuh) subuhCount++;
+        }
+    }
+
+    // 6. Workout
+    let workoutCount = 0;
+    if(typeof workoutState !== 'undefined' && workoutState.history) {
+        workoutCount = dates.filter(d => workoutState.history[d]).length;
+    }
+
+    const compiledData = JSON.stringify({
+        dateRange: `${dates[0]} to ${dates[6]}`,
+        finance: { income, expense, net: income - expense },
+        tasks: { completedThisWeek: doneRecent, currentlyPending: pendingCount },
+        habits: habitData,
+        moods: moodCounts,
+        spiritual: { subuhCompleted: subuhCount },
+        fitness: { workoutDays: workoutCount }
+    });
+
+    const prompt = `Anda adalah "Senior Executive Consultant" pribadi. Berdasarkan data 7 hari terakhir, buatlah Laporan Eksekutif (Rapor) untuk dikirim ke CEO (pengguna).
+    Analisis data mentah berikut secara Kritis dan Tajam:
+    ${compiledData}
+
+    FORMAT HTML OUTPUT (Wajib Rapi dan Profesional):
+    <div id="executive-pdf-content" style="font-family: Arial, sans-serif; color: #1e293b;">
+        <h2 style="color: #0f172a; text-align: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px;">Executive Weekly Report</h2>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <span>Periode: ${dates[0]} s/d ${dates[6]}</span>
+            <span style="font-weight: bold; font-size: 1.2rem; background: #4f46e5; color: white; padding: 4px 12px; border-radius: 4px;">GRADE: [Nilai A/B/C/D]</span>
+        </div>
+        
+        <h3 style="color: #334155;">📊 Executive Summary</h3>
+        <p>[2 paragraf padat berisi inti kinerja minggu ini. Beri pujian jika bagus, kritik keras jika jelek/malas.]</p>
+        
+        <h3 style="color: #334155;">🔍 Performance Breakdown</h3>
+        <ul style="line-height: 1.6;">
+            <li><b>💰 Keuangan:</b> [Analisis arus kas berserta angka]</li>
+            <li><b>⚡ Produktivitas & Habit:</b> [Analisis penyelesaian task & kebiasaan]</li>
+            <li><b>🧘 Kebugaran & Mental:</b> [Analisis mood & workout]</li>
+            <li><b>🕌 Spiritual:</b> [Analisis kelengkapan ibadah, beri teguran jika Subuh bolong]</li>
+        </ul>
+        
+        <h3 style="color: #334155; border-top: 1px solid #cbd5e1; padding-top: 10px;">💡 Top 3 Tactic & Strategy (Minggu Depan)</h3>
+        <ol style="line-height: 1.6;">
+            <li>[Strategi konkrit 1 berdasarkan kelemahan/peluang minggu ini]</li>
+            <li>[Strategi konkrit 2]</li>
+            <li>[Strategi konkrit 3]</li>
+        </ol>
+    </div>
+    
+    Jangan berikan kata pembuka/penutup seperti "Tentu,". Hanya kembalikan elemen HTML murni (tanpa tag \`\`\`html).`;
+
+    try {
+        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+            })
+        });
+
+        if (!response.ok) throw new Error('API Error');
+
+        const result = await response.json();
+        let text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal memproses.';
+        text = text.replace(/```html/gi, '').replace(/```/g, '');
+
+        const contentDiv = document.getElementById('analysis-content');
+        if (contentDiv) {
+            // Wrapping AI response in a guaranteed ID container for PDF export
+            const wrappedContent = `
+                <div id="executive-pdf-content" style="font-family: Arial, sans-serif; color: #1e293b; background: white; padding: 30px;">
+                    ${text}
+                </div>
+            `;
+
+            contentDiv.innerHTML = wrappedContent + `
+            <div style="margin-top: 25px; text-align: center;">
+                <button class="btn btn-primary" onclick="exportReportToPDF()" style="background: #10b981; border: none; font-weight: bold; padding: 10px 20px; font-size: 1rem;">
+                    📥 Unduh PDF Laporan
+                </button>
+            </div>`;
+            document.getElementById('analysis-loading').classList.add('hidden');
+            document.getElementById('analysis-title').textContent = '📈 Weekly CEO Report';
+        }
+
+
+    } catch (e) {
+        console.error(e);
+        const contentDiv = document.getElementById('analysis-content');
+        if (contentDiv) {
+            contentDiv.innerHTML = `<p style="color: red;">Gagal mengambil data laporan: ${e.message}</p>`;
+            document.getElementById('analysis-loading').classList.add('hidden');
+        }
+    }
+}
+
+async function exportReportToPDF() {
+    const el = document.getElementById('executive-pdf-content') || document.getElementById('analysis-content');
+    if (!el) {
+        alert('Laporan tidak ditemukan.');
+        return;
+    }
+
+    // Ensure the element is visible and has white background for capture
+    const originalBackground = el.style.background;
+    el.style.background = 'white';
+    el.style.color = '#1e293b';
+
+    const opt = {
+        margin:       0.5,
+        filename:     `JurnalAI_Weekly_Report_${getTodayString()}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            letterRendering: true
+        },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    
+    const triggerExport = (lib) => {
+        lib().set(opt).from(el).toPdf().get('pdf').then(function (pdf) {
+            // Restore styles after rendering
+            el.style.background = originalBackground;
+        }).save();
+    };
+
+    if (typeof html2pdf === 'function') {
+        triggerExport(html2pdf);
+    } else {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = () => {
+            triggerExport(html2pdf);
+        };
+        document.head.appendChild(script);
+    }
+}
+

@@ -2,34 +2,10 @@
 let assistantMessages = [];
 
 async function initAIAssistant() {
-    const fab = document.getElementById('ai-assistant-btn');
-    const drawer = document.getElementById('ai-assistant-drawer');
-    const closeBtn = document.getElementById('close-ai-assistant');
     const sendBtn = document.getElementById('send-ai-assistant-btn');
     const input = document.getElementById('ai-assistant-input');
 
-    if (!fab || !drawer) return;
-
-    // Initialize Draggable state
-    initDraggableFAB(fab);
-
-    fab.addEventListener('click', (e) => {
-        // Only toggle if not dragged
-        if (fab.dataset.dragged === 'true') {
-            fab.dataset.dragged = 'false';
-            return;
-        }
-        
-        drawer.classList.toggle('hidden');
-        if (!drawer.classList.contains('hidden')) {
-            positionAIDrawer();
-            input.focus();
-        }
-    });
-
-    closeBtn.addEventListener('click', () => {
-        drawer.classList.add('hidden');
-    });
+    if (!sendBtn || !input) return;
 
     sendBtn.addEventListener('click', handleAssistantSend);
 
@@ -53,149 +29,23 @@ async function initAIAssistant() {
             const btn = e.target.closest('.qa-btn');
             if (btn) {
                 const query = btn.dataset.query;
-                input.value = query;
-                handleAssistantSend();
+                if (query) {
+                    input.value = query;
+                    handleAssistantSend();
+                }
             }
         });
     }
 }
 
-function initDraggableFAB(fab) {
-    let isDragging = false;
-    let startX, startY, initialX, initialY;
-    let dragThreshold = 5; // px to consider it a drag vs a click
-    
-    // Load persisted position
-    const savedPos = JSON.parse(localStorage.getItem('jurnal_ai_fab_pos') || '{}');
-    if (savedPos.left !== undefined) {
-        fab.style.left = savedPos.left + 'px';
-        fab.style.top = savedPos.top + 'px';
-        fab.style.bottom = 'auto';
-        fab.style.right = 'auto';
-    }
-
-    const onStart = (e) => {
-        isDragging = false;
-        fab.dataset.dragged = 'false';
-        
-        const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
-        
-        startX = clientX;
-        startY = clientY;
-        
-        const rect = fab.getBoundingClientRect();
-        initialX = rect.left;
-        initialY = rect.top;
-        
-        fab.classList.remove('snapping');
-        
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onEnd);
-        document.addEventListener('touchmove', onMove, { passive: false });
-        document.addEventListener('touchend', onEnd);
-    };
-
-    const onMove = (e) => {
-        const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
-        
-        const dx = clientX - startX;
-        const dy = clientY - startY;
-        
-        if (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold) {
-            isDragging = true;
-            fab.dataset.dragged = 'true';
-            
-            // Boundary constraints
-            let newX = initialX + dx;
-            let newY = initialY + dy;
-            
-            newX = Math.max(10, Math.min(newX, window.innerWidth - 70));
-            newY = Math.max(10, Math.min(newY, window.innerHeight - 70));
-            
-            fab.style.left = newX + 'px';
-            fab.style.top = newY + 'px';
-            fab.style.bottom = 'auto';
-            fab.style.right = 'auto';
-            
-            if (e.cancelable) e.preventDefault();
-        }
-    };
-
-    const onEnd = () => {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onEnd);
-        document.removeEventListener('touchmove', onMove);
-        document.removeEventListener('touchend', onEnd);
-        
-        if (isDragging) {
-            snapToEdge(fab);
-        }
-    };
-
-    fab.addEventListener('mousedown', onStart);
-    fab.addEventListener('touchstart', onStart, { passive: true });
-}
-
-function snapToEdge(fab) {
-    fab.classList.add('snapping');
-    const rect = fab.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const thresh = window.innerWidth / 2;
-    
-    let finalX = centerX < thresh ? 20 : window.innerWidth - rect.width - 20;
-    
-    // Boundary check for Y
-    let finalY = Math.max(20, Math.min(rect.top, window.innerHeight - rect.height - 20));
-    
-    fab.style.left = finalX + 'px';
-    fab.style.top = finalY + 'px';
-    
-    // Save position
-    localStorage.setItem('jurnal_ai_fab_pos', JSON.stringify({ left: finalX, top: finalY }));
-    
-    // Update drawer if open
-    if (!document.getElementById('ai-assistant-drawer').classList.contains('hidden')) {
-        positionAIDrawer();
+// Helper to scroll chat to bottom
+function scrollToBottom() {
+    const chatHistory = document.getElementById('ai-assistant-chat-history');
+    if (chatHistory) {
+        chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 }
 
-function positionAIDrawer() {
-    const fab = document.getElementById('ai-assistant-btn');
-    const drawer = document.getElementById('ai-assistant-drawer');
-    const rect = fab.getBoundingClientRect();
-    
-    const isLeft = (rect.left + rect.width / 2) < (window.innerWidth / 2);
-    
-    if (window.innerWidth <= 480) {
-        // Mobile: centered bottom
-        drawer.style.left = '15px';
-        drawer.style.right = '15px';
-        drawer.style.bottom = '90px';
-        drawer.style.top = 'auto';
-    } else {
-        // Desktop: Near FAB
-        if (isLeft) {
-            drawer.style.left = (rect.left) + 'px';
-            drawer.style.right = 'auto';
-        } else {
-            drawer.style.right = (window.innerWidth - rect.right) + 'px';
-            drawer.style.left = 'auto';
-        }
-        
-        // Vertical pos
-        if (rect.top < 600) {
-            // If FAB is at top, drawer goes below
-            drawer.style.top = (rect.bottom + 15) + 'px';
-            drawer.style.bottom = 'auto';
-        } else {
-            // Else drawer goes above
-            drawer.style.bottom = (window.innerHeight - rect.top + 15) + 'px';
-            drawer.style.top = 'auto';
-        }
-    }
-}
 
 async function handleAssistantSend() {
     const input = document.getElementById('ai-assistant-input');
