@@ -567,17 +567,21 @@ function renderInspectionChecklist(containerId, dataArray) {
                         
                         <!-- Memo Container (Hidden by default) -->
                         <div id="memo-container-${cbId}" class="inspection-memo-container hidden">
-                            <textarea id="memo-text-${cbId}" class="inspection-memo-textarea" placeholder="Tambahkan pengertian atau catatan pribadi agar cepat hafal..."></textarea>
+                            <textarea id="memo-text-${cbId}" class="inspection-memo-textarea" 
+                                placeholder="Tambahkan pengertian atau catatan pribadi agar cepat hafal..."
+                                oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'"></textarea>
                             
                             <div id="memo-photo-area-${cbId}">
-                                <img id="memo-preview-${cbId}" class="inspection-photo-preview hidden" src="" alt="Preview">
-                                <div class="inspection-memo-actions" style="margin-top: 5px;">
-                                    <label class="btn btn-secondary btn-small" style="cursor:pointer; font-size: 0.75rem;">
-                                        📷 Upload Foto
-                                        <input type="file" accept="image/*" style="display:none;" onchange="handleRigPhoto(event, '${cbId}')">
+                                <div id="memo-photo-grid-${cbId}" class="inspection-photo-grid">
+                                    <!-- Photos will be injected here -->
+                                </div>
+                                <div class="inspection-memo-actions" style="margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <label class="btn btn-secondary btn-small" style="cursor:pointer; font-size: 0.75rem; flex: 1; min-width: 120px; text-align: center;">
+                                        📷 Tambah Foto
+                                        <input type="file" accept="image/*" multiple style="display:none;" onchange="handleRigPhotos(event, '${cbId}')">
                                     </label>
-                                    <button class="btn btn-primary btn-small" onclick="saveRigMemo('${cbId}')" style="font-size: 0.75rem;">💾 Simpan</button>
-                                    <button class="btn btn-danger btn-small" onclick="clearRigMemo('${cbId}')" style="font-size: 0.75rem;">🗑️</button>
+                                    <button class="btn btn-primary btn-small" onclick="saveRigMemo('${cbId}')" style="font-size: 0.75rem; flex: 1; min-width: 80px;">💾 Simpan</button>
+                                    <button class="btn btn-danger btn-small" onclick="clearRigMemo('${cbId}')" style="font-size: 0.75rem; padding: 5px 10px;">🗑️</button>
                                 </div>
                             </div>
                             <div id="memo-status-${cbId}" class="memo-saved-indicator hidden">✅ Tersimpan</div>
@@ -600,6 +604,16 @@ function saveInspectionState() {
         if(cb.checked) state[cb.id] = true;
     });
     localStorage.setItem('rigInspectionState', JSON.stringify(state));
+    updateInspectionProgress();
+}
+
+function updateInspectionProgress() {
+    const total = document.querySelectorAll('.inspection-checkbox').length;
+    const checked = document.querySelectorAll('.inspection-checkbox:checked').length;
+    const progressEl = document.getElementById('inspection-overall-progress');
+    if (progressEl) {
+        progressEl.textContent = `Progress: ${checked} / ${total} Poin Centang (${Math.round(checked/total*100)}%)`;
+    }
 }
 
 function loadInspectionState() {
@@ -611,6 +625,7 @@ function loadInspectionState() {
                 const cb = document.getElementById(id);
                 if (cb) cb.checked = state[id];
             });
+            updateInspectionProgress();
         } catch(e) {}
     }
     
@@ -628,16 +643,69 @@ function loadInspectionState() {
                 if (textEl && memo.note) {
                     textEl.value = memo.note;
                     if (btnMemo) btnMemo.classList.add('has-content');
+                    // Resize textarea - wait for potential DOM visibility or just try multiple times
+                    const doResize = () => {
+                        textEl.style.height = 'auto';
+                        textEl.style.height = textEl.scrollHeight + 'px';
+                    };
+                    setTimeout(doResize, 100);
+                    setTimeout(doResize, 500); // Fail-safe for slow rendering
                 }
                 
-                if (previewEl && memo.photo) {
-                    previewEl.src = memo.photo;
-                    previewEl.classList.remove('hidden');
-                    if (btnMemo) btnMemo.classList.add('has-content');
+                // Handle multiple photos (array) or legacy single photo (string)
+                if (memo.photos || memo.photo) {
+                    const photos = memo.photos || (memo.photo ? [memo.photo] : []);
+                    renderRigPhotoGrid(id, photos);
+                    if (photos.length > 0 && btnMemo) btnMemo.classList.add('has-content');
                 }
             });
-        } catch(e) {}
+        } catch(e) { console.error("Error loading memos:", e); }
     }
+}
+
+function renderRigPhotoGrid(cbId, photos) {
+    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+    if (!grid) return;
+    
+    grid.innerHTML = photos.map((src, index) => `
+        <div class="inspection-photo-item" id="photo-${cbId}-${index}">
+            <img src="${src}" alt="Photo ${index + 1}" onclick="viewRigPhotoFull('${src}')" style="cursor: zoom-in;">
+            <button class="delete-photo" onclick="removeRigPhoto('${cbId}', ${index})" title="Hapus Foto">✕</button>
+        </div>
+    `).join('');
+    
+    // Store temporarily in a data attribute if needed, but we usually just read from grid or store separately
+    grid.dataset.photos = JSON.stringify(photos);
+}
+
+function viewRigPhotoFull(src) {
+    const modal = document.getElementById('rig-photo-modal');
+    const img = document.getElementById('rig-photo-full'); // match index.html
+    const closeBtn = document.getElementById('close-rig-photo-modal');
+    
+    if (modal && img) {
+        img.src = src;
+        modal.classList.remove('hidden');
+        
+        // Close on X
+        if (closeBtn) {
+            closeBtn.onclick = () => modal.classList.add('hidden');
+        }
+        
+        // Close on background click
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        };
+    }
+}
+
+function removeRigPhoto(cbId, index) {
+    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+    if (!grid || !grid.dataset.photos) return;
+    
+    let photos = JSON.parse(grid.dataset.photos);
+    photos.splice(index, 1);
+    renderRigPhotoGrid(cbId, photos);
 }
 
 // ===== MEMO MANAGEMENT =====
@@ -646,35 +714,51 @@ function toggleRigMemo(cbId) {
     const container = document.getElementById(`memo-container-${cbId}`);
     if (container) {
         container.classList.toggle('hidden');
+        if (!container.classList.contains('hidden')) {
+            // Resize textarea when it becomes visible
+            const textEl = document.getElementById(`memo-text-${cbId}`);
+            if (textEl) {
+                textEl.style.height = 'auto'; // Reset height
+                textEl.style.height = textEl.scrollHeight + 'px';
+            }
+        }
     }
 }
 
-async function handleRigPhoto(event, cbId) {
-    const file = event.target.files[0];
-    if (!file) return;
+async function handleRigPhotos(event, cbId) {
+    const files = Array.from(event.target.files);
+    if (!files || files.length === 0) return;
 
-    // Preview
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const preview = document.getElementById(`memo-preview-${cbId}`);
-        if (preview) {
-            preview.src = e.target.result;
-            preview.classList.remove('hidden');
-        }
-    };
-    reader.readAsDataURL(file);
+    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+    const existingPhotos = grid && grid.dataset.photos ? JSON.parse(grid.dataset.photos) : [];
+    
+    const newPhotos = [];
+    
+    for (const file of files) {
+        const photoData = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+        newPhotos.push(photoData);
+    }
+    
+    const allPhotos = [...existingPhotos, ...newPhotos];
+    renderRigPhotoGrid(cbId, allPhotos);
 }
 
 function saveRigMemo(cbId) {
     const note = document.getElementById(`memo-text-${cbId}`).value;
-    const photo = document.getElementById(`memo-preview-${cbId}`).src;
+    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+    const photos = grid && grid.dataset.photos ? JSON.parse(grid.dataset.photos) : [];
     
     const savedMemos = localStorage.getItem('rigInspectionMemos');
     const memos = savedMemos ? JSON.parse(savedMemos) : {};
     
     memos[cbId] = {
         note: note,
-        photo: photo.startsWith('data:') ? photo : '' // Only save if it's base64
+        photos: photos,
+        updatedAt: new Date().toISOString()
     };
     
     localStorage.setItem('rigInspectionMemos', JSON.stringify(memos));
@@ -689,7 +773,7 @@ function saveRigMemo(cbId) {
     }
     
     if (btnMemo) {
-        if (note || (photo && photo.startsWith('data:'))) {
+        if (note || (photos && photos.length > 0)) {
             btnMemo.classList.add('has-content');
         } else {
             btnMemo.classList.remove('has-content');
@@ -698,16 +782,19 @@ function saveRigMemo(cbId) {
 }
 
 function clearRigMemo(cbId) {
-    if (!confirm('Hapus memo dan foto untuk item ini?')) return;
+    if (!confirm('Hapus memo dan semua foto untuk item ini?')) return;
     
     const textEl = document.getElementById(`memo-text-${cbId}`);
-    const previewEl = document.getElementById(`memo-preview-${cbId}`);
+    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
     const btnMemo = document.getElementById(`btn-memo-${cbId}`);
     
-    if (textEl) textEl.value = '';
-    if (previewEl) {
-        previewEl.src = '';
-        previewEl.classList.add('hidden');
+    if (textEl) {
+        textEl.value = '';
+        textEl.style.height = 'auto';
+    }
+    if (grid) {
+        grid.innerHTML = '';
+        grid.dataset.photos = '[]';
     }
     if (btnMemo) btnMemo.classList.remove('has-content');
     
@@ -785,9 +872,21 @@ async function generateInspectionPDF() {
             }
 
             const memo = memos[cbId];
-            const memoHtml = (memo && memo.note) 
-                ? `<div style="margin-top: 4px; color: #555; background: #fdf2f2; padding: 4px; border-radius: 4px; border-left: 2px solid #e53e3e; font-style: italic;">Memo: ${memo.note}</div>` 
-                : '';
+            let memoHtml = '';
+            if (memo) {
+                if (memo.note) {
+                    memoHtml += `<div style="margin-top: 4px; color: #555; background: #fdf2f2; padding: 4px; border-radius: 4px; border-left: 2px solid #e53e3e; font-style: italic;">Memo: ${memo.note}</div>`;
+                }
+                
+                const photos = memo.photos || (memo.photo ? [memo.photo] : []);
+                if (photos && photos.length > 0) {
+                    memoHtml += `<div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">`;
+                    photos.forEach(src => {
+                        memoHtml += `<img src="${src}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">`;
+                    });
+                    memoHtml += `</div>`;
+                }
+            }
 
             html += `
                 <tr>
