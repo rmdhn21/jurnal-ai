@@ -5792,10 +5792,100 @@ body::before {
     animation: pulse 1.5s infinite linear;
 }
 
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(2.5); opacity: 0; }
-    100% { transform: scale(1); opacity: 0; }
+/* ===== Rig Inspection Enhanced UI ===== */
+.inspection-memo-container {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 10px;
+    animation: fadeIn 0.3s ease;
+}
+
+.inspection-memo-textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 10px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    resize: none;
+    overflow: hidden; /* To support auto-expanding without scrollbar showing */
+    min-height: 60px;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.inspection-memo-textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.inspection-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.inspection-photo-item {
+    position: relative;
+    aspect-ratio: 1/1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.inspection-photo-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.inspection-photo-item .delete-photo {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(239, 68, 68, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.inspection-memo-btn {
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-muted);
+}
+
+.inspection-memo-btn.has-content {
+    background: rgba(56, 178, 172, 0.15);
+    border-color: rgba(56, 178, 172, 0.4);
+    color: #4fd1c5;
+    font-weight: 600;
+}
+
+.memo-saved-indicator {
+    font-size: 0.75rem;
+    color: #48bb78;
+    margin-top: 5px;
+    font-weight: 600;
 }
 
 @keyframes slideUp {
@@ -5806,4 +5896,92 @@ body::before {
 
 
 
-
+
+/* ===== HSE Rig Inspection Additional Styles ===== */
+.inspection-memo-container {
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.inspection-memo-textarea {
+    width: 100%;
+    min-height: 80px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: var(--text-color);
+    padding: 10px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    resize: none;
+    overflow: hidden; /* Prevent internal scrollbar */
+    transition: all 0.2s;
+    margin-bottom: 10px;
+}
+
+.inspection-memo-textarea:focus {
+    outline: none;
+    border-color: #38b2ac;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.inspection-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.inspection-photo-item {
+    position: relative;
+    aspect-ratio: 1/1;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.inspection-photo-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.inspection-photo-item .delete-photo {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(239, 68, 68, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    z-index: 2;
+}
+
+.inspection-memo-btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.inspection-memo-btn.has-content {
+    background: rgba(56, 178, 172, 0.2);
+    border-color: #38b2ac;
+    color: #4fd1c5;
+    font-weight: 600;
+}
+

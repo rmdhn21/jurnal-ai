@@ -2059,7 +2059,10 @@
             <div id="rig-chapter-inspection" class="rig-chapter hidden">
                 <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <h3 style="margin: 0;">✅ Form Inspeksi Rig</h3>
+                        <div style="display: flex; flex-direction: column;">
+                            <h3 style="margin: 0;">✅ Form Inspeksi Rig</h3>
+                            <div id="inspection-overall-progress" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Progress: 0 / 0 Poin</div>
+                        </div>
                         <div style="display: flex; gap: 8px;">
                             <button onclick="generateInspectionPDF()" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
                                 <span>📄</span> Download PDF
@@ -2408,6 +2411,11 @@
     <script src="js/learn-pertamina.js"></script>
     <script src="js/nutrition-tracker.js"></script>
 
+    <!-- HSE Rig Photo Full Viewer Modal -->
+    <div id="rig-photo-modal" class="modal hidden" style="z-index: 99999; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+        <span id="close-rig-photo-modal" style="position: absolute; top: 20px; right: 30px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer;">&times;</span>
+        <img class="modal-content" id="rig-photo-full" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px;">
+    </div>
 
     <!-- App Initialization (must be last) -->
     <script src="js/dashboard-widgets.js"></script>
