@@ -1121,6 +1121,7 @@ function formatPJSMContent(text) {
 let pjsmSpeechUtterance = null;
 
 async function generatePJSM(workDescOverride = null) {
+    if (workDescOverride instanceof Event) workDescOverride = null;
     const input = document.getElementById('pjsm-work-input');
     const loading = document.getElementById('pjsm-loading');
     const resultArea = document.getElementById('pjsm-result-area');

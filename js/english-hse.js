@@ -938,6 +938,7 @@ let hseChatHistory = [
 
 let listeningAudio = null;
 async function generateJSADocument(manualDesc = null, manualType = null) {
+    if (manualDesc instanceof Event) manualDesc = null;
     const jobDescInput = document.getElementById('jsa-job-desc');
     const docTypeSelect = document.getElementById('jsa-doc-type');
     const resultArea = document.getElementById('jsa-result-area');
@@ -1462,6 +1463,7 @@ function toggleRcaVoiceInput() {
 }
 
 async function generateRCADocument(manualDesc = null) {
+    if (manualDesc instanceof Event) manualDesc = null;
     const incidentDesc = manualDesc || document.getElementById('rca-incident-desc').value.trim();
     const btn = document.getElementById('generate-rca-btn');
     const resultArea = document.getElementById('rca-result-area');
@@ -1638,6 +1640,7 @@ function copyRcaText() {
 // ==========================================
 
 async function generateTBTDocument(manualTopic = null) {
+    if (manualTopic instanceof Event) manualTopic = null;
     const operationDesc = manualTopic || document.getElementById('tbt-operation-desc').value.trim();
     const btn = document.getElementById('generate-tbt-btn');
     const resultArea = document.getElementById('tbt-result-area');

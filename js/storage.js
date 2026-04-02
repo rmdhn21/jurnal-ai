@@ -588,12 +588,15 @@ function markTutorLearned() {
 }
 
 // ==== HSE VOCAB BANK FUNCTIONS ====
-async function getVocabBank() {
+async function getVocabBank(includeDeleted = false) {
+    let items = [];
     if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
         const data = localStorage.getItem(STORAGE_KEYS.HSE_VOCAB_BANK);
-        return data ? JSON.parse(data) : [];
+        items = data ? JSON.parse(data) : [];
+    } else {
+        items = await idbGetAll('hse_vocab_bank');
     }
-    return await idbGetAll('hse_vocab_bank');
+    return includeDeleted ? items : items.filter(v => !v.deleted);
 }
 
 async function saveVocabToBank(vocabObject) {
@@ -613,12 +616,15 @@ async function deleteVocabFromBank(id) {
 }
 
 // ==== SAVED GENERATIONS FUNCTIONS ====
-async function getSavedGenerations() {
+async function getSavedGenerations(includeDeleted = false) {
+    let items = [];
     if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
         const data = localStorage.getItem(STORAGE_KEYS.SAVED_GENERATIONS);
-        return data ? JSON.parse(data) : [];
+        items = data ? JSON.parse(data) : [];
+    } else {
+        items = await idbGetAll('saved_generations');
     }
-    return await idbGetAll('saved_generations');
+    return includeDeleted ? items : items.filter(it => !it.deleted);
 }
 
 async function saveGeneration(item) {
