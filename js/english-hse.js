@@ -937,15 +937,15 @@ let hseChatHistory = [
 ];
 
 let listeningAudio = null;
-async function generateJSADocument() {
+async function generateJSADocument(manualDesc = null, manualType = null) {
     const jobDescInput = document.getElementById('jsa-job-desc');
     const docTypeSelect = document.getElementById('jsa-doc-type');
     const resultArea = document.getElementById('jsa-result-area');
     const contentArea = document.getElementById('jsa-content');
     const btn = document.getElementById('generate-jsa-btn');
 
-    const jobDesc = jobDescInput ? jobDescInput.value.trim() : '';
-    const docType = docTypeSelect ? docTypeSelect.value : 'JSA';
+    const jobDesc = manualDesc || (jobDescInput ? jobDescInput.value.trim() : '');
+    const docType = manualType || (docTypeSelect ? docTypeSelect.value : 'JSA');
 
     if (!jobDesc) {
         alert("Mohon isi deskripsi pekerjaan terlebih dahulu.");
@@ -1461,8 +1461,8 @@ function toggleRcaVoiceInput() {
     }
 }
 
-async function generateRCADocument() {
-    const incidentDesc = document.getElementById('rca-incident-desc').value.trim();
+async function generateRCADocument(manualDesc = null) {
+    const incidentDesc = manualDesc || document.getElementById('rca-incident-desc').value.trim();
     const btn = document.getElementById('generate-rca-btn');
     const resultArea = document.getElementById('rca-result-area');
     const contentArea = document.getElementById('rca-content');
@@ -1637,8 +1637,8 @@ function copyRcaText() {
 // AI Daily TBT & P5M Briefing Generator LOGIC
 // ==========================================
 
-async function generateTBTDocument() {
-    const operationDesc = document.getElementById('tbt-operation-desc').value.trim();
+async function generateTBTDocument(manualTopic = null) {
+    const operationDesc = manualTopic || document.getElementById('tbt-operation-desc').value.trim();
     const btn = document.getElementById('generate-tbt-btn');
     const resultArea = document.getElementById('tbt-result-area');
     const contentArea = document.getElementById('tbt-content');

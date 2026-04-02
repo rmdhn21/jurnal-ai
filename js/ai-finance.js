@@ -114,11 +114,40 @@ async function executePendingTransaction() {
     if (!pendingTransaction) return;
 
     try {
+        const parsedAmount = parseFloat(pendingTransaction.amount) || 0;
+        if (parsedAmount <= 0) {
+            alert('Nominal transaksi tidak valid!');
+            return;
+        }
+
+        // Resolve walletId: AI often sends wallet NAME instead of ID
+        let resolvedWalletId = pendingTransaction.walletId || 'wallet_default';
+        const walletByIdCheck = await idbGet('wallets', resolvedWalletId);
+        if (!walletByIdCheck) {
+            const allWallets = await getWallets();
+            const matchedWallet = allWallets.find(w => 
+                w.name && w.name.toLowerCase().trim() === resolvedWalletId.toLowerCase().trim()
+            );
+            if (matchedWallet) {
+                console.log(`🔍 Resolved wallet name '${resolvedWalletId}' → ID: ${matchedWallet.id}`);
+                resolvedWalletId = matchedWallet.id;
+            } else {
+                resolvedWalletId = 'wallet_default';
+            }
+        }
+
         const tx = {
-            ...pendingTransaction,
+            id: generateId(),
+            amount: parsedAmount,
+            type: pendingTransaction.type || 'expense',
+            category: pendingTransaction.category || 'Lain-lain',
+            description: pendingTransaction.description || '',
+            walletId: resolvedWalletId,
             date: getTodayString(),
             createdAt: new Date().toISOString()
         };
+
+        console.log('💰 Saving pending transaction:', tx);
 
         await saveTransaction(tx);
         await updateWalletBalance(tx.walletId, tx.amount, tx.type);
@@ -132,9 +161,12 @@ async function executePendingTransaction() {
 
         pendingTransaction = null;
         
-        // Update Finance UI if it's the active screen
-        if (typeof updateGlobalBudgetUI === 'function') updateGlobalBudgetUI();
-        if (typeof renderWalletList === 'function') renderWalletList();
+        // Update Finance UI
+        if (typeof renderTransactionList === 'function') await renderTransactionList();
+        if (typeof updateFinanceSummary === 'function') await updateFinanceSummary();
+        if (typeof renderWalletListSummary === 'function') await renderWalletListSummary();
+        if (typeof updateWalletSelectOptions === 'function') await updateWalletSelectOptions();
+        if (typeof updateGlobalBudgetUI === 'function') await updateGlobalBudgetUI();
 
     } catch (error) {
         console.error('Save Tx Error:', error);

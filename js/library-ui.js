@@ -81,6 +81,11 @@ async function renderLibrary(category = 'all') {
     }).join('');
 }
 
+let currentLibraryFontSize = 14;
+let currentLibraryOrientation = 'portrait';
+let isLibraryEditing = false;
+let currentLibraryItemId = null;
+
 window.openLibraryItem = async function(id) {
     const items = await getSavedGenerations();
     const item = items.find(it => it.id === id);
@@ -93,9 +98,25 @@ window.openLibraryItem = async function(id) {
 
     titleEl.innerText = item.title;
     deleteBtn.setAttribute('data-id', item.id);
+    currentLibraryItemId = item.id;
+
+    // Reset settings
+    isLibraryEditing = false;
+    currentLibraryFontSize = 14;
+    contentEl.style.fontSize = '14px';
+    contentEl.contentEditable = 'false';
+    document.getElementById('lib-font-size-text').innerText = '14px';
+    document.getElementById('lib-edit-toggle').innerText = '📝 Edit';
+    document.getElementById('lib-save-edits').classList.add('hidden');
+    
+    // Auto-detect orientation
+    const isHSE = item.category === 'HSE' || item.title.toLowerCase().includes('jsa') || item.title.toLowerCase().includes('ptw');
+    currentLibraryOrientation = isHSE ? 'landscape' : 'portrait';
+    document.getElementById('lib-orientation-select').value = currentLibraryOrientation;
 
     // Handle different types of content
     if (item.type === 'mindmap') {
+        document.getElementById('lib-settings-bar').classList.add('hidden'); // No edit for SVG
         contentEl.innerHTML = `
             <div id="lib-mindmap-container" style="height: 500px; width: 100%; position: relative;">
                 <svg id="lib-markmap-svg" style="width:100%; height:100%;"></svg>
@@ -103,7 +124,6 @@ window.openLibraryItem = async function(id) {
         `;
         modal.classList.remove('hidden');
         
-        // Use a timeout to ensure SVG is in DOM before markmap renders
         setTimeout(() => {
             if (window.markmap) {
                 const { Transformer, Markmap } = window.markmap;
@@ -113,6 +133,7 @@ window.openLibraryItem = async function(id) {
             }
         }, 100);
     } else if (item.type === 'flashcards') {
+        document.getElementById('lib-settings-bar').classList.add('hidden');
         try {
             const cards = JSON.parse(item.content);
             contentEl.innerHTML = `
@@ -131,51 +152,102 @@ window.openLibraryItem = async function(id) {
             modal.classList.remove('hidden');
         }
     } else {
-        // Default HTML content
+        document.getElementById('lib-settings-bar').classList.remove('hidden');
         contentEl.innerHTML = item.content;
         modal.classList.remove('hidden');
     }
 };
 
-// Expose renderLibrary globally so navigation can trigger it
-window.refreshLibraryUI = async function() {
-    const activeCategory = document.querySelector('#library-category-tabs .tab-btn.active')?.getAttribute('data-category') || 'all';
-    await renderLibrary(activeCategory);
+window.toggleLibraryEdit = function() {
+    const contentEl = document.getElementById('lib-view-content');
+    const toggleBtn = document.getElementById('lib-edit-toggle');
+    const saveBtn = document.getElementById('lib-save-edits');
+    
+    isLibraryEditing = !isLibraryEditing;
+    
+    if (isLibraryEditing) {
+        contentEl.contentEditable = 'true';
+        contentEl.style.border = '2px solid var(--primary)';
+        contentEl.style.outline = 'none';
+        contentEl.focus();
+        toggleBtn.innerText = '✕ Batal';
+        saveBtn.classList.remove('hidden');
+    } else {
+        contentEl.contentEditable = 'false';
+        contentEl.style.border = '1px solid var(--border)';
+        toggleBtn.innerText = '📝 Edit';
+        saveBtn.classList.add('hidden');
+    }
+};
+
+window.saveLibraryEdits = async function() {
+    if (!currentLibraryItemId) return;
+    
+    const contentEl = document.getElementById('lib-view-content');
+    const newContent = contentEl.innerHTML;
+    
+    try {
+        const items = await getSavedGenerations();
+        const item = items.find(it => it.id === currentLibraryItemId);
+        if (item) {
+            item.content = newContent;
+            await saveGeneration(item); // Dexie put will overwrite if ID exists
+            alert('Perubahan berhasil disimpan!');
+            toggleLibraryEdit();
+        }
+    } catch (e) {
+        alert('Gagal menyimpan perubahan: ' + e.message);
+    }
+};
+
+window.adjustLibFontSize = function(delta) {
+    currentLibraryFontSize += delta;
+    if (currentLibraryFontSize < 8) currentLibraryFontSize = 8;
+    if (currentLibraryFontSize > 30) currentLibraryFontSize = 30;
+    
+    const contentEl = document.getElementById('lib-view-content');
+    contentEl.style.fontSize = currentLibraryFontSize + 'px';
+    document.getElementById('lib-font-size-text').innerText = currentLibraryFontSize + 'px';
+};
+
+window.updateLibOrientation = function() {
+    currentLibraryOrientation = document.getElementById('lib-orientation-select').value;
 };
 
 window.exportLibraryPDF = function() {
     const title = document.getElementById('lib-view-title').innerText;
     let content = document.getElementById('lib-view-content').innerHTML;
     
-    // Detection logic for HSE items
-    const isHSE = title.toLowerCase().includes('jsa') || 
-                  title.toLowerCase().includes('ptw') || 
-                  title.toLowerCase().includes('rca') || 
-                  title.toLowerCase().includes('tbt') ||
-                  title.toLowerCase().includes('incident');
-
-    // Check if it's a mind-map (SVG)
     const isMindmap = document.getElementById('lib-markmap-svg') !== null;
     
     // Create a temporary cleaning div
     const cleanDiv = document.createElement('div');
     cleanDiv.innerHTML = content;
     
-    // 1. Remove app-specific UI elements that might have been saved
+    // Clean up
     cleanDiv.querySelectorAll('.no-print, .action-bar, button, .badge-ai, .loading-spinner').forEach(el => el.remove());
     
-    // 2. Clean up inline styles that cause 'App' look (dark backgrounds, etc.)
     cleanDiv.querySelectorAll('*').forEach(el => {
-        if (el.style.background.includes('var(') || el.style.background.includes('#')) {
-            el.style.background = 'transparent';
+        // FORCE BLACK COLOR AND WHITE BACKGROUND
+        el.style.setProperty('color', '#000', 'important');
+        el.style.setProperty('background-color', 'transparent', 'important');
+        el.style.setProperty('background', 'transparent', 'important');
+        
+        // Remove transitions/animations
+        el.style.transition = 'none';
+        el.style.animation = 'none';
+
+        // Fix table cutoff
+        if (el.tagName === 'TABLE') {
+            el.style.width = '100%';
+            el.style.tableLayout = 'auto'; // allow dynamic sizing
+            el.style.borderCollapse = 'collapse';
         }
-        if (el.style.color.includes('var(')) {
-            el.style.color = '#111'; // High contrast for print
-        }
-        if (el.classList.contains('card')) {
-            el.style.border = 'none';
-            el.style.boxShadow = 'none';
-            el.style.padding = '0';
+        if (el.tagName === 'TH' || el.tagName === 'TD') {
+            el.style.border = '1px solid #000';
+            el.style.padding = '6px';
+            el.style.wordBreak = 'break-word';
+            el.style.fontSize = (currentLibraryFontSize - 2) + 'px'; // Tables slightly smaller
         }
     });
 
@@ -187,146 +259,166 @@ window.exportLibraryPDF = function() {
         <head>
             <title>${title}</title>
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap');
-                
                 @page {
-                    size: ${isHSE ? 'A4 landscape' : 'A4 portrait'};
-                    margin: 1.5cm;
+                    size: ${currentLibraryOrientation};
+                    margin: 10mm;
                 }
                 
                 body { 
-                    font-family: ${isHSE ? 'Arial, sans-serif' : "'Inter', sans-serif"}; 
-                    line-height: 1.6; 
-                    color: #000; 
+                    font-family: Arial, Helvetica, sans-serif; 
+                    line-height: 1.5; 
+                    color: #000 !important; 
                     background: #fff;
                     margin: 0;
-                    padding: 0;
-                    font-size: ${isHSE ? '11px' : '11pt'};
+                    padding: 20px;
+                    font-size: ${currentLibraryFontSize}px;
                 }
                 
-                .document-wrapper {
-                    max-width: ${isHSE ? '100%' : '800px'};
-                    margin: 0 auto;
-                }
+                .document-wrapper { width: 100%; margin: 0 auto; }
                 
                 header {
-                    border-bottom: ${isHSE ? '4px solid #3182ce' : '2px solid #333'};
-                    margin-bottom: 25px;
-                    padding-bottom: 12px;
-                    text-align: ${isHSE ? 'center' : 'left'};
-                }
-                
-                header h1 { 
-                    font-family: ${isHSE ? 'Arial, sans-serif' : "'Crimson Pro', serif"};
-                    font-size: ${isHSE ? '22px' : '2.4rem'}; 
-                    margin: 0;
-                    color: ${isHSE ? '#3182ce' : '#000'};
-                    font-weight: 700;
-                    text-transform: ${isHSE ? 'uppercase' : 'none'};
-                }
-                
-                .doc-type {
-                    font-size: 0.8rem;
-                    text-transform: uppercase;
-                    letter-spacing: 2px;
-                    color: ${isHSE ? '#3182ce' : '#666'};
-                    font-weight: bold;
-                    margin-bottom: 5px;
-                }
-
-                .meta-info {
-                    font-size: 10px;
-                    color: #555;
+                    text-align: center;
                     margin-bottom: 20px;
-                    padding: 8px;
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 4px;
+                    border-bottom: 3px solid #3182ce;
+                    padding-bottom: 15px;
+                }
+                
+                header h2 { margin: 0; color: #3182ce; font-size: 24px; text-transform: uppercase; }
+                header h1 { font-size: 18px; margin: 10px 0 0 0; color: #000; font-weight: bold; }
+                
+                .meta-info {
+                    font-size: 11px;
+                    color: #444;
+                    margin-bottom: 20px;
+                    border-bottom: 1px solid #ddd;
+                    padding-bottom: 10px;
+                    text-align: right;
                 }
 
-                h2, h3, h4 { color: #000; margin-top: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+                table { width: 100%; border-collapse: collapse; margin: 15px 0; table-layout: auto; page-break-inside: auto; }
+                tr { page-break-inside: avoid; }
+                th, td { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; word-wrap: break-word; }
+                th { background: #f2f2f2 !important; font-weight: bold; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 
-                table { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    margin: 15px 0; 
-                    table-layout: fixed;
-                }
-                
-                th, td { 
-                    border: 1px solid #000; 
-                    padding: 8px 10px; 
-                    text-align: left; 
-                    vertical-align: top;
-                    word-wrap: break-word;
-                }
-                
-                th { background: #f0f0f0 !important; font-weight: bold; text-align: center; }
-                
-                pre { 
-                    background: #f9f9f9; 
-                    padding: 15px; 
-                    border: 1px solid #ddd;
-                    border-radius: 4px; 
-                    white-space: pre-wrap;
-                    font-family: monospace;
-                    font-size: 10px;
-                }
-
                 footer {
-                    margin-top: 40px;
-                    font-size: 0.7rem;
-                    color: #666;
+                    margin-top: 30px;
+                    font-size: 10px;
+                    color: #777;
                     text-align: center;
                     border-top: 1px solid #eee;
-                    padding-top: 15px;
+                    padding-top: 10px;
                 }
 
                 @media print {
-                    header { margin-top: 0; }
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
+                    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    body { padding: 0; }
                 }
             </style>
         </head>
         <body>
             <div class="document-wrapper">
                 <header>
-                    <div class="doc-type">${isHSE ? 'HSE DEPARTMENT - OFFICIAL DOCUMENT' : 'Jurnal AI • Laporan Belajar'}</div>
+                    <h2>HSE DEPARTMENT</h2>
                     <h1>${title}</h1>
-                    ${isHSE ? '<p style="margin:5px 0 0 0; color:#4a5568; font-size:12px;">AI Generated Professional HSE Report</p>' : ''}
                 </header>
                 
                 <div class="meta-info">
-                    <strong>Generated:</strong> ${new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })} &nbsp; | &nbsp; 
-                    <strong>System:</strong> Jurnal AI - Intelligent Hub
+                    <strong>Tgl Terbit:</strong> ${new Date().toLocaleString('id-ID', { dateStyle: 'full' })} WIB
                 </div>
 
                 <div id="content">${finalContent}</div>
                 
                 <footer>
-                    Dokumen ini dihasilkan secara otomatis oleh sistem AI Jurnal. Keamanan adalah prioritas utama.<br>
-                    © 2026 Jurnal AI - Safety & Learning Management System
+                    Dicetak melalui Jurnal AI - Intelligent Professional System Hub<br>
+                    © 2026 Jurnal AI. Keamanan adalah prioritas utama.
                 </footer>
             </div>
-            
             <script>
                 if (${isMindmap}) {
                     const svg = document.querySelector('svg');
-                    if (svg) {
-                        svg.setAttribute('width', '100%');
-                        svg.style.maxHeight = 'none'; // Allow it to expand
-                    }
+                    if (svg) { svg.setAttribute('width', '100%'); }
                 }
-                window.onload = () => { 
-                    setTimeout(() => { 
-                        window.print(); 
-                        window.close(); 
-                    }, 800); 
-                };
+                window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 800); };
             </script>
         </body>
         </html>
     `);
     printWindow.document.close();
+};
+
+// Refresh Library
+window.refreshLibraryUI = async function() {
+    const activeCategory = document.querySelector('#library-category-tabs .tab-btn.active')?.getAttribute('data-category') || 'all';
+    await renderLibrary(activeCategory);
+};
+
+window.searchLibrary = async function(query) {
+    if (!query) return;
+    
+    // 1. Navigate to library screen
+    if (typeof showScreen === 'function') {
+        showScreen('library-screen');
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.screen === 'library-screen'));
+    }
+    
+    // 2. Set category to 'all' to ensure we search everything
+    const tabs = document.querySelectorAll('#library-category-tabs .tab-btn');
+    tabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-category') === 'all'));
+    
+    // 3. Render and filter
+    const grid = document.getElementById('library-items-grid');
+    if (!grid) return;
+
+    const items = await getSavedGenerations();
+    const filteredItems = items.filter(item => 
+        item.title.toLowerCase().includes(query.toLowerCase()) || 
+        item.content.toLowerCase().includes(query.toLowerCase()) ||
+        item.category.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (filteredItems.length === 0) {
+        grid.innerHTML = `
+            <div class="text-center p-md text-muted" style="background:var(--surface); border-radius:12px; border:1px dashed var(--border);">
+                <div style="font-size:2rem; margin-bottom:10px;">🔍</div>
+                <p>Tidak ditemukan item untuk pencarian: <strong>"${query}"</strong></p>
+                <button class="btn btn-secondary btn-sm mt-sm" onclick="renderLibrary('all')">Lihat Semua</button>
+            </div>
+        `;
+        return;
+    }
+
+    // Sort by timestamp (newest first)
+    filteredItems.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    grid.innerHTML = filteredItems.map(item => {
+        const date = new Date(item.timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        let icon = '📄';
+        if (item.category === 'EPLS') icon = '🎓';
+        if (item.category === 'HSE') icon = '🏗️';
+        if (item.category === 'Mind-Map') icon = '🧠';
+        if (item.category === 'Flashcards') icon = '🗂️';
+        if (item.category === 'Brain Boost') icon = '💡';
+
+        return `
+            <div class="card library-card fade-in" onclick="openLibraryItem('${item.id}')" style="cursor:pointer; transition: transform 0.2s; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 1.5rem; background: var(--surface-hover); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">${icon}</div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 1rem;"><mark style="background:rgba(255,255,0,0.3); color:inherit; padding:0 2px;">${item.title}</mark></h4>
+                        <div style="display: flex; gap: 10px; margin-top: 4px;">
+                            <span class="badge-ai" style="font-size: 0.7rem; padding: 2px 6px;">${item.category}</span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">${date}</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="color: var(--text-muted);">❯</div>
+            </div>
+        `;
+    }).join('');
+    
+    // If there's only one match and it's a very confident hit, open it!
+    if (filteredItems.length === 1) {
+        setTimeout(() => openLibraryItem(filteredItems[0].id), 500);
+    }
 };

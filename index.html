@@ -336,7 +336,28 @@
                         <h2 id="lib-view-title" style="margin:0; font-size:1.1rem; color: var(--primary);">Judul Item</h2>
                         <button class="btn btn-secondary" style="padding: 10px 20px; font-weight: bold; border-radius: 30px;" onclick="document.getElementById('library-view-modal').classList.add('hidden')">✕ Tutup</button>
                     </div>
-                    <div id="lib-view-content" class="card" style="background:var(--surface); min-height:400px; padding:25px; border:1px solid var(--border);">
+                    <div id="lib-settings-bar" class="mt-sm mb-sm" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-hover); padding:10px; border-radius:12px; border:1px solid var(--border); font-size:0.85rem; flex-wrap: wrap; gap: 10px;">
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button id="lib-edit-toggle" class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="toggleLibraryEdit()">📝 Edit</button>
+                            <button id="lib-save-edits" class="btn btn-primary hidden" style="padding:6px 12px; font-size:0.8rem;" onclick="saveLibraryEdits()">💾 Simpan</button>
+                        </div>
+                        <div style="display:flex; gap:12px; align-items:center; border-left:1px solid var(--border); padding-left:12px;">
+                            <span class="text-muted">Font:</span>
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem; height: 30px; display: flex; align-items: center; justify-content: center; width: 30px;" onclick="adjustLibFontSize(-1)">-</button>
+                                <span id="lib-font-size-text" style="font-weight:bold; min-width:35px; text-align:center;">14px</span>
+                                <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem; height: 30px; display: flex; align-items: center; justify-content: center; width: 30px;" onclick="adjustLibFontSize(1)">+</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; border-left:1px solid var(--border); padding-left:12px;">
+                            <span class="text-muted">Arah:</span>
+                            <select id="lib-orientation-select" class="btn btn-secondary" style="padding:5px; font-size:0.8rem; background:transparent;" onchange="updateLibOrientation()">
+                                <option value="portrait" style="background:var(--background);">📄 Tegak</option>
+                                <option value="landscape" style="background:var(--background);">▱ Miring</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="lib-view-content" class="card" style="background:var(--surface); min-height:400px; padding:25px; border:1px solid var(--border); font-size: 14px; overflow-x: auto;">
                         <!-- Content injected by JS -->
                     </div>
                     <div class="mt-md" style="display:flex; gap:10px;">
@@ -2147,7 +2168,8 @@
                             <button id="copy-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Naskah</button>
                             <button id="speak-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">🔊 Baca (TTS)</button>
                             <button id="stop-speak-pjsm-btn" class="btn btn-secondary hidden" style="flex: 1; font-size: 0.85rem; padding: 8px; background: #e53e3e; color: white;">⏹️ Stop</button>
-                            <button id="export-pjsm-pdf-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📄 Export PDF</button>
+                            <button id="export-pjsm-pdf-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📄 PDF</button>
+                            <button id="save-pjsm-btn" class="btn btn-ai" style="flex: 1; font-size: 0.85rem; padding: 8px; background: var(--secondary);">💾 Simpan</button>
                         </div>
                         <div id="pjsm-content" class="pjsm-generated-content"
                             style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.7; white-space: normal; overflow-x: auto;">

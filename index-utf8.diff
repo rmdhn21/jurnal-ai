@@ -1,0 +1,895 @@
+﻿diff --git a/index.html b/index.html
+index 4702ac2..4ec7535 100644
+--- a/index.html
++++ b/index.html
+@@ -9,10 +9,12 @@
+ 
+     <!-- PWA Meta Tags -->
+     <meta name="theme-color" content="#f59e0b">
++    <meta name="mobile-web-app-capable" content="yes">
+     <meta name="apple-mobile-web-app-capable" content="yes">
+     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+     <meta name="apple-mobile-web-app-title" content="Jurnal AI">
+ 
++
+     <!-- PWA Manifest -->
+     <link rel="manifest" href="manifest.json">
+ 
+@@ -33,6 +35,14 @@
+     <!-- Chart.js CDN -->
+     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ 
++    <!-- Dexie.js for IndexedDB -->
++    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
++
++    <!-- Markmap & D3 for Interactive Mind-Maps -->
++    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
++    <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
++    <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
++
+     <!-- html2pdf.js CDN -->
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+ 
+@@ -52,10 +62,53 @@
+                 padding-top: calc(var(--spacing-md) + env(safe-area-inset-top));
+             }
+         }
++        /* Migration Overlay */
++        .migration-overlay {
++            position: fixed;
++            top: 0;
++            left: 0;
++            right: 0;
++            bottom: 0;
++            background: rgba(10, 10, 15, 0.95);
++            display: flex;
++            flex-direction: column;
++            align-items: center;
++            justify-content: center;
++            z-index: 9999;
++            backdrop-filter: blur(15px);
++            text-align: center;
++            padding: 20px;
++        }
++
++        .migration-progress-bar {
++            width: 200px;
++            height: 6px;
++            background: rgba(255, 255, 255, 0.1);
++            border-radius: 3px;
++            margin-top: 20px;
++            overflow: hidden;
++        }
++
++        #migration-fill {
++            height: 100%;
++            background: var(--accent-primary);
++            width: 0%;
++            transition: width 0.3s ease;
++        }
+     </style>
+ </head>
+ 
+ <body>
++    <!-- Migration Overlay (Hidden by default) -->
++    <div id="migration-overlay" class="migration-overlay hidden">
++        <div class="login-logo">≡ƒÜÇ</div>
++        <h2>Migrasi Data</h2>
++        <p class="text-muted" id="migration-status">Memindahkan data ke database baru yang lebih cepat...</p>
++        <div class="migration-progress-bar">
++            <div id="migration-fill"></div>
++        </div>
++    </div>
++
+     <!-- Login Screen -->
+     <div id="login-screen" class="login-screen">
+         <div class="login-container">
+@@ -120,10 +173,12 @@
+             </div>
+ 
+             <div class="header-actions">
++                <button id="reload-app-btn" class="icon-btn" title="Refresh App" style="margin-right: 5px;">≡ƒöä</button>
+                 <button id="theme-toggle-btn" class="icon-btn" title="Ganti Tema">≡ƒîÖ</button>
+                 <button id="logout-btn" class="icon-btn" title="Logout">≡ƒÜ¬</button>
+                 <button id="settings-btn" class="icon-btn" title="Settings">ΓÜÖ∩╕Å</button>
+             </div>
++
+         </header>
+ 
+         <!-- Main Navigation (Bottom Bar - 4 Hubs) -->
+@@ -132,6 +187,10 @@
+                 <span class="nav-icon">≡ƒôè</span>
+                 <span class="nav-label">Dashboard</span>
+             </button>
++            <button class="nav-btn" data-screen="jarvis">
++                <span class="nav-icon">Γ£¿</span>
++                <span class="nav-label">Jarvis AI</span>
++            </button>
+             <button class="nav-btn" data-screen="activity-hub">
+                 <span class="nav-icon">ΓÜí</span>
+                 <span class="nav-label">Activity</span>
+@@ -144,62 +203,248 @@
+                 <span class="nav-icon">≡ƒÆ░</span>
+                 <span class="nav-label">Keuangan</span>
+             </button>
++            <button class="nav-btn" data-screen="workout-tracker">
++                <span class="nav-icon">≡ƒÅï∩╕Å</span>
++                <span class="nav-label">Workout</span>
++            </button>
+         </nav>
+ 
+         <!-- Main Content (Added bottom padding for the new fixed nav) -->
+-        <main class="main" style="padding-bottom: 80px;">
++        <main class="main" style="padding-bottom: 85px;">
++            <!-- Dashboard Screen -->
++            <section id="dashboard-screen" class="screen active">
++                <div class="dashboard-header">
++                    <h1 class="welcome-text">Halo User, <span>Siap produktif?</span></h1>
++                </div>
++            </section>
++
++            <!-- Jarvis AI Screen -->
++            <section id="jarvis-screen" class="screen jarvis-hub">
++                <div class="card" style="position: relative; overflow: hidden; margin-bottom: 15px;">
++                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">Γ£¿</div>
++                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; position: relative; z-index: 1;">
++                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
++                            <span>Γ£¿</span> Jarvis Center
++                        </h2>
++                        <span class="ribbon" style="font-size: 0.55rem; padding: 4px 10px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; border-radius: 20px; font-weight: 800; text-transform: uppercase;">Neural Active</span>
++                    </div>
++                    <p class="text-muted" style="position: relative; z-index: 1; font-size: 0.85rem;">Asisten AI Global dengan akses ke seluruh jurnal, keuangan, dan habit Anda.</p>
++                </div>
++
++                <div class="jarvis-chat-container card" style="display: flex; flex-direction: column; height: calc(100vh - 350px); min-height: 400px; padding: 0; overflow: hidden; background: rgba(255,255,255,0.02);">
++                    <div id="ai-assistant-chat-history" class="ai-chat-history" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;">
++                        <div class="bot-message" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 12px 16px; border-radius: 15px 15px 15px 5px; font-size: 0.9rem; align-self: flex-start; max-width: 85%;">Halo! Saya asisten AI Anda. Saya memiliki akses ke seluruh data Anda untuk memberikan saran yang lebih personal. Apa yang ingin Anda tanyakan hari ini?</div>
++                    </div>
++                    <div id="ai-quick-actions" class="jarvis-quick-actions" style="display: flex; gap: 10px; padding: 15px; overflow-x: auto; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.1);">
++                        <button class="qa-btn" onclick="startJarvisVoice()" style="white-space: nowrap; padding: 8px 16px; border-radius: 20px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; font-size: 0.75rem; font-weight: 700; cursor: pointer;">≡ƒÄÖ∩╕Å Voice Command</button>
++                        <button class="qa-btn" data-query="Analisis mood vs pengeluaran saya minggu ini" style="white-space: nowrap; padding: 8px 16px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem; font-weight: 700; cursor: pointer;">≡ƒôè Mood vs Jajan</button>
++                        <button class="qa-btn" data-query="Kenapa produktivitas saya rendah hari ini?" style="white-space: nowrap; padding: 8px 16px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem; font-weight: 700; cursor: pointer;">≡ƒÆí Produktivitas</button>
++                    </div>
++                </div>
++
++                <div class="jarvis-input-area" style="margin-top: 15px;">
++                    <div class="ai-input-wrapper" style="position: relative; display: flex; align-items: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px;">
++                        <textarea id="ai-assistant-input" placeholder="Perintah Jarvis (Gunakan @ untuk panggil modul)..." rows="1" style="flex: 1; background: transparent; border: none; color: white; outline: none; padding: 8px 0; font-size: 0.9rem; resize: none;"></textarea>
++                        <button id="send-ai-assistant-btn" class="send-btn" style="background: var(--primary); color: white; border: none; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;">
++                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
++                        </button>
++                    </div>
++                </div>
++            </section>
++
+             <!-- Activity Hub Screen -->
+             <section id="activity-hub-screen" class="screen">
+-                <div class="card">
+-                    <h2>ΓÜí Activity Hub</h2>
+-                    <p class="text-muted">Kelola rutinitas dan tugas harian Anda.</p>
++                <div class="card" style="position: relative; overflow: hidden;">
++                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">ΓÜí</div>
++                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
++                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
++                            <span>ΓÜí</span> Activity Hub
++                        </h2>
++                        <span style="font-size: 0.65rem; font-weight: 800; color: #38a169; background: rgba(56, 161, 105, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(56, 161, 105, 0.3); text-transform: uppercase;">Active Hub</span>
++                    </div>
++                    <p class="text-muted" style="position: relative; z-index: 1;">Kelola rutinitas dan tugas harian Anda.</p>
+                 </div>
+                 <div class="hub-grid mt-md">
+                     <button class="hub-btn" onclick="navigateToSubscreen('todo-today')">
+-                        <div class="hub-icon" style="background: #e6fffa; color: #319795;">Γ£à</div>
++                        <div class="hub-icon" style="background: rgba(56, 178, 172, 0.1); color: #4fd1c5; border: 1px solid rgba(56, 178, 172, 0.2);">Γ£à</div>
+                         <span class="hub-label">To Do List</span>
+                     </button>
+                     <button class="hub-btn" onclick="navigateToSubscreen('islam')">
+-                        <div class="hub-icon" style="background: #f0fff4; color: #38a169;">Γÿ¬∩╕Å</div>
++                        <div class="hub-icon" style="background: rgba(72, 187, 120, 0.1); color: #68d391; border: 1px solid rgba(72, 187, 120, 0.2);">Γÿ¬∩╕Å</div>
+                         <span class="hub-label">Ibadah</span>
+                     </button>
+                     <button class="hub-btn" onclick="navigateToSubscreen('habits')">
+-                        <div class="hub-icon" style="background: #ebf8ff; color: #3182ce;">≡ƒî▒</div>
++                        <div class="hub-icon" style="background: rgba(66, 153, 225, 0.1); color: #63b3ed; border: 1px solid rgba(66, 153, 225, 0.2);">≡ƒî▒</div>
+                         <span class="hub-label">Habits</span>
+                     </button>
+                     <button class="hub-btn" onclick="navigateToSubscreen('planner')">
+-                        <div class="hub-icon" style="background: #faf5ff; color: #805ad5;">≡ƒôï</div>
++                        <div class="hub-icon" style="background: rgba(159, 122, 234, 0.1); color: #b794f4; border: 1px solid rgba(159, 122, 234, 0.2);">≡ƒôï</div>
+                         <span class="hub-label">Planner</span>
+                     </button>
+                     <button class="hub-btn" onclick="navigateToSubscreen('kanban')">
+-                        <div class="hub-icon" style="background: #fff5f5; color: #e53e3e;">≡ƒôè</div>
++                        <div class="hub-icon" style="background: rgba(245, 101, 101, 0.1); color: #fc8181; border: 1px solid rgba(245, 101, 101, 0.2);">≡ƒôè</div>
+                         <span class="hub-label">Kanban</span>
+                     </button>
+                     <button class="hub-btn" onclick="navigateToSubscreen('journal')">
+-                        <div class="hub-icon" style="background: #fffaf0; color: #dd6b20;">≡ƒô¥</div>
++                        <div class="hub-icon" style="background: rgba(237, 137, 54, 0.1); color: #f6ad55; border: 1px solid rgba(237, 137, 54, 0.2);">≡ƒô¥</div>
+                         <span class="hub-label">Jurnal</span>
+                     </button>
+                     <button class="hub-btn" onclick="navigateToSubscreen('goals')">
+-                        <div class="hub-icon" style="background: #fff5f7; color: #d53f8c;">≡ƒÄ»</div>
++                        <div class="hub-icon" style="background: rgba(237, 100, 166, 0.1); color: #f687b3; border: 1px solid rgba(237, 100, 166, 0.2);">≡ƒÄ»</div>
+                         <span class="hub-label">Goals</span>
+                     </button>
++                    <button class="hub-btn" onclick="navigateToSubscreen('workout-tracker')">
++                        <div class="hub-icon" style="background: rgba(66, 153, 225, 0.1); color: #63b3ed; border: 1px solid rgba(66, 153, 225, 0.2);">≡ƒÅï∩╕Å</div>
++                        <span class="hub-label">Workout</span>
++                    </button>
++                </div>
++            </section>
++
++            <!-- Library Screen -->
++            <section id="library-screen" class="screen">
++                <div class="card" style="background: linear-gradient(135deg, #742a2a, #9b2c2c); color: white; border: none;">
++                    <div style="display:flex; justify-content:space-between; align-items:center;">
++                        <div>
++                            <h2 style="color:white;">≡ƒôû Perpustakaan AI</h2>
++                            <p style="opacity:0.9;">Hasil generate (Lesson, JSA, Mind-Map, dll) yang Anda simpan.</p>
++                        </div>
++                        <div style="font-size: 2.5rem;">≡ƒôÜ</div>
++                    </div>
++                </div>
++                
++                <div class="library-filters mt-md">
++                    <div class="tabs-scroll" id="library-category-tabs">
++                        <button class="tab-btn active" data-category="all">Semua</button>
++                        <button class="tab-btn" data-category="EPLS">EPLS</button>
++                        <button class="tab-btn" data-category="HSE">HSE</button>
++                        <button class="tab-btn" data-category="Mind-Map">Mind-Map</button>
++                        <button class="tab-btn" data-category="Flashcards">Flashcards</button>
++                        <button class="tab-btn" data-category="Brain Boost">Brain Boost</button>
++                    </div>
++                </div>
++
++                <div id="library-items-grid" class="mt-md" style="display: grid; grid-template-columns: 1fr; gap: 15px;">
++                    <!-- Items injected by library-ui.js -->
++                    <div class="text-center p-md text-muted">Belum ada item yang disimpan.</div>
++                </div>
++            </section>
++
++            <!-- Library View Modal (Detail View) -->
++            <div id="library-view-modal" class="mastery-modal hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--background); z-index:40000; overflow-y:auto; padding:20px; padding-top: calc(env(safe-area-inset-top) + 30px);">
++                <div style="max-width:800px; margin:0 auto; padding-bottom: 100px;">
++                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; background: var(--surface); padding: 15px; border-radius: 12px; border: 1px solid var(--border); position: sticky; top: 0; z-index: 10;">
++                        <h2 id="lib-view-title" style="margin:0; font-size:1.1rem; color: var(--primary);">Judul Item</h2>
++                        <button class="btn btn-secondary" style="padding: 10px 20px; font-weight: bold; border-radius: 30px;" onclick="document.getElementById('library-view-modal').classList.add('hidden')">Γ£ò Tutup</button>
++                    </div>
++                    <div id="lib-view-content" class="card" style="background:var(--surface); min-height:400px; padding:25px; border:1px solid var(--border);">
++                        <!-- Content injected by JS -->
++                    </div>
++                    <div class="mt-md" style="display:flex; gap:10px;">
++                        <button id="lib-delete-btn" class="btn btn-danger" style="flex:1;">≡ƒùæ∩╕Å Hapus</button>
++                        <button class="btn btn-primary" onclick="exportLibraryPDF()" style="flex:1;">≡ƒû¿∩╕Å Cetak / PDF</button>
++                    </div>
++                </div>
++            </div>
++
++            <!-- Workout Tracker Screen -->
++            <section id="workout-tracker-screen" class="screen">
++                <div class="card" style="position: relative; overflow: hidden;">
++                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">≡ƒÅï∩╕Å</div>
++                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
++                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
++                            <span>≡ƒÅï∩╕Å</span> Hybrid Athlete
++                        </h2>
++                        <span style="font-size: 0.65rem; font-weight: 800; color: #3b82f6; background: rgba(59, 130, 246, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.3); text-transform: uppercase;">Elite Performance</span>
++                    </div>
++                    <p class="text-muted" style="position: relative; z-index: 1; font-size: 0.85rem;">Gym Power + Silent Home Routine (Bola & Voli)</p>
++                </div>
++
++                <!-- Tab Navigation in Screen -->
++                <div class="tabs-scroll mb-md" id="workout-tabs">
++                    <button class="tab-btn active" data-tab="jadwal">≡ƒôà Jadwal</button>
++                    <button class="tab-btn" data-tab="nutrisi">≡ƒì▓ Nutrisi</button>
++                    <button class="tab-btn" data-tab="rules">≡ƒô£ Rules</button>
++                    <button class="tab-btn" data-tab="gym1">≡ƒÆ¬ Gym 1</button>
++                    <button class="tab-btn" data-tab="gym2">≡ƒÅï∩╕Å Gym 2</button>
++                    <button class="tab-btn" data-tab="home1">≡ƒÅá Home 1</button>
++                    <button class="tab-btn" data-tab="home2">≡ƒ⌐╣ Home 2</button>
++                </div>
++
++
++                <div id="workout-content-area" class="animate-in fade-in slide-in-from-bottom-2 duration-300">
++                    <!-- Dynamic content injected by workout-tracker.js -->
+                 </div>
+             </section>
+ 
+             <!-- Learning Hub Screen -->
+             <section id="learning-hub-screen" class="screen">
+-                <div class="card">
+-                    <h2>≡ƒôÜ Learning Hub</h2>
+-                    <p class="text-muted">Tingkatkan karir dan karisma diri Anda dengan belajar.</p>
++                <div class="card" style="position: relative; overflow: hidden;">
++                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">≡ƒôÜ</div>
++                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
++                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
++                            <span>≡ƒôÜ</span> Learning Hub
++                        </h2>
++                        <span style="font-size: 0.65rem; font-weight: 800; color: #818cf8; background: rgba(129, 140, 248, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(129, 140, 248, 0.3); text-transform: uppercase;">Learning Center</span>
++                    </div>
++                    <p class="text-muted" style="position: relative; z-index: 1;">Tingkatkan karir dan karisma diri Anda dengan belajar.</p>
++                </div>
++
++                <!-- Global Mastery Bar -->
++                <div class="card mt-md" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(0, 0, 0, 0.2)); border: 1px solid rgba(59, 130, 246, 0.2);">
++                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
++                        <span style="font-size: 0.75rem; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 1px;">Global Mastery Level</span>
++                        <span id="global-mastery-percent" style="font-size: 0.85rem; font-weight: 800; color: white;">0%</span>
++                    </div>
++                    <div class="progress-bar-bg" style="height: 6px; background: rgba(255, 255, 255, 0.05);">
++                        <div id="global-mastery-bar" class="progress-bar-fill" style="width: 0%; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);"></div>
++                    </div>
++                    <div id="mastery-rank-text" style="font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; font-style: italic;">Memulai perjalanan keahlian...</div>
++                </div>
++
++                <!-- Mastery 2.0: Hexagon Dashboard (Skill Tree) -->
++                <div class="card mt-md" style="padding: 0; overflow: visible; background: transparent; border: none;">
++                    <div class="card-header" style="padding: 20px 0 0 0;">
++                        <h3 style="display: flex; align-items: center; gap: 8px;">Γ£¿ Elite Skill Tree</h3>
++                    </div>
++                    <div id="mastery-hexagon-dashboard" style="position: relative; min-height: 600px; margin-top: 20px;">
++                        <!-- SVG Connection Layer -->
++                        <svg id="mastery-tree-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;"></svg>
++                        <!-- Hexagons will be rendered here by JS -->
++                    </div>
++                </div>
++
++                <!-- Elite Mastery Tree Footer: AI Recommendation -->
++                <div id="mastery-ai-advice" class="card mt-md" style="background: rgba(59, 130, 246, 0.03); border: 1px dashed rgba(59, 130, 246, 0.2); display: none; animation: fadeIn 0.8s ease;">
++                    <div style="display: flex; align-items: flex-start; gap: 12px;">
++                        <span style="font-size: 1.5rem;">≡ƒºÖΓÇìΓÖé∩╕Å</span>
++                        <div>
++                            <h4 style="margin: 0; font-size: 0.85rem; color: #60a5fa;">AI Mastery Guide</h4>
++                            <p id="mastery-suggestion-text" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;"></p>
++                        </div>
++                    </div>
++                </div>
++
++                <!-- Detailed Module List (Collapsible / Secondary) -->
++                <div class="card mt-md minimized" id="mastery-list-container">
++                    <div class="card-header" onclick="this.parentElement.classList.toggle('minimized')" style="cursor:pointer; display: flex; justify-content: space-between; align-items: center;">
++                        <h3 style="margin: 0;">≡ƒôï Detailed Modules</h3>
++                        <span style="font-size: 0.8rem; opacity: 0.6;">Γû╝</span>
++                    </div>
++                    <div class="mastery-list-content" id="mastery-detailed-list" style="padding: 15px;">
++                        <!-- Content injected by JS -->
++                    </div>
+                 </div>
++
+                 <!-- Moving the AI Tutors card from the dashboard to here -->
+-                <div class="card mt-md" id="ai-tutor-card" style="border-left: 4px solid var(--secondary);">
+-                    <div class="brain-header-row">
+-                        <h3>≡ƒÄô Guru Privat AI</h3>
+-                        <span class="badge-ai" id="tutor-status-badge">Tersedia</span>
++                <div class="card mt-md" id="ai-tutor-card" style="position: relative; overflow: hidden; border-left: 4px solid var(--secondary);">
++                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">≡ƒÄô</div>
++                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
++                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
++                            <span>≡ƒÄô</span> Guru Privat AI
++                        </h3>
++                        <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); text-transform: uppercase;">AI Tutor</span>
+                     </div>
+-                    <p class="text-muted" style="font-size: 0.9rem; margin-top: 5px; margin-bottom: 12px;">Pilih topik
+-                        mikro untuk dipelajari hari ini. Beri AI beberapa detik untuk menyusun modul pendek.</p>
++                    <p class="text-muted" style="font-size: 0.85rem; margin-top: 5px; margin-bottom: 12px; position: relative; z-index: 1;">Pilih topik mikro untuk dipelajari hari ini. Beri AI beberapa detik untuk menyusun modul pendek.</p>
+ 
+                     <div class="tutor-actions" id="tutor-action-btn-group"
+                         style="display: flex; gap: 10px; margin-bottom: 15px;">
+@@ -245,162 +490,30 @@
+                         <span class="hub-label">AI JSA & PTW</span>
+                         <p class="hub-desc">Buat dokumen JSA / Risk Assessment via AI.</p>
+                     </button>
++                    <button class="hub-btn" onclick="navigateToSubscreen('library')">
++                        <div class="hub-icon" style="background: #fdf2f2; color: #9b2c2c;">≡ƒôû</div>
++                        <span class="hub-label">Perpustakaan AI</span>
++                        <p class="hub-desc">Simpan & kelola hasil generate AI Anda.</p>
++                    </button>
+                 </div>
+             </section>
+ 
+             <!-- Screen 0: Dashboard -->
+             <section id="dashboard-screen" class="screen active">
+-                <!-- Gamification Profile Card -->
+-                <div id="user-profile-card">
+-                    <!-- Injected by gamification.js -->
+-                </div>
+-
+-                <!-- Overview Cards -->
+-                <div class="dashboard-grid">
+-                    <div class="dashboard-card">
+-                        <div class="dashboard-icon">≡ƒô¥</div>
+-                        <div class="dashboard-stat" id="stat-journals">0</div>
+-                        <div class="dashboard-label">Total Jurnal</div>
+-                    </div>
+-                    <div class="dashboard-card">
+-                        <div class="dashboard-icon">ΓÅ│</div>
+-                        <div class="dashboard-stat" id="stat-tasks">0</div>
+-                        <div class="dashboard-label">Belum Dilakukan</div>
+-                    </div>
+-                    <div class="dashboard-card">
+-                        <div class="dashboard-icon">≡ƒÆ░</div>
+-                        <div class="dashboard-stat" id="stat-balance">Rp 0</div>
+-                        <div class="dashboard-label">Saldo</div>
+-                    </div>
+-                    <div class="dashboard-card" id="streak-card">
+-                        <div class="dashboard-icon">≡ƒöÑ</div>
+-                        <div class="dashboard-stat" id="current-streak">0</div>
+-                        <div class="dashboard-label">Best Streak</div>
+-                    </div>
+-
+-                    <div class="dashboard-card" id="prayer-card">
+-                        <div class="prayer-card-header">
+-                            <div class="prayer-card-left">
+-                                <span class="prayer-card-icon">≡ƒòî</span>
+-                                <div>
+-                                    <div class="prayer-card-location" id="prayer-location">Jakarta</div>
+-                                    <div class="prayer-card-name" id="next-prayer-name">Subuh</div>
+-                                </div>
+-                            </div>
+-                            <div class="prayer-card-right">
+-                                <div class="prayer-card-time" id="next-prayer-time">--:--</div>
+-                                <div class="prayer-card-countdown" id="next-prayer-countdown">-00:00:00</div>
+-                            </div>
+-                        </div>
+-                        <div class="prayer-list-mini" id="prayer-list-mini">
+-                            <!-- Injected by JS -->
+-                            <div>Subuh<br>04:30</div>
+-                            <div>Dzuhur<br>12:00</div>
+-                            <div>Ashar<br>15:15</div>
+-                            <div>Maghrib<br>18:00</div>
+-                            <div>Isya<br>19:15</div>
+-                        </div>
+-                    </div>
+-                </div>
+-
+-
+-
+-
+-                <!-- Daily Discipline Motivation -->
+-                <div class="card mt-md" id="motivation-card">
+-                    <!-- Injected by JS -->
+-                    <p class="text-muted">Memuat motivasi...</p>
+-                </div>
+-
+-                <!-- Daily Brain Boost -->
+-                <div class="card mt-md" id="brain-boost-card">
+-                    <div class="brain-header-row">
+-                        <h3>≡ƒºá Brain Boost</h3>
+-                        <span class="badge-ai">Daily XP</span>
+-                    </div>
+-
+-                    <div class="brain-tabs">
+-                        <button class="brain-tab active" id="tab-fact" onclick="switchTab('fact')">≡ƒÆí Fakta</button>
+-                        <button class="brain-tab" id="tab-vocab" onclick="switchTab('vocab')">≡ƒç¼≡ƒçº Vocab</button>
+-                        <button class="brain-tab" id="tab-math" onclick="switchTab('math')">≡ƒº« Math</button>
+-                        <button class="brain-tab" id="tab-logic" onclick="switchTab('logic')">≡ƒº⌐ Logic</button>
+-                        <button class="brain-tab" id="tab-myth" onclick="switchTab('myth')">≡ƒò╡∩╕Å Mitos</button>
+-                    </div>
+-
+-                    <div id="brain-content" class="brain-content mt-sm">
+-                        <!-- Injected by JS -->
+-                        <p class="text-muted">Memuat data...</p>
+-                    </div>
+-                </div>
+-
+-                <!-- Daily Hadith -->
+-                <div class="card mt-md hadith-card-container">
+-                    <h3>Γ£¿ Hadits Harian</h3>
+-                    <div id="hadith-content" class="hadith-content">
+-                        <p class="text-muted">Memuat hadits...</p>
+-                    </div>
+-                </div>
+-
+-
+-                <!-- Global Daily Budget -->
+-                <div class="card mt-md" id="global-budget-card">
+-                    <div class="budget-card-header">
+-                        <h3>≡ƒôë Budget Harian</h3>
+-                        <span id="global-budget-text" class="text-muted">Rp 0 / Rp 0</span>
+-                    </div>
+-                    <div class="progress-bar">
+-                        <div id="global-budget-progress" class="progress-fill" style="width: 0%"></div>
+-                    </div>
+-                    <small class="text-muted budget-card-hint">
+-                        Pengeluaran hari ini dari semua wallet.
+-                    </small>
+-                </div>
+-
+-                <!-- Dashboard Reminders -->
+-                <div class="card">
+-                    <h3>≡ƒöö Reminder & Jadwal</h3>
+-                    <div id="dashboard-reminders" class="reminder-list" style="max-height: 300px; overflow-y: auto;">
+-                        <p class="text-muted">Tidak ada reminder</p>
+-                    </div>
+-                </div>
+-
+-                <!-- Mood History Chart -->
+-                <div class="card">
+-                    <h3>≡ƒÄ¡ Mood Minggu Ini</h3>
+-                    <div class="mood-chart-container">
+-                        <canvas id="mood-chart" height="150"></canvas>
+-                    </div>
+-                </div>
+-
+-                <!-- Dashboard Calendar Section (Synced with Planner) -->
+-                <div class="card calendar-card">
+-                    <div class="calendar-view" style="padding:0; margin:0; border:none; box-shadow:none;">
+-                        <div class="calendar-header">
+-                            <h3 id="dashboard-calendar-month-year">...</h3>
+-                            <div class="calendar-nav">
+-                                <button id="dashboard-prev-month">ΓùÇ</button>
+-                                <button id="dashboard-next-month">Γû╢</button>
+-                            </div>
+-                        </div>
+-                        <div class="calendar-grid" id="dashboard-calendar-grid">
+-                            <!-- Injected by JS -->
+-                        </div>
+-                        <div id="dashboard-selected-date-events" class="selected-date-events" style="display: none; margin-top: 15px;">
+-                            <h4 id="dashboard-selected-date-label">Events</h4>
+-                            <ul id="dashboard-selected-date-list" class="date-events-list">
+-                                <!-- Injected by JS -->
+-                            </ul>
+-                        </div>
++                <div class="dashboard-header-row mb-md">
++                    <div class="welcome-text">
++                        <h2 style="margin:0;">Dashboard</h2>
++                        <p class="text-xs text-muted">Selamat datang kembali!</p>
+                     </div>
++                    <button class="icon-btn" onclick="openWidgetCustomizer()" title="Atur Dashboard" style="background: var(--surface); border: 1px solid var(--border); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">ΓÜÖ∩╕Å</button>
+                 </div>
+-
+-                <!-- Quick AI Insight -->
+-                <div class="card">
+-                    <h3>≡ƒºá Quick AI Insight</h3>
+-                    <div id="quick-insight" class="insight-box">
+-                        <p class="text-muted">Klik tombol di bawah untuk insight harian</p>
++                
++                <div id="dashboard-widgets-container" class="dashboard-widgets-container">
++                    <!-- Widgets injected by dashboard-widgets.js -->
++                    <div class="loading-spinner-container">
++                        <div class="loading-spinner"></div>
++                        <p class="text-muted mt-sm">Menyusun widget Anda...</p>
+                     </div>
+-                    <button id="get-daily-insight-btn" class="btn btn-ai btn-full">Γ£¿ Dapatkan Insight Harian</button>
+                 </div>
+             </section>
+ 
+@@ -709,6 +822,28 @@
+ 
+             <!-- Screen 4: Finance -->
+             <section id="finance-screen" class="screen">
++                <!-- Financial Health Score Card -->
++                <div class="card animate-in fade-in" style="position: relative; overflow: hidden; margin-bottom: 20px;">
++                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">≡ƒÆ░</div>
++                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; position: relative; z-index: 1;">
++                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
++                            <span>≡ƒôè</span> Financial Health
++                        </h2>
++                        <span style="font-size: 0.65rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); text-transform: uppercase;">PRO ANALYTICS</span>
++                    </div>
++                    
++                    <div class="health-score-container" style="position: relative; z-index: 1; display: flex; gap: 20px; align-items: center;">
++                        <div id="health-score-circle" class="health-score-circle good" style="flex-shrink: 0;">
++                            <span id="health-score-value" class="health-score-value">--</span>
++                            <span class="health-score-label">Skor</span>
++                        </div>
++                        <div class="health-info">
++                            <div id="health-status-text" class="health-status-text" style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">Menganalisis...</div>
++                            <div id="health-advice" class="health-advice" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">Lakukan beberapa transaksi untuk melihat analisis kesehatan keuangan Anda.</div>
++                        </div>
++                    </div>
++                </div>
++
+                 <!-- Wallet Summary -->
+                 <div class="card">
+                     <div class="card-header">
+@@ -738,10 +873,34 @@
+ 
+                 <!-- Chart -->
+                 <div class="card">
+-                    <h3>≡ƒôè Grafik Bulanan</h3>
+-                    <div class="chart-container">
++                    <div class="card-header">
++                        <h3>≡ƒôè Grafik & Analisis</h3>
++                        <div class="flex-row gap-sm">
++                            <button id="show-bar-chart-btn" class="btn btn-small btn-primary">Tren</button>
++                            <button id="show-pie-chart-btn" class="btn btn-small btn-secondary">Kategori</button>
++                        </div>
++                    </div>
++                    <div class="chart-container" id="finance-bar-chart-container">
+                         <canvas id="finance-chart"></canvas>
+                     </div>
++                    <div class="chart-container hidden" id="finance-pie-chart-container">
++                        <div class="category-chart-wrapper">
++                            <canvas id="category-chart"></canvas>
++                        </div>
++                    </div>
++                    
++                    <div class="finance-stats-grid">
++                        <div class="finance-stat-mini">
++                            <span class="stat-mini-label">Savings Rate</span>
++                            <span id="stat-savings-rate" class="stat-mini-value">--%</span>
++                        </div>
++                        <div class="finance-stat-mini">
++                            <span class="stat-mini-label">Saran Utama</span>
++                            <span id="stat-main-advice" class="stat-mini-value">Tetap Catat</span>
++                        </div>
++                    </div>
++
++                    <button id="view-pro-report-btn" class="btn btn-report mt-md">≡ƒôä Buka Laporan Keuangan Profesional</button>
+                 </div>
+ 
+                 <!-- Global Budget Card -->
+@@ -1137,6 +1296,16 @@
+ 
+                 <hr class="settings-divider">
+ 
++                <!-- UI Scaling Section -->
++                <div class="form-group">
++                    <label>≡ƒöì Ukuran Tampilan & Zoom</label>
++                    <small class="settings-hint">Sesuaikan ukuran tulisan dan elemen aplikasi (mirip Ctrl +/- di komputer).</small>
++                    <div class="flex-row-sm" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; justify-content: center; gap: 20px;">
++                        <button id="ui-scale-down-btn" class="icon-btn" style="background: var(--surface-hover); width: 40px; height: 40px; font-weight: bold;">ΓêÆ</button>
++                        <span id="ui-scale-label" style="font-weight: 800; min-width: 60px; text-align: center; color: var(--accent-primary);">100%</span>
++                        <button id="ui-scale-up-btn" class="icon-btn" style="background: var(--surface-hover); width: 40px; height: 40px; font-weight: bold;">+</button>
++                    </div>
++                </div>
+                 <hr class="settings-divider">
+ 
+                 <!-- Export Data (CSV) Section -->
+@@ -1244,6 +1413,70 @@
+             </div>
+         </div>
+ 
++        <!-- Professional Financial Report Modal -->
++        <div id="pro-report-modal" class="modal hidden">
++            <div class="modal-content card report-modal-content">
++                <div class="modal-header">
++                    <h3>≡ƒôä Laporan Keuangan Profesional</h3>
++                    <button id="close-pro-report-modal" class="icon-btn">Γ£ò</button>
++                </div>
++                
++                <div id="pro-report-body" class="report-body">
++                    <div class="report-header-info text-center">
++                        <h2 id="report-period-title">Laporan Keuangan - Maret 2026</h2>
++                        <p class="text-muted" id="report-date-generated">Generated on: 2026-03-28</p>
++                    </div>
++
++                    <div class="report-grid">
++                        <!-- Summary Section -->
++                        <div class="report-section">
++                            <div class="report-section-title">≡ƒÆ░ Ringkasan Kas</div>
++                            <table class="report-table">
++                                <tr><td>Total Pemasukan</td><td id="report-total-income" class="income">Rp 0</td></tr>
++                                <tr><td>Total Pengeluaran</td><td id="report-total-expense" class="expense">Rp 0</td></tr>
++                                <tr style="border-top: 2px solid rgba(255,255,255,0.1)">
++                                    <td><strong>Arus Kas Bersih</strong></td>
++                                    <td id="report-net-cash" class="balance">Rp 0</td>
++                                </tr>
++                                <tr><td>Savings Rate</td><td id="report-savings-rate">0%</td></tr>
++                            </table>
++                        </div>
++
++                        <!-- Budget Adherence -->
++                        <div class="report-section">
++                            <div class="report-section-title">≡ƒôë Kepatuhan Anggaran</div>
++                            <div id="report-budget-list">
++                                <!-- Budget adherence list injected here -->
++                                <p class="text-muted text-xs">Belum ada budget yang diatur.</p>
++                            </div>
++                        </div>
++                    </div>
++
++                    <div class="report-grid mt-md">
++                        <!-- Top Expenses -->
++                        <div class="report-section">
++                            <div class="report-section-title">≡ƒö╝ Pengeluaran Terbesar</div>
++                            <div id="report-top-expenses">
++                                <!-- Top expense categories injected here -->
++                            </div>
++                        </div>
++
++                        <!-- Advisor Notes -->
++                        <div class="report-section">
++                            <div class="report-section-title">≡ƒºá Catatan Analis AI</div>
++                            <p id="report-ai-advice" class="text-sm italic">Menganalisis data keuangan Anda untuk memberikan saran profesional...</p>
++                            <div id="report-summary-table" class="mt-md"></div>
++                        </div>
++                    </div>
++
++                    <div class="report-footer">
++                        <p>Dokumen ini dihasilkan secara otomatis oleh <strong>Jurnal AI Professional</strong>.</p>
++                        <button class="btn btn-secondary btn-small mt-sm" onclick="window.print()">≡ƒû¿∩╕Å Cetak / Simpan PDF</button>
++                    </div>
++                </div>
++            </div>
++        </div>
++
+         <!-- Edit Modal -->
+         <div id="edit-modal" class="modal hidden">
+             <div class="modal-content card">
+@@ -1417,9 +1650,11 @@
+                 <div id="tbt-result-area" class="mt-md hidden">
+                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                         <button id="copy-tbt-btn" class="btn btn-secondary"
+-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒôï Copy Text</button>
++                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒôï Copy</button>
+                         <button id="translate-tbt-btn" class="btn btn-secondary"
+-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒç«≡ƒç⌐ Terjemahkan</button>
++                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒç«≡ƒç⌐ Trans</button>
++                        <button id="save-tbt-lib-btn" class="btn btn-ai"
++                            style="flex: 1; font-size: 0.85rem; padding: 8px; background: var(--secondary);">≡ƒÆ╛ Simpan</button>
+                     </div>
+                     <div id="tbt-content"
+                         style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.6; overflow-x: auto;">
+@@ -1453,11 +1688,12 @@
+                 <button id="generate-jsa-btn" class="btn btn-primary btn-full mt-sm">Mulai Generate Dokumen ΓÜí</button>
+ 
+                 <div id="jsa-result-area" class="mt-md hidden">
+-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+-                        <button id="copy-jsa-btn" class="btn btn-secondary"
+-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒôï Copy Text</button>
+-                        <button id="translate-jsa-btn" class="btn btn-secondary"
+-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒç«≡ƒç⌐ Terjemahkan</button>
++                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px;">
++                        <button id="copy-jsa-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px;">≡ƒôï Copy</button>
++                        <button id="translate-jsa-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px;">≡ƒç«≡ƒç⌐ Indo</button>
++                        <button id="export-excel-jsa-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px;">≡ƒôè XL</button>
++                        <button id="export-pdf-jsa-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px;">≡ƒôä PDF</button>
++                        <button id="save-jsa-lib-btn" class="btn btn-ai" style="font-size: 0.8rem; padding: 6px; background: var(--secondary); grid-column: span 2;">≡ƒÆ╛ Simpan ke Perpustakaan</button>
+                     </div>
+                     <div id="jsa-content"
+                         style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
+@@ -1496,9 +1732,11 @@
+                 <div id="rca-result-area" class="mt-md hidden">
+                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                         <button id="copy-rca-btn" class="btn btn-secondary"
+-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒôï Copy Text</button>
++                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒôï Copy</button>
+                         <button id="translate-rca-btn" class="btn btn-secondary"
+-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒç«≡ƒç⌐ Terjemahkan</button>
++                            style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒç«≡ƒç⌐ Indo</button>
++                        <button id="save-rca-lib-btn" class="btn btn-ai"
++                            style="flex: 1; font-size: 0.85rem; padding: 8px; background: var(--secondary);">≡ƒÆ╛ Simpan</button>
+                     </div>
+                     <div id="rca-content"
+                         style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
+@@ -1676,6 +1914,11 @@
+                     <button class="brain-tab rig-tab" onclick="switchRigChapter('poster', this)">≡ƒû╝∩╕Å Poster</button>
+                     <button class="brain-tab rig-tab" onclick="switchRigChapter('gas', this)">≡ƒöÑ Gas & Fire</button>
+                     <button class="brain-tab rig-tab" onclick="switchRigChapter('inspection', this)">Γ£à Inspeksi</button>
++                    <button class="brain-tab rig-tab" onclick="switchRigChapter('lifecycle', this)">≡ƒöä Lifecycle</button>
++                    <button class="brain-tab rig-tab" onclick="switchRigChapter('sequence', this)">ΓÜÖ∩╕Å Operasi</button>
++                    <button class="brain-tab rig-tab" onclick="switchRigChapter('parameters', this)">≡ƒôè Parameter</button>
++                    <button class="brain-tab rig-tab" onclick="switchRigChapter('oversight', this)">≡ƒ¢í∩╕Å Supervisor</button>
++
+                     <button class="brain-tab rig-tab" onclick="switchRigChapter('pjsm', this)">≡ƒôó PJSM</button>
+                 </div>
+             </div>
+@@ -1816,119 +2059,22 @@
+             <div id="rig-chapter-inspection" class="rig-chapter hidden">
+                 <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
+                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+-                        <h3 style="margin: 0;">Γ£à Form Inspeksi Rig</h3>
++                        <div style="display: flex; flex-direction: column;">
++                            <h3 style="margin: 0;">Γ£à Form Inspeksi Rig</h3>
++                            <div id="inspection-overall-progress" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Progress: 0 / 0 Poin</div>
++                        </div>
+                         <div style="display: flex; gap: 8px;">
+                             <button onclick="generateInspectionPDF()" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
+                                 <span>≡ƒôä</span> Download PDF
+                             </button>
+-                            <button onclick="if(confirm('Reset semua centang inspeksi?')) { localStorage.removeItem('rigInspectionState'); initHseRig(); }" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
+-                                <span>≡ƒöä</span> Reset
+-                            </button>
+-                        </div>
+-                    </div>
+-                    <p class="text-muted" style="font-size: 0.9rem;">Gunakan daftar periksa interaktif ini saat melakukan Audit Keselamatan. Status Anda akan tersimpan otomatis.</p>
+-                    <div id="rig-inspection-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+-                    </div>
+-                </div>
+             </div>
+-
+-            <!-- Chapter 10: PJSM Generator -->
+-            <div id="rig-chapter-pjsm" class="rig-chapter hidden">
+-                <div class="card mt-md" style="border-left: 4px solid #e53e3e;">
+-                    <h3>≡ƒôó AI PJSM Generator</h3>
+-                    <p class="text-muted" style="font-size: 0.9rem;">Masukkan daftar pekerjaan hari ini, dan AI akan menyusun naskah <b>Pre-Job Safety Meeting (PJSM) / Toolbox Talk</b> gaya lisan lapangan, lengkap dengan bahaya, CLSR, mitigasi, dan yel-yel!</p>
+-
+-                    <div class="form-group mt-sm">
+-                        <label style="font-size: 0.9rem; font-weight: 600;">≡ƒôï Daftar Pekerjaan Hari Ini</label>
+-                        <textarea id="pjsm-work-input" class="form-control"
+-                            placeholder="Contoh:&#10;1. Tripping in Drill Pipe 5 inch&#10;2. Maintenance pompa lumpur #2&#10;3. Pengelasan pipa di area terbatas&#10;4. Inspeksi scaffolding derrick"
+-                            style="width: 100%; height: 120px; padding: 10px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
+-                    </div>
+-
+-                    <button id="generate-pjsm-btn" class="btn btn-primary btn-full mt-sm"
+-                        style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); border: none; font-size: 1rem;">
+-                        ≡ƒôó Generate Naskah PJSM ΓÜí
+-                    </button>
+-
+-                    <div id="pjsm-loading" class="hidden mt-md" style="text-align: center; padding: 20px;">
+-                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+-                        <p class="text-muted">Senior HSSE Officer sedang menyusun naskah briefing...</p>
+-                    </div>
+-
+-                    <div id="pjsm-result-area" class="mt-md hidden">
+-                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+-                            <button id="copy-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒôï Copy Naskah</button>
+-                            <button id="speak-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒöè Baca (TTS)</button>
+-                            <button id="stop-speak-pjsm-btn" class="btn btn-secondary hidden" style="flex: 1; font-size: 0.85rem; padding: 8px; background: #e53e3e; color: white;">ΓÅ╣∩╕Å Stop</button>
+-                            <button id="export-pjsm-pdf-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">≡ƒôä Export PDF</button>
+-                        </div>
+-                        <div id="pjsm-content"
+-                            style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; overflow-x: auto;">
+-                        </div>
+-                    </div>
+-                </div>
+             </div>
+-
+-            <!-- JSA Builder removed - now accessed via Learning Hub > AI JSA & PTW -->
+-
+-        </section>
+-    </div>
+-
+-    <!-- Scripts (modular) -->
+-    <!-- Core / Data Layer -->
+-    <script src="js/storage.js"></script>
+-    <script src="js/cloud-sync.js"></script>
+-    <script src="js/ai.js"></script>
+-    <script src="js/theme.js"></script>
+-    <script src="js/encryption.js"></script>
+-    <script src="js/auth.js"></script>
+-    <script src="js/charts.js"></script>
+-
+-    <!-- UI Modules -->
+-    <script src="js/backup-tags.js"></script>
+-    <script src="js/journal-ui.js"></script>
+-    <script src="js/planner-ui.js"></script>
+-    <script src="js/finance-ui.js"></script>
+-    <script src="js/habits-goals-ui.js"></script>
+-    <script src="js/navigation-settings.js"></script>
+-    <script src="js/dashboard.js"></script>
+-    <script src="js/wallet-budget-ui.js"></script>
+-
+-    <!-- Feature Modules -->
+-    <script src="js/features.js"></script>
+-    <script src="js/extras.js"></script>
+-    <script src="js/edit-modal.js"></script>
+-    <script src="js/onboarding.js"></script>
+-    <script src="js/insight.js"></script>
+-    <script src="js/gamification.js"></script>
+-    <script src="js/hadith.js"></script>
+-    <script src="js/brain-boost.js"></script>
+-    <script src="js/journal-templates.js"></script>
+-    <script src="js/motivation.js"></script>
+-    <script src="js/islam-tracker.js"></script>
+-    <script src="js/ai-tutors.js"></script>
+-    <script src="js/todo-today.js"></script>
+-    <script src="js/english-hse.js"></script>
+-    <script src="js/english-fluency.js"></script>
+-    <script src="js/hse-rig.js"></script>
+-
+-    <!-- App Initialization (must be last) -->
+-    <script src="js/app-init.js"></script>
+-
+-    <!-- Register Service Worker -->
+-    <script>
+-        if ('serviceWorker' in navigator) {
+-            window.addEventListener('load', () => {
+-                navigator.serviceWorker.register('./sw.js')
+                     .then((registration) => {
+                         console.log('SW registered:', registration);
+                     })
+                     .catch((error) => {
+                         console.log('SW registration failed:', error);
+-                    });
+-            });
+-        }
+-    </script>
++    </div>
+ </body>
+ 
+ </html>

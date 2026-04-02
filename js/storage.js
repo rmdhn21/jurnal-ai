@@ -444,13 +444,44 @@ async function deleteWallet(id) {
 }
 
 async function updateWalletBalance(walletId, amount, type) {
-    const wallet = await idbGet('wallets', walletId);
+    // Coerce amount to number (AI may send string)
+    const numAmount = parseFloat(amount) || 0;
+    if (numAmount === 0) {
+        console.warn('⚠️ updateWalletBalance: amount is 0 or invalid', { walletId, amount, type });
+        return;
+    }
+
+    let wallet = await idbGet('wallets', walletId);
+    
+    // AI often sends wallet NAME instead of ID (e.g. "BCA" instead of "lz1abc...")
+    // Try to find wallet by name if ID lookup fails
+    if (!wallet && walletId) {
+        const allWallets = await idbGetAll('wallets');
+        const activeWallets = allWallets.filter(w => !w.deleted);
+        const searchName = walletId.toLowerCase().trim();
+        wallet = activeWallets.find(w => 
+            w.name && w.name.toLowerCase().trim() === searchName
+        );
+        if (wallet) {
+            console.log(`🔍 Wallet found by name '${walletId}' → ID: ${wallet.id}`);
+        }
+    }
+
+    // Last resort: fallback to default wallet
+    if (!wallet) {
+        console.warn(`⚠️ Wallet '${walletId}' not found by ID or name, falling back to wallet_default`);
+        wallet = await idbGet('wallets', 'wallet_default');
+    }
+    
     if (wallet) {
-        const change = type === 'income' ? amount : -amount;
+        const change = type === 'income' ? numAmount : -numAmount;
         wallet.balance = (wallet.balance || 0) + change;
         wallet.updatedAt = new Date().toISOString();
         wallet.synced = 0;
         await idbSave('wallets', wallet);
+        console.log(`✅ Wallet '${wallet.name}' updated: ${change > 0 ? '+' : ''}${change} → Balance: ${wallet.balance}`);
+    } else {
+        console.error('❌ updateWalletBalance: No wallet found at all!', { walletId, amount: numAmount, type });
     }
 }
 

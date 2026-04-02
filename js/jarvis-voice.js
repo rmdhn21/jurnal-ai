@@ -51,8 +51,17 @@ window.jarvisVoice = {
             console.error('Speech Recognition Error:', event.error);
             this.isRecording = false;
             if (window.jarvisUI) {
-                window.jarvisUI.updateStatus('Error: ' + event.error);
-                setTimeout(() => window.jarvisUI.hide(), 2000);
+                let errorMsg = 'Error: ' + event.error;
+                if (event.error === 'not-allowed' || event.error === 'audio-capture') {
+                    errorMsg = '🎙️ Izin mikrofon ditolak. Buka Settings browser → izinkan mikrofon untuk situs ini.';
+                } else if (event.error === 'network') {
+                    errorMsg = '🌐 Tidak ada koneksi internet untuk speech recognition.';
+                } else if (event.error === 'no-speech') {
+                    errorMsg = '🔇 Tidak ada suara terdeteksi. Coba bicara lebih dekat.';
+                }
+                window.jarvisUI.updateStatus('Error');
+                window.jarvisUI.updateTranscript(errorMsg);
+                setTimeout(() => window.jarvisUI.hide(), 4000);
             }
         };
     },
@@ -67,10 +76,31 @@ window.jarvisVoice = {
         if (this.isRecording) {
             this.recognition.stop();
         } else {
-            try {
-                this.recognition.start();
-            } catch(e) {
-                console.error('Recognition Start Error:', e);
+            // Mobile requires explicit microphone permission first
+            this.requestMicAndStart();
+        }
+    },
+
+    requestMicAndStart: async function() {
+        try {
+            // Request microphone permission explicitly (required on mobile browsers)
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Stop the stream immediately — we just need the permission grant
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            // Now start recognition (permission already granted)
+            this.recognition.start();
+        } catch(e) {
+            console.error('Mic Permission Error:', e);
+            if (window.jarvisUI) {
+                window.jarvisUI.show();
+                window.jarvisUI.updateStatus('Mic Denied');
+                window.jarvisUI.updateTranscript('🎙️ Izin mikrofon ditolak. Buka Settings browser → izinkan mikrofon untuk situs ini.');
+                setTimeout(() => window.jarvisUI.hide(), 5000);
+            } else {
+                alert('Izin mikrofon ditolak. Buka Settings browser dan izinkan mikrofon.');
             }
         }
     },

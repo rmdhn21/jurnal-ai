@@ -327,13 +327,16 @@ async function renderTransactionList() {
 
     // Delete
     listEl.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
             if (confirm('Hapus transaksi ini?')) {
                 const item = btn.closest('.transaction-item');
-                deleteTransaction(item.dataset.id);
-                renderTransactionList();
-                updateFinanceSummary();
-                initFinanceChart();
+                await deleteTransaction(item.dataset.id);
+                await renderTransactionList();
+                await updateFinanceSummary();
+                if (typeof renderWalletListSummary === 'function') await renderWalletListSummary();
+                if (typeof updateWalletSelectOptions === 'function') await updateWalletSelectOptions();
+                await initFinanceChart();
+                await updateFinancialHealthScore();
             }
         });
     });

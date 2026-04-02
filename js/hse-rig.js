@@ -725,6 +725,30 @@ function toggleRigMemo(cbId) {
     }
 }
 
+// Helper function to compress and resize images to save localStorage space
+async function compressRigImage(base64Str, maxWidth = 800) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = base64Str;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+                height = (maxWidth / width) * height;
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress to JPEG 70%
+        };
+    });
+}
+
 async function handleRigPhotos(event, cbId) {
     const files = Array.from(event.target.files);
     if (!files || files.length === 0) return;
@@ -740,44 +764,55 @@ async function handleRigPhotos(event, cbId) {
             reader.onload = (e) => resolve(e.target.result);
             reader.readAsDataURL(file);
         });
-        newPhotos.push(photoData);
+        
+        // Compress image before adding to the list
+        const compressedData = await compressRigImage(photoData);
+        newPhotos.push(compressedData);
     }
     
     const allPhotos = [...existingPhotos, ...newPhotos];
     renderRigPhotoGrid(cbId, allPhotos);
+    
+    // Reset input value so the same file can be uploaded again if needed
+    event.target.value = '';
 }
 
 function saveRigMemo(cbId) {
-    const note = document.getElementById(`memo-text-${cbId}`).value;
-    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
-    const photos = grid && grid.dataset.photos ? JSON.parse(grid.dataset.photos) : [];
-    
-    const savedMemos = localStorage.getItem('rigInspectionMemos');
-    const memos = savedMemos ? JSON.parse(savedMemos) : {};
-    
-    memos[cbId] = {
-        note: note,
-        photos: photos,
-        updatedAt: new Date().toISOString()
-    };
-    
-    localStorage.setItem('rigInspectionMemos', JSON.stringify(memos));
-    
-    // UI Feedback
-    const status = document.getElementById(`memo-status-${cbId}`);
-    const btnMemo = document.getElementById(`btn-memo-${cbId}`);
-    
-    if (status) {
-        status.classList.remove('hidden');
-        setTimeout(() => status.classList.add('hidden'), 2000);
-    }
-    
-    if (btnMemo) {
-        if (note || (photos && photos.length > 0)) {
-            btnMemo.classList.add('has-content');
-        } else {
-            btnMemo.classList.remove('has-content');
+    try {
+        const note = document.getElementById(`memo-text-${cbId}`).value;
+        const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+        const photos = grid && grid.dataset.photos ? JSON.parse(grid.dataset.photos) : [];
+        
+        const savedMemos = localStorage.getItem('rigInspectionMemos');
+        const memos = savedMemos ? JSON.parse(savedMemos) : {};
+        
+        memos[cbId] = {
+            note: note,
+            photos: photos,
+            updatedAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem('rigInspectionMemos', JSON.stringify(memos));
+        
+        // UI Feedback
+        const status = document.getElementById(`memo-status-${cbId}`);
+        const btnMemo = document.getElementById(`btn-memo-${cbId}`);
+        
+        if (status) {
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 2000);
         }
+        
+        if (btnMemo) {
+            if (note || (photos && photos.length > 0)) {
+                btnMemo.classList.add('has-content');
+            } else {
+                btnMemo.classList.remove('has-content');
+            }
+        }
+    } catch (e) {
+        console.error("Storage Error:", e);
+        alert("Gagal menyimpan! Memori browser mungkin sudah penuh. Coba hapus beberapa foto atau catatan lama.");
     }
 }
 
@@ -1085,14 +1120,14 @@ function formatPJSMContent(text) {
 
 let pjsmSpeechUtterance = null;
 
-async function generatePJSM() {
+async function generatePJSM(workDescOverride = null) {
     const input = document.getElementById('pjsm-work-input');
     const loading = document.getElementById('pjsm-loading');
     const resultArea = document.getElementById('pjsm-result-area');
     const content = document.getElementById('pjsm-content');
     const btn = document.getElementById('generate-pjsm-btn');
 
-    const workList = input?.value?.trim();
+    const workList = workDescOverride || input?.value?.trim();
     if (!workList) {
         alert('Masukkan daftar pekerjaan hari ini terlebih dahulu!');
         return;
@@ -1247,11 +1282,12 @@ function exportPJSMToPDF() {
     
     // Add Company Logo / Header
     const header = document.createElement('div');
-    header.style.borderBottom = '3px solid #e53e3e';
+    header.style.borderBottom = '3px solid #3182ce';
     header.style.marginBottom = '20px';
     header.style.paddingBottom = '10px';
+    header.style.textAlign = 'center';
     header.innerHTML = `
-        <h2 style="margin: 0; color: #e53e3e; font-size: 24px;">HSE DEPARTMENT</h2>
+        <h2 style="margin: 0; color: #3182ce; font-size: 24px;">HSE DEPARTMENT</h2>
         <h3 style="margin: 5px 0 0 0; color: #4a5568; font-size: 16px;">Pre-Job Safety Meeting (PJSM) / Toolbox Talk Document</h3>
     `;
     wrapper.appendChild(header);
@@ -1301,9 +1337,9 @@ function exportPJSMToPDF() {
             // Re-apply the innerHTML to keep bolding
             p.innerHTML = line; 
             
-            // Adjust the red color for PDF printing clarity
+            // Adjust the bold color for PDF printing clarity (using a professional dark blue/black)
             const strongs = p.querySelectorAll('strong');
-            strongs.forEach(s => s.style.setProperty('color', '#c53030', 'important'));
+            strongs.forEach(s => s.style.setProperty('color', '#2c5282', 'important'));
             
             bodyContainer.appendChild(p);
         }
@@ -1361,6 +1397,53 @@ function exportPJSMToPDF() {
     });
 }
 
+async function savePJSMToLibrary() {
+    const content = document.getElementById('pjsm-content');
+    const input = document.getElementById('pjsm-work-input');
+    const workList = input?.value?.trim() || 'Daily Operation';
+
+    if (!content || !content.innerText || content.innerText.length < 10) {
+        alert('Tidak ada naskah yang bisa disimpan.');
+        return;
+    }
+
+    const firstLine = workList.split('\n')[0].substring(0, 30);
+    const title = `PJSM: ${firstLine}${workList.length > 30 ? '...' : ''}`;
+    
+    const item = {
+        title: title,
+        content: content.innerHTML,
+        category: 'HSE',
+        type: 'pjsm',
+        timestamp: new Date().toISOString()
+    };
+
+    if (typeof saveGeneration === 'function') {
+        const btn = document.getElementById('save-pjsm-btn');
+        const original = btn.innerHTML;
+        
+        try {
+            await saveGeneration(item);
+            btn.innerHTML = '✅ Disimpan';
+            btn.style.background = 'var(--success)';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.style.background = 'var(--secondary)';
+                btn.disabled = false;
+            }, 3000);
+            
+            // Trigger refresh in library if the module exists
+            if (window.refreshLibraryUI) window.refreshLibraryUI();
+        } catch (error) {
+            alert('Gagal menyimpan ke perpustakaan: ' + error.message);
+        }
+    } else {
+        alert('Fungsi simpan belum tersedia.');
+    }
+}
+
 // Initialize PJSM event listeners
 document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generate-pjsm-btn');
@@ -1368,12 +1451,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const speakBtn = document.getElementById('speak-pjsm-btn');
     const stopBtn = document.getElementById('stop-speak-pjsm-btn');
     const exportPdfBtn = document.getElementById('export-pjsm-pdf-btn');
+    const saveBtn = document.getElementById('save-pjsm-btn');
 
     if (generateBtn) generateBtn.addEventListener('click', generatePJSM);
     if (copyBtn) copyBtn.addEventListener('click', copyPJSM);
     if (speakBtn) speakBtn.addEventListener('click', speakPJSM);
     if (stopBtn) stopBtn.addEventListener('click', stopSpeakPJSM);
     if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportPJSMToPDF);
+    if (saveBtn) saveBtn.addEventListener('click', savePJSMToLibrary);
 
     // Preload voices for TTS
     if (window.speechSynthesis) {

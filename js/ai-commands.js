@@ -77,6 +77,10 @@ ${habitContext}
 ${workoutContext}
 ${nutritionContext}
 
+PERAN TAMBAHAN: Kamu adalah HSE SAFETY MENTOR. 
+- Kuasai UU No 1 Tahun 1970 (Keselamatan Kerja), PTK 005 SKK Migas, Corporate Life Saving Rules (CLSR), dan standar internasional (OSHA/NEBOSH).
+- Berikan saran teknis yang akurat jika ditanya tentang prosedur keselamatan (misal: jarak aman hot work, prosedur confined space, dll).
+
 TUGASMU:
 Analisis kalimat pengguna: "${transcript}" dan:
 1. Berikan respon tekstual (ngobrol/penjelasan/mentor).
@@ -97,6 +101,8 @@ INTENT PERINTAH YANG DIDUKUNG:
 12. "SAVE_JOURNAL": Simpan Jurnal Rahasia (Wajib kirim { content, mood }).
 13. "UPDATE_WORKOUT": Menceklis kategori workout (Wajib kirim { category }).
 14. "UPDATE_NUTRITION": Menceklis nutrisi harian (Wajib kirim { category }).
+15. "GENERATE_HSE": Buat dokumen HSE baru (JSA, PJSM, RCA, TBT).
+16. "SEARCH_LIBRARY": Cari item di Perpustakaan AI.
 
 ATURAN OUTPUT:
 KEMBALIKAN HANYA JSON dengan struktur:
@@ -104,19 +110,11 @@ KEMBALIKAN HANYA JSON dengan struktur:
   "textResponse": "Kalimat respon verbal dari Jarvis (Gunakan format markdown-ish)",
   "commands": [
     {
-      "intent": "SAVE_TRANSACTION" | "SAVE_SCHEDULE" | "SAVE_TASK_TODAY" | "SAVE_TASK_KANBAN" | "NAVIGATE" | "UPDATE_TODO" | "UPDATE_KANBAN" | "UPDATE_ISLAMIC" | "SAVE_HABIT" | "UPDATE_HABIT" | "SAVE_JOURNAL" | "UPDATE_WORKOUT" | "UPDATE_NUTRITION",
+      "intent": "INTENT_NAME",
       "data": { 
-         // Jika SAVE_TRANSACTION: { amount, type, category, description, walletId }
-         // Jika SAVE_SCHEDULE: { title, datetime, priority }
-         // Jika SAVE_TASK_TODAY: { text, priority }
-         // Jika SAVE_TASK_KANBAN: { title, priority }
-         // Jika NAVIGATE: { targetScreen }
-         // Jika UPDATE_TODO / UPDATE_KANBAN / UPDATE_HABIT: { id: "string", title_context: "Nama untuk ditampilkan" }
-         // Jika UPDATE_ISLAMIC: { field: "subuh" | "dzuhur" | "ashar" | "maghrib" | "isya" | "qobliyah" | "sedekah" }
-         // Jika SAVE_HABIT: { name: "Nama habit baru" }
-         // Jika SAVE_JOURNAL: { content: "Catatan jurnalnya", mood: "senang" | "biasa" | "sedih" | "marah" | "lelah" }
-         // Jika UPDATE_WORKOUT: { category: "gym1" | "gym2" | "home1" | "home2" | "game" }
-         // Jika UPDATE_NUTRITION: { category: "pagi" | "siang" | "preWorkout" | "postWorkout" | "malam" | "opsional" | "water" }
+         // Jika GENERATE_HSE: { type: "jsa"|"pjsm"|"rca"|"tbt", description: "inti tugas/pekerjaan", jsaType: "JSA"|"RA" }
+         // Jika SEARCH_LIBRARY: { query: "kata kunci pencarian" }
+         // ... field intent lainnya seperti sebelumnya ...
       },
       "message": "Konfirmasi singkat u/ kartu"
     }
@@ -124,8 +122,8 @@ KEMBALIKAN HANYA JSON dengan struktur:
 }
 
 PENTING:
-- Pastikan field 'text' (untuk SAVE_TASK_TODAY) atau 'title' (untuk SAVE_SCHEDULE/KANBAN) TIDAK BOLEH kosong. Ambil dari inti kalimat pengguna.
-- 'amount' harus angka murni tanpa titik/koma.
+- Jika user minta dibuatkan JSA/PJSM/RCA/TBT, gunakan intent "GENERATE_HSE".
+- Jika user minta dicarikan dokumen lama, gunakan intent "SEARCH_LIBRARY".
 - Gunakan bahasa Indonesia yang asertif dan cerdas (ala Jarvis Iron Man).
 `;
 
@@ -286,6 +284,19 @@ function showUniversalConfirmCard(cmd) {
         detailsHtml = `
             <div class="confirm-row"><span>Kategori:</span><strong style="text-transform: capitalize;">${data.category || 'Nutrisi'}</strong></div>
         `;
+    } else if (intent === 'GENERATE_HSE') {
+        icon = '🛡️';
+        confirmTitle = `Buat Dokumen ${data.type?.toUpperCase()}`;
+        detailsHtml = `
+            <div class="confirm-row"><span>Jenis:</span><strong>${data.type?.toUpperCase()}</strong></div>
+            <div class="confirm-row"><span>Pekerjaan:</span><strong>${data.description || 'Pekerjaan Baru'}</strong></div>
+        `;
+    } else if (intent === 'SEARCH_LIBRARY') {
+        icon = '🔍';
+        confirmTitle = 'Cari Perpustakaan';
+        detailsHtml = `
+            <div class="confirm-row"><span>Cari:</span><strong>${data.query || ''}</strong></div>
+        `;
     }
 
     const cardHtml = `
@@ -329,9 +340,53 @@ async function executeSingleCommand(cmd) {
     const { intent, data } = cmd;
     try {
         if (intent === 'SAVE_TRANSACTION') {
-            const tx = { ...data, date: getTodayString(), createdAt: new Date().toISOString() };
+            const parsedAmount = parseFloat(data.amount) || 0;
+            const resolvedType = data.type || 'expense';
+            
+            if (parsedAmount <= 0) {
+                console.error('❌ Jarvis SAVE_TRANSACTION: invalid amount', data);
+                return;
+            }
+
+            // Resolve walletId: AI often sends wallet NAME instead of ID
+            let resolvedWalletId = data.walletId || 'wallet_default';
+            const walletByIdCheck = await idbGet('wallets', resolvedWalletId);
+            if (!walletByIdCheck) {
+                // Try to find by name
+                const allWallets = await getWallets();
+                const matchedWallet = allWallets.find(w => 
+                    w.name && w.name.toLowerCase().trim() === resolvedWalletId.toLowerCase().trim()
+                );
+                if (matchedWallet) {
+                    console.log(`🔍 Resolved wallet name '${resolvedWalletId}' → ID: ${matchedWallet.id}`);
+                    resolvedWalletId = matchedWallet.id;
+                } else {
+                    console.warn(`⚠️ Wallet '${resolvedWalletId}' not found, using wallet_default`);
+                    resolvedWalletId = 'wallet_default';
+                }
+            }
+
+            const tx = { 
+                id: generateId(),
+                amount: parsedAmount,
+                type: resolvedType,
+                category: data.category || 'Lain-lain',
+                description: data.description || '',
+                walletId: resolvedWalletId,
+                date: getTodayString(), 
+                createdAt: new Date().toISOString() 
+            };
+            
+            console.log('💰 Jarvis saving transaction:', tx);
+            
             await saveTransaction(tx);
             await updateWalletBalance(tx.walletId, tx.amount, tx.type);
+            
+            // Refresh finance UI immediately
+            if (typeof renderTransactionList === 'function') await renderTransactionList();
+            if (typeof updateFinanceSummary === 'function') await updateFinanceSummary();
+            if (typeof renderWalletListSummary === 'function') await renderWalletListSummary();
+            if (typeof updateWalletSelectOptions === 'function') await updateWalletSelectOptions();
         } else if (intent === 'SAVE_SCHEDULE') {
             const sch = { ...data, id: generateId(), createdAt: new Date().toISOString(), createdFrom: 'jarvis_unified' };
             await saveSchedule(sch);
@@ -411,6 +466,27 @@ async function executeSingleCommand(cmd) {
                         }
                     });
                 }
+            }
+        } else if (intent === 'GENERATE_HSE') {
+            const type = data.type?.toLowerCase();
+            const desc = data.description;
+            if (type === 'pjsm') {
+                showScreen('hse-rig-screen');
+                if (typeof generatePJSM === 'function') generatePJSM(desc);
+            } else if (type === 'jsa' || type === 'ra') {
+                showScreen('hsse-screen');
+                if (typeof generateJSADocument === 'function') generateJSADocument(desc, data.jsaType || 'JSA');
+            } else if (type === 'rca') {
+                showScreen('hsse-screen');
+                if (typeof generateRCADocument === 'function') generateRCADocument(desc);
+            } else if (type === 'tbt') {
+                showScreen('hsse-screen');
+                if (typeof generateTBTDocument === 'function') generateTBTDocument(desc);
+            }
+        } else if (intent === 'SEARCH_LIBRARY') {
+            const query = data.query;
+            if (query && typeof searchLibrary === 'function') {
+                searchLibrary(query);
             }
         }
         
