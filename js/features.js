@@ -6,7 +6,8 @@ let speechMode = 'journal'; // 'journal' or 'jarvis' (universal)
 function initVoiceInput() {
     const micBtn = document.getElementById('mic-btn');
     if (micBtn) {
-        micBtn.addEventListener('click', () => {
+        micBtn.addEventListener('click', (e) => {
+            console.log('🎤 Mic Button Clicked');
             if (window.jarvisVoice) {
                 window.jarvisVoice.toggle('journal');
             } else {

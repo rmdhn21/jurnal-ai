@@ -99,12 +99,16 @@ window.jarvisVoice = {
         if (this.isRecording) {
             this.recognition.stop();
         } else {
+            // Immediate UI feedback
+            if (typeof updateMicUI === 'function') updateMicUI(true);
+            
             // iOS CRITICAL: Must start synchronously in click handler
             try {
                 this.recognition.start();
+                console.log("🎤 Recognition started (mode: " + mode + ")");
             } catch (e) {
                 console.error("Start failed:", e);
-                // Try to handle "already started" error silently
+                if (typeof updateMicUI === 'function') updateMicUI(false);
             }
         }
     },
@@ -155,7 +159,7 @@ window.jarvisVoice = {
         // Cancel existing speech
         this.synth.cancel();
 
-        const utterance = new SpeechUtterance(text);
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'id-ID';
         utterance.rate = 1.0;
         utterance.pitch = 1.0;

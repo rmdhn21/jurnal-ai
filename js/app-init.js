@@ -166,7 +166,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (typeof initTheme === 'function') initTheme();
-        if (typeof initVoiceInput === 'function') initVoiceInput();
+        if (typeof initVoiceInput === 'function') {
+            console.log('🎙️ Initializing Voice Input...');
+            initVoiceInput();
+        }
         if (typeof initSecurity === 'function') initSecurity();
         if (typeof initExportCSV === 'function') initExportCSV();
         if (typeof renderCalendar === 'function') await renderCalendar();
