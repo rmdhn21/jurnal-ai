@@ -8,6 +8,7 @@ window.jarvisVoice = {
     isRecording: false,
     synth: window.speechSynthesis,
 
+    interimTranscript: '', // Store for force-stop processing
     mode: 'command', // 'command' or 'journal'
 
     init: function() {
@@ -33,22 +34,21 @@ window.jarvisVoice = {
         };
 
         this.recognition.onresult = (event) => {
-            let interimTranscript = '';
+            let interim = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcript = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    const finalTranscript = event.results[i][0].transcript;
+                    this.interimTranscript = ''; // Reset
                     if (this.mode === 'command') {
-                        if (window.jarvisUI) window.jarvisUI.updateTranscript(finalTranscript);
-                        this.process(finalTranscript);
+                        if (window.jarvisUI) window.jarvisUI.updateTranscript(transcript);
+                        this.process(transcript);
                     } else if (this.mode === 'journal') {
-                        this.handleJournalResult(finalTranscript);
+                        this.handleJournalResult(transcript);
                     }
                 } else {
-                    interimTranscript += event.results[i][0].transcript;
-                    if (this.mode === 'command' && window.jarvisUI) window.jarvisUI.updateTranscript(interimTranscript);
-                    if (this.mode === 'journal') {
-                         // Optional: show interim in journal field or status
-                    }
+                    interim += transcript;
+                    this.interimTranscript = interim; // Store current best guess
+                    if (this.mode === 'command' && window.jarvisUI) window.jarvisUI.updateTranscript(interim);
                 }
             }
         };
@@ -97,8 +97,9 @@ window.jarvisVoice = {
         }
 
         if (this.isRecording) {
-            this.recognition.stop();
+            this.forceStop();
         } else {
+            this.interimTranscript = ''; // Clear old data
             // Immediate UI feedback
             if (typeof updateMicUI === 'function') updateMicUI(true);
             
@@ -110,6 +111,24 @@ window.jarvisVoice = {
                 console.error("Start failed:", e);
                 if (typeof updateMicUI === 'function') updateMicUI(false);
             }
+        }
+    },
+
+    forceStop: function() {
+        if (!this.recognition || !this.isRecording) return;
+        
+        // If we have an interim transcript but no final yet, process it now
+        const finalGuess = (this.interimTranscript || '').trim();
+        this.recognition.stop();
+        
+        if (finalGuess && finalGuess.length > 2) {
+            console.log("🛑 Forced processing of interim transcript:", finalGuess);
+            if (this.mode === 'command') {
+                this.process(finalGuess);
+            } else {
+                this.handleJournalResult(finalGuess);
+            }
+            this.interimTranscript = ''; // Clear so onend doesn't double process
         }
     },
 

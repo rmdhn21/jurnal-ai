@@ -4,17 +4,56 @@ let isRecording = false;
 let speechMode = 'journal'; // 'journal' or 'jarvis' (universal)
 
 function initVoiceInput() {
-    const micBtn = document.getElementById('mic-btn');
-    if (micBtn) {
-        micBtn.addEventListener('click', (e) => {
-            console.log('🎤 Mic Button Clicked');
+    const journalMicBtn = document.getElementById('mic-btn');
+    const jarvisMicBtn = document.querySelector('.jarvis-quick-actions .qa-btn:first-child'); // The "Voice Command" button
+
+    const setupPTT = (btn, mode) => {
+        if (!btn) return;
+        let pressTimer;
+        let isHolding = false;
+
+        const startHold = (e) => {
+            // Only handle primary touch/mouse
+            if (e.type === 'mousedown' && e.button !== 0) return;
+            
+            isHolding = false;
+            pressTimer = setTimeout(() => {
+                isHolding = true;
+                if (window.jarvisVoice && !window.jarvisVoice.isRecording) {
+                    window.jarvisVoice.toggle(mode);
+                }
+            }, 400); // 400ms threshold
+        };
+
+        const endHold = (e) => {
+            clearTimeout(pressTimer);
+            if (isHolding) {
+                if (window.jarvisVoice && window.jarvisVoice.isRecording) {
+                    window.jarvisVoice.forceStop();
+                }
+                isHolding = false;
+            }
+        };
+
+        btn.addEventListener('mousedown', startHold);
+        btn.addEventListener('touchstart', startHold, { passive: false });
+        btn.addEventListener('mouseup', endHold);
+        btn.addEventListener('touchend', endHold);
+        btn.addEventListener('mouseleave', endHold);
+
+        // Click handles standard toggle (short tap)
+        btn.addEventListener('click', (e) => {
+            if (isHolding) return;
             if (window.jarvisVoice) {
-                window.jarvisVoice.toggle('journal');
+                window.jarvisVoice.toggle(mode);
             } else {
                 alert('Voice system slow to load. Please wait.');
             }
         });
-    }
+    };
+
+    setupPTT(journalMicBtn, 'journal');
+    setupPTT(jarvisMicBtn, 'command');
 }
 
 function startJarvisVoice() {
