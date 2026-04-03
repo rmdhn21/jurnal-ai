@@ -28,6 +28,8 @@ function startJarvisVoice() {
         if (typeof renderAssistantMessage === 'function') {
             renderAssistantMessage('Silakan sebutkan perintah Anda ke Jarvis...', 'bot');
         }
+    } else {
+        alert('Voice system slow to load. Please wait.');
     }
 }
 
