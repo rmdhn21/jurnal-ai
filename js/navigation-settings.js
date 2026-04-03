@@ -83,6 +83,8 @@ function showScreen(targetScreen) {
         if (typeof refreshLibraryUI === 'function') refreshLibraryUI();
     } else if (targetScreen === 'workout-tracker') {
         if (typeof initWorkoutTracker === 'function') initWorkoutTracker();
+    } else if (targetScreen === 'jmp-generator') {
+        // No special entry logic needed yet
     }
 }
 
@@ -122,6 +124,10 @@ function navigateToJSAGenerator() {
             jsaSection.closest('.card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, 200);
+}
+
+function navigateToJMPGenerator() {
+    navigateToSubscreen('jmp-generator');
 }
 
 function handleBackButton() {

@@ -297,6 +297,13 @@ function showUniversalConfirmCard(cmd) {
         detailsHtml = `
             <div class="confirm-row"><span>Cari:</span><strong>${data.query || ''}</strong></div>
         `;
+    } else if (intent === 'GENERATE_HSE' && data.type?.toLowerCase() === 'jmp') {
+        icon = '🗺️';
+        confirmTitle = 'Buat JMP (Hazard Register)';
+        detailsHtml = `
+            <div class="confirm-row"><span>Tipe:</span><strong>JMP Generator</strong></div>
+            <div class="confirm-row"><span>Catatan:</span><strong>${(data.description || data.notes || '').substring(0, 30)}...</strong></div>
+        `;
     }
 
     const cardHtml = `
@@ -482,6 +489,13 @@ async function executeSingleCommand(cmd) {
             } else if (type === 'tbt') {
                 showScreen('hsse-screen');
                 if (typeof generateTBTDocument === 'function') generateTBTDocument(desc);
+            } else if (type === 'jmp') {
+                if (typeof navigateToJMPGenerator === 'function') navigateToJMPGenerator();
+                const jmpInput = document.getElementById('jmp-input');
+                if (jmpInput) {
+                    jmpInput.value = desc || data.notes || '';
+                    if (typeof generateJMP === 'function') setTimeout(generateJMP, 500);
+                }
             }
         } else if (intent === 'SEARCH_LIBRARY') {
             const query = data.query;

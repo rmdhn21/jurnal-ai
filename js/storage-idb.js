@@ -5,7 +5,7 @@ if (typeof Dexie === 'undefined') {
 const db = new Dexie('JurnalAIDB');
 
 // Define Schema
-db.version(2).stores({
+db.version(3).stores({
     journals: 'id, mood, createdAt, updatedAt, synced',
     tasks: 'id, status, done, createdAt, updatedAt, synced',
     schedules: 'id, datetime, createdAt, updatedAt, synced',
@@ -17,6 +17,8 @@ db.version(2).stores({
     islamic_tracks: 'date, updatedAt, synced', // Primary key is date
     hse_vocab_bank: 'id, word, createdAt, updatedAt, synced',
     saved_generations: 'id, title, category, type, createdAt, updatedAt, synced',
+    rig_memos: 'id, updatedAt, synced',
+    rig_inspection_state: 'id',
     settings: 'key' // For simple key-value settings
 });
 
@@ -61,15 +63,25 @@ async function idbSave(table, data) {
 }
 
 async function idbDelete(table, id) {
-    // Soft delete support would be better for sync, but for now let's do hard delete
-    // or we can add a 'deleted' flag.
-    const item = await db[table].get(id);
+    // Soft delete support
+    // Try provided ID as is
+    let item = await db[table].get(id);
+    
+    // If not found and ID looks like a number, try as number
+    if (!item && typeof id === 'string' && !isNaN(id) && id.trim() !== '') {
+        const numId = Number(id);
+        item = await db[table].get(numId);
+        if (item) id = numId; // Update ID for the final delete call if needed
+    }
+
     if (item) {
         item.deleted = true;
         item.updatedAt = new Date().toISOString();
         item.synced = 0;
         return await db[table].put(item);
     }
+    
+    // Hard delete fallback if not found for soft delete
     return await db[table].delete(id);
 }
 

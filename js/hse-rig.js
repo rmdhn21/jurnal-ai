@@ -597,13 +597,23 @@ function renderInspectionChecklist(containerId, dataArray) {
     loadInspectionState();
 }
 
-function saveInspectionState() {
+async function saveInspectionState() {
     const checkboxes = document.querySelectorAll('.inspection-checkbox');
-    const state = {};
+    const items = [];
     checkboxes.forEach(cb => {
-        if(cb.checked) state[cb.id] = true;
+        if(cb.checked) items.push({ id: cb.id });
     });
-    localStorage.setItem('rigInspectionState', JSON.stringify(state));
+    
+    try {
+        // Clear old state and put new state
+        await db.rig_inspection_state.clear();
+        if (items.length > 0) {
+            await idbBulkSave('rig_inspection_state', items);
+        }
+    } catch(e) {
+        console.error("Error saving inspection state:", e);
+    }
+    
     updateInspectionProgress();
 }
 
@@ -616,51 +626,84 @@ function updateInspectionProgress() {
     }
 }
 
-function loadInspectionState() {
-    const saved = localStorage.getItem('rigInspectionState');
-    if (saved) {
+async function migrateRigToIDB() {
+    const MIGRATED_KEY = 'rig_data_migrated_v3';
+    if (localStorage.getItem(MIGRATED_KEY)) return;
+
+    console.log("🚚 Migrating Rig Inspection data to IndexedDB...");
+
+    // 1. Migrate Checkbox States
+    const savedState = localStorage.getItem('rigInspectionState');
+    if (savedState) {
         try {
-            const state = JSON.parse(saved);
-            Object.keys(state).forEach(id => {
-                const cb = document.getElementById(id);
-                if (cb) cb.checked = state[id];
-            });
-            updateInspectionProgress();
+            const stateObj = JSON.parse(savedState);
+            const items = Object.keys(stateObj).filter(id => stateObj[id]).map(id => ({ id }));
+            if (items.length > 0) {
+                await idbBulkSave('rig_inspection_state', items);
+            }
         } catch(e) {}
     }
-    
-    // Load Memos
+
+    // 2. Migrate Memos
     const savedMemos = localStorage.getItem('rigInspectionMemos');
     if (savedMemos) {
         try {
             const memos = JSON.parse(savedMemos);
-            Object.keys(memos).forEach(id => {
-                const memo = memos[id];
-                const textEl = document.getElementById(`memo-text-${id}`);
-                const previewEl = document.getElementById(`memo-preview-${id}`);
-                const btnMemo = document.getElementById(`btn-memo-${id}`);
-                
-                if (textEl && memo.note) {
-                    textEl.value = memo.note;
-                    if (btnMemo) btnMemo.classList.add('has-content');
-                    // Resize textarea - wait for potential DOM visibility or just try multiple times
-                    const doResize = () => {
-                        textEl.style.height = 'auto';
-                        textEl.style.height = textEl.scrollHeight + 'px';
-                    };
-                    setTimeout(doResize, 100);
-                    setTimeout(doResize, 500); // Fail-safe for slow rendering
-                }
-                
-                // Handle multiple photos (array) or legacy single photo (string)
-                if (memo.photos || memo.photo) {
-                    const photos = memo.photos || (memo.photo ? [memo.photo] : []);
-                    renderRigPhotoGrid(id, photos);
-                    if (photos.length > 0 && btnMemo) btnMemo.classList.add('has-content');
-                }
-            });
-        } catch(e) { console.error("Error loading memos:", e); }
+            const memoEntries = Object.keys(memos).map(id => ({
+                id,
+                ...memos[id]
+            }));
+            if (memoEntries.length > 0) {
+                await idbBulkSave('rig_memos', memoEntries);
+            }
+        } catch(e) {}
     }
+
+    localStorage.setItem(MIGRATED_KEY, 'true');
+    console.log("✅ Rig Inspection data migration complete.");
+}
+
+async function loadInspectionState() {
+    // Run migration if needed
+    await migrateRigToIDB();
+
+    // Load Checkboxes
+    try {
+        const stateItems = await idbGetAll('rig_inspection_state');
+        stateItems.forEach(item => {
+            const cb = document.getElementById(item.id);
+            if (cb) cb.checked = true;
+        });
+        updateInspectionProgress();
+    } catch(e) { console.error("Error loading inspection state:", e); }
+    
+    // Load Memos
+    try {
+        const memos = await idbGetAll('rig_memos');
+        memos.forEach(memo => {
+            const id = memo.id;
+            const textEl = document.getElementById(`memo-text-${id}`);
+            const btnMemo = document.getElementById(`btn-memo-${id}`);
+            
+            if (textEl && memo.note) {
+                textEl.value = memo.note;
+                if (btnMemo) btnMemo.classList.add('has-content');
+                // Resize textarea
+                const doResize = () => {
+                    textEl.style.height = 'auto';
+                    textEl.style.height = textEl.scrollHeight + 'px';
+                };
+                setTimeout(doResize, 100);
+                setTimeout(doResize, 500);
+            }
+            
+            if (memo.photos || memo.photo) {
+                const photos = memo.photos || (memo.photo ? [memo.photo] : []);
+                renderRigPhotoGrid(id, photos);
+                if (photos.length > 0 && btnMemo) btnMemo.classList.add('has-content');
+            }
+        });
+    } catch(e) { console.error("Error loading memos:", e); }
 }
 
 function renderRigPhotoGrid(cbId, photos) {
@@ -777,22 +820,18 @@ async function handleRigPhotos(event, cbId) {
     event.target.value = '';
 }
 
-function saveRigMemo(cbId) {
+async function saveRigMemo(cbId) {
     try {
         const note = document.getElementById(`memo-text-${cbId}`).value;
         const grid = document.getElementById(`memo-photo-grid-${cbId}`);
         const photos = grid && grid.dataset.photos ? JSON.parse(grid.dataset.photos) : [];
         
-        const savedMemos = localStorage.getItem('rigInspectionMemos');
-        const memos = savedMemos ? JSON.parse(savedMemos) : {};
-        
-        memos[cbId] = {
+        await idbSave('rig_memos', {
+            id: cbId,
             note: note,
             photos: photos,
             updatedAt: new Date().toISOString()
-        };
-        
-        localStorage.setItem('rigInspectionMemos', JSON.stringify(memos));
+        });
         
         // UI Feedback
         const status = document.getElementById(`memo-status-${cbId}`);
@@ -812,11 +851,11 @@ function saveRigMemo(cbId) {
         }
     } catch (e) {
         console.error("Storage Error:", e);
-        alert("Gagal menyimpan! Memori browser mungkin sudah penuh. Coba hapus beberapa foto atau catatan lama.");
+        alert("Gagal menyimpan! Masalah pada database browser.");
     }
 }
 
-function clearRigMemo(cbId) {
+async function clearRigMemo(cbId) {
     if (!confirm('Hapus memo dan semua foto untuk item ini?')) return;
     
     const textEl = document.getElementById(`memo-text-${cbId}`);
@@ -833,12 +872,9 @@ function clearRigMemo(cbId) {
     }
     if (btnMemo) btnMemo.classList.remove('has-content');
     
-    const savedMemos = localStorage.getItem('rigInspectionMemos');
-    if (savedMemos) {
-        const memos = JSON.parse(savedMemos);
-        delete memos[cbId];
-        localStorage.setItem('rigInspectionMemos', JSON.stringify(memos));
-    }
+    try {
+        await idbDelete('rig_memos', cbId);
+    } catch(e) { console.error("Error clearing memo:", e); }
     
     toggleRigMemo(cbId);
 }
@@ -850,12 +886,14 @@ async function generateInspectionPDF() {
     if (!rigName) return;
 
     // Load state
-    const saved = localStorage.getItem('rigInspectionState');
-    const state = saved ? JSON.parse(saved) : {};
+    const stateItems = await idbGetAll('rig_inspection_state');
+    const state = {};
+    stateItems.forEach(item => state[item.id] = true);
     
     // Load Memos
-    const savedMemos = localStorage.getItem('rigInspectionMemos');
-    const memos = savedMemos ? JSON.parse(savedMemos) : {};
+    const memoItems = await idbGetAll('rig_memos');
+    const memos = {};
+    memoItems.forEach(item => memos[item.id] = item);
 
     // Generate HTML for PDF
     const printDiv = document.createElement('div');

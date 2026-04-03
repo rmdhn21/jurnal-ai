@@ -4,73 +4,15 @@ let isRecording = false;
 let speechMode = 'journal'; // 'journal' or 'jarvis' (universal)
 
 function initVoiceInput() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        console.warn('Voice input not supported in this browser.');
-        const micBtn = document.getElementById('mic-btn');
-        if (micBtn) micBtn.style.display = 'none';
-        return;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.continuous = false; // Set to false to auto-stop after speaking
-    recognition.interimResults = true;
-    recognition.lang = 'id-ID';
-
-    recognition.onstart = function () {
-        isRecording = true;
-        updateMicUI(true);
-    };
-
-    recognition.onend = function () {
-        isRecording = false;
-        updateMicUI(false);
-    };
-
-    recognition.onresult = function (event) {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript;
-            }
-        }
-
-        if (finalTranscript) {
-            handleSpeechResult(finalTranscript);
-        }
-    };
-
-    recognition.onerror = function (event) {
-        console.error('Speech recognition error', event.error);
-        stopRecording();
-        if (event.error === 'not-allowed') {
-            alert('Akses mikrofon ditolak. Izinkan akses untuk menggunakan fitur ini.');
-        }
-    };
-
     const micBtn = document.getElementById('mic-btn');
     if (micBtn) {
         micBtn.addEventListener('click', () => {
-            speechMode = 'journal';
-            toggleRecording();
+            if (window.jarvisVoice) {
+                window.jarvisVoice.toggle('journal');
+            } else {
+                alert('Voice system slow to load. Please wait.');
+            }
         });
-    }
-}
-
-function handleSpeechResult(transcript) {
-    if (speechMode === 'journal') {
-        const journalInput = document.getElementById('journal-input');
-        if (journalInput) {
-            const currentText = journalInput.value;
-            const separator = currentText.length > 0 && !currentText.endsWith(' ') ? ' ' : '';
-            journalInput.value = currentText + separator + transcript;
-            journalInput.dispatchEvent(new Event('input'));
-        }
-    } else if (speechMode === 'jarvis') {
-        renderAssistantMessage(`"${transcript}"...`, 'user');
-        if (typeof processAICommand === 'function') {
-            processAICommand(transcript);
-        }
     }
 }
 
@@ -80,44 +22,26 @@ function startJarvisVoice() {
         navigateToScreen('jarvis');
     }
 
-    speechMode = 'jarvis';
-    startRecording();
-    renderAssistantMessage('Silakan sebutkan perintah Anda ke Jarvis...', 'bot');
-}
-
-function toggleRecording() {
-    if (isRecording) {
-        stopRecording();
-    } else {
-        startRecording();
+    if (window.jarvisVoice) {
+        window.jarvisVoice.toggle('command');
+        if (typeof renderAssistantMessage === 'function') {
+            renderAssistantMessage('Silakan sebutkan perintah Anda ke Jarvis...', 'bot');
+        }
     }
 }
 
-function startRecording() {
-    try { recognition.start(); } catch (e) { console.error('Failed to start recording:', e); }
-}
-
-function stopRecording() {
-    try { recognition.stop(); } catch (e) { console.error('Failed to stop recording:', e); }
-}
+// These are now handled by jarvis-voice.js
+function toggleRecording() { if (window.jarvisVoice) window.jarvisVoice.toggle(speechMode); }
+function startRecording() { if (window.jarvisVoice && window.jarvisVoice.recognition) window.jarvisVoice.recognition.start(); }
+function stopRecording() { if (window.jarvisVoice && window.jarvisVoice.recognition) window.jarvisVoice.recognition.stop(); }
 
 function updateMicUI(recording) {
+    // This is now partially handled by jarvis-voice.js onstart/onend, 
+    // but we can keep it for manual UI updates if needed.
     const micBtn = document.getElementById('mic-btn');
-    const statusText = document.getElementById('recording-status');
-
-    if (micBtn && speechMode === 'journal') {
+    if (micBtn) {
         micBtn.innerHTML = recording ? '⏹️' : '🎤';
         micBtn.classList.toggle('mic-active', recording);
-    }
-    
-    // Also visual indicator in AI drawer if in jarvis mode
-    const aiMicFeedback = document.getElementById('ai-mic-indicator');
-    if (aiMicFeedback) {
-        aiMicFeedback.classList.toggle('hidden', !recording);
-    }
-
-    if (statusText) {
-        statusText.classList.toggle('hidden', !recording);
     }
 }
 

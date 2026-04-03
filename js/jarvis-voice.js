@@ -8,6 +8,8 @@ window.jarvisVoice = {
     isRecording: false,
     synth: window.speechSynthesis,
 
+    mode: 'command', // 'command' or 'journal'
+
     init: function() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -22,7 +24,12 @@ window.jarvisVoice = {
 
         this.recognition.onstart = () => {
             this.isRecording = true;
-            if (window.jarvisUI) window.jarvisUI.show();
+            if (this.mode === 'command' && window.jarvisUI) window.jarvisUI.show();
+            if (this.mode === 'journal') {
+                const statusText = document.getElementById('recording-status');
+                if (statusText) statusText.classList.remove('hidden');
+                if (typeof updateMicUI === 'function') updateMicUI(true);
+            }
         };
 
         this.recognition.onresult = (event) => {
@@ -30,78 +37,85 @@ window.jarvisVoice = {
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
                     const finalTranscript = event.results[i][0].transcript;
-                    if (window.jarvisUI) window.jarvisUI.updateTranscript(finalTranscript);
-                    this.process(finalTranscript);
+                    if (this.mode === 'command') {
+                        if (window.jarvisUI) window.jarvisUI.updateTranscript(finalTranscript);
+                        this.process(finalTranscript);
+                    } else if (this.mode === 'journal') {
+                        this.handleJournalResult(finalTranscript);
+                    }
                 } else {
                     interimTranscript += event.results[i][0].transcript;
-                    if (window.jarvisUI) window.jarvisUI.updateTranscript(interimTranscript);
+                    if (this.mode === 'command' && window.jarvisUI) window.jarvisUI.updateTranscript(interimTranscript);
+                    if (this.mode === 'journal') {
+                         // Optional: show interim in journal field or status
+                    }
                 }
             }
         };
 
         this.recognition.onend = () => {
             this.isRecording = false;
-            // Don't hide immediately to allow "Processing" view
-            setTimeout(() => {
-                if (!this.isRecording && window.jarvisUI) window.jarvisUI.hide();
-            }, 3000);
+            if (this.mode === 'command') {
+                setTimeout(() => {
+                    if (!this.isRecording && window.jarvisUI) window.jarvisUI.hide();
+                }, 3000);
+            } else {
+                const statusText = document.getElementById('recording-status');
+                if (statusText) statusText.classList.add('hidden');
+                if (typeof updateMicUI === 'function') updateMicUI(false);
+            }
         };
 
         this.recognition.onerror = (event) => {
             console.error('Speech Recognition Error:', event.error);
             this.isRecording = false;
-            if (window.jarvisUI) {
-                let errorMsg = 'Error: ' + event.error;
-                if (event.error === 'not-allowed' || event.error === 'audio-capture') {
-                    errorMsg = '🎙️ Izin mikrofon ditolak. Buka Settings browser → izinkan mikrofon untuk situs ini.';
-                } else if (event.error === 'network') {
-                    errorMsg = '🌐 Tidak ada koneksi internet untuk speech recognition.';
-                } else if (event.error === 'no-speech') {
-                    errorMsg = '🔇 Tidak ada suara terdeteksi. Coba bicara lebih dekat.';
-                }
+            
+            let errorMsg = 'Error: ' + event.error;
+            if (event.error === 'not-allowed' || event.error === 'audio-capture') {
+                errorMsg = '🎙️ Izin mikrofon ditolak. Buka Settings browser → izinkan mikrofon untuk situs ini.';
+            } else if (event.error === 'no-speech') {
+                errorMsg = '🔇 Tidak ada suara terdeteksi. Bicara lebih dekat.';
+            }
+
+            if (this.mode === 'command' && window.jarvisUI) {
                 window.jarvisUI.updateStatus('Error');
                 window.jarvisUI.updateTranscript(errorMsg);
                 setTimeout(() => window.jarvisUI.hide(), 4000);
+            } else if (this.mode === 'journal') {
+                const statusText = document.getElementById('recording-status');
+                if (statusText) statusText.innerText = 'Mic Error: ' + event.error;
             }
         };
     },
 
-    toggle: function() {
+    toggle: function(mode = 'command') {
+        this.mode = mode;
         if (!this.recognition) this.init();
         if (!this.recognition) {
-            alert('Fitur Voice tidak didukung di browser ini. Gunakan Chrome.');
+            alert('Voice not supported on this device.');
             return;
         }
 
         if (this.isRecording) {
             this.recognition.stop();
         } else {
-            // Mobile requires explicit microphone permission first
-            this.requestMicAndStart();
+            // iOS CRITICAL: Must start synchronously in click handler
+            try {
+                this.recognition.start();
+            } catch (e) {
+                console.error("Start failed:", e);
+                // Try to handle "already started" error silently
+            }
         }
     },
 
-    requestMicAndStart: async function() {
-        try {
-            // Request microphone permission explicitly (required on mobile browsers)
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                // Stop the stream immediately — we just need the permission grant
-                stream.getTracks().forEach(track => track.stop());
-            }
-
-            // Now start recognition (permission already granted)
-            this.recognition.start();
-        } catch(e) {
-            console.error('Mic Permission Error:', e);
-            if (window.jarvisUI) {
-                window.jarvisUI.show();
-                window.jarvisUI.updateStatus('Mic Denied');
-                window.jarvisUI.updateTranscript('🎙️ Izin mikrofon ditolak. Buka Settings browser → izinkan mikrofon untuk situs ini.');
-                setTimeout(() => window.jarvisUI.hide(), 5000);
-            } else {
-                alert('Izin mikrofon ditolak. Buka Settings browser dan izinkan mikrofon.');
-            }
+    handleJournalResult: function(transcript) {
+        const journalInput = document.getElementById('journal-input');
+        if (journalInput) {
+            const currentText = journalInput.value;
+            const separator = currentText.length > 0 && !currentText.endsWith(' ') ? ' ' : '';
+            journalInput.value = currentText + separator + transcript;
+            journalInput.dispatchEvent(new Event('input'));
         }
     },
 

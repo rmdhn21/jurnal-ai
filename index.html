@@ -506,6 +506,11 @@
                         <span class="hub-label">PJSM Generator</span>
                         <p class="hub-desc">Generate Pre-Job Safety Meeting otomatis.</p>
                     </button>
+                    <button class="hub-btn" onclick="navigateToJMPGenerator()">
+                        <div class="hub-icon" style="background: #fff1f2; color: #e11d48;">🗺️</div>
+                        <span class="hub-label">JMP Generator</span>
+                        <p class="hub-desc">Tabel Hazard Register Journey Management Plan.</p>
+                    </button>
                     <button class="hub-btn" onclick="navigateToJSAGenerator()">
                         <div class="hub-icon" style="background: #ebf8ff; color: #2b6cb0;">📑</div>
                         <span class="hub-label">AI JSA & PTW</span>
@@ -1201,6 +1206,51 @@
                 </div>
             </section>
 
+            <!-- Screen: JMP Generator -->
+            <section id="jmp-generator-screen" class="screen">
+                <div class="card" style="border-left: 4px solid #e11d48;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <span>🗺️</span> JMP Generator
+                        </h2>
+                        <span class="badge-ai">HSSE Expert</span>
+                    </div>
+                    <p class="text-muted mt-sm" style="font-size: 0.85rem;">Ubah catatan survei lapangan menjadi Tabel Hazard Register JMP profesional secara otomatis.</p>
+                </div>
+
+                <div class="card mt-md">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; color: var(--primary);">📝 Catatan Hasil Survei / Kondisi Jalan:</label>
+                    <textarea id="jmp-input" class="form-control" rows="6" placeholder="Contoh: KM 12 amblas, ada tiang listrik miring, jembatan KM 15 sempit..."></textarea>
+                    
+                    <button id="generate-jmp-btn" class="btn btn-primary w-100 mt-md" onclick="generateJMP()">
+                        ⚡ Generate Tabel Hazard Register JMP
+                    </button>
+                </div>
+
+                <!-- JMP Result Area -->
+                <div id="jmp-result-area" class="hidden mt-lg">
+                    <div class="card" style="background: var(--surface-hover); border: 1px solid var(--primary);">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
+                            <h3 style="margin: 0; font-size: 1rem;">🛡️ Hasil Hazard Register JMP</h3>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-secondary btn-xs" onclick="copyJMP()">📋 Copy</button>
+                                <button class="btn btn-secondary btn-xs" onclick="saveJMPToLibrary()">💾 Simpan</button>
+                            </div>
+                        </div>
+                        <div id="jmp-content" class="p-md" style="font-size: 0.9rem; overflow-x: auto;">
+                            <!-- AI Result Table Table will go here -->
+                        </div>
+                        <div class="card-footer" style="padding-top: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
+                            <button class="btn btn-ai w-100" onclick="exportJMPToPDF()">📄 Export PDF Professional</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="jmp-loading" class="hidden text-center p-xl">
+                    <div class="loading-spinner" style="margin: 0 auto 15px;"></div>
+                    <p class="text-muted">Sedang menganalisis 10 Hazard Energy & mitigasi...</p>
+                </div>
+            </section>
         </main>
 
         <!-- AI Analysis Modal -->
@@ -2419,6 +2469,7 @@
     <script src="js/english-hse.js"></script>
     <script src="js/english-fluency.js"></script>
     <script src="js/hse-rig.js"></script>
+    <script src="js/jmp-generator.js"></script>
     <script src="js/epls.js"></script>
     <script src="js/lesson-tools.js"></script>
     <script src="js/workout-tracker.js"></script>

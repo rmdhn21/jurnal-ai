@@ -180,6 +180,14 @@ async function saveJournal(journal) {
 
 async function deleteJournal(id) {
     await idbDelete('journals', id);
+    if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
+        const raw = localStorage.getItem(STORAGE_KEYS.JOURNALS);
+        if (raw) {
+            let journals = JSON.parse(raw);
+            journals = journals.filter(j => j.id != id);
+            localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(journals));
+        }
+    }
     triggerCloudSync();
 }
 
@@ -640,5 +648,13 @@ async function saveGeneration(item) {
 
 async function deleteSavedGeneration(id) {
     await idbDelete('saved_generations', id);
+    if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
+        const raw = localStorage.getItem(STORAGE_KEYS.SAVED_GENERATIONS);
+        if (raw) {
+            let items = JSON.parse(raw);
+            items = items.filter(it => it.id != id);
+            localStorage.setItem(STORAGE_KEYS.SAVED_GENERATIONS, JSON.stringify(items));
+        }
+    }
     triggerCloudSync();
 }
