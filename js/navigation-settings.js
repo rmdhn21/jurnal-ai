@@ -83,6 +83,9 @@ function showScreen(targetScreen) {
         if (typeof refreshLibraryUI === 'function') refreshLibraryUI();
     } else if (targetScreen === 'workout-tracker') {
         if (typeof initWorkoutTracker === 'function') initWorkoutTracker();
+    } else if (targetScreen === 'oxford-vocab') {
+        if (typeof renderOxfordWordList === 'function') renderOxfordWordList();
+        if (typeof updateOxfordProgressBars === 'function') updateOxfordProgressBars();
     } else if (targetScreen === 'jmp-generator') {
         // No special entry logic needed yet
     }

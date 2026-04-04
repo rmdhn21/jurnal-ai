@@ -18,15 +18,18 @@ Tugasmu: Ekstrak data transaksi dari kalimat berikut: "${transcript}"
 KONTEKS DOMPET YANG TERSEDIA:
 ${walletContext}
 
-ATURAN EKSTRAKSI:
-1. "amount": Angka nominal (hilangkan titik/koma desimal, pastikan integer).
-2. "type": Harus "expense" (pengeluaran) atau "income" (pemasukan).
-3. "category": Kategori singkat (misal: Makan, Transport, Gaji, Belanja).
-4. "description": Deskripsi singkat transaksi.
-5. "walletId": Pilih ID dompet yang paling cocok dari daftar di atas. Jika tidak disebutkan "tunai" atau "cash", asumsikan "wallet_default".
+ATURAN EKSTRAKSI (WAJIB):
+1. "amount": Angka nominal (integer).
+2. "type": "expense" (pengeluaran) atau "income" (pemasukan).
+3. "category": WAJIB pilih salah satu dari daftar ini:
+   - Pemasukan: "Gaji", "Profit Trading/Investasi", "Pemasukan Lainnya".
+   - Pengeluaran: "Makan & Minum", "Kebutuhan Harian/Bulanan", "Transportasi", "Tagihan & Utilitas", "Tempat Tinggal", "Tabungan Nikah", "Edukasi & Pengembangan", "Hiburan & Nongkrong", "Sosial & Sedekah", "Lain-lain / Tak Terduga".
+4. "description": Jika pengguna menyebut item spesifik (misal: "beli telur", "jajan bakso"), tulis item tersebut di sini. Jangan gunakan "Tanpa Nama".
+5. "walletId": Pilih ID dompet yang paling cocok. Jika tidak disebutkan, gunakan "wallet_default".
 
-Gunakan Bahasa Indonesia.
-KEMBALIKAN HANYA JSON DENGAN STRUKTUR:
+PENTING: Jika pengguna bilang "beli telur", maka description="Beli telur" dan category="Makan & Minum" atau "Kebutuhan Harian/Bulanan".
+
+KEMBALIKAN HANYA JSON:
 {
   "amount": number,
   "type": "expense" | "income",

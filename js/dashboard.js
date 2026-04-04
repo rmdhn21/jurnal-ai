@@ -406,7 +406,7 @@ Gunakan bahasa Indonesia yang hangat dan memotivasi.`;
             Arus Kas Bersih: ${formatCurrency(income - expense)}
             Savings Rate: ${Math.round(savingsRate)}%
             Batas Anggaran (Budget): ${JSON.stringify(budgets)}
-            Daftar Transaksi: ${JSON.stringify(data.slice(-20))}
+            Daftar Transaksi: ${JSON.stringify(data.slice(0, 20))}
 
             Berikan laporan profesional dalam format HTML:
             <div class="pro-analysis">

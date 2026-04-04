@@ -5,7 +5,7 @@ if (typeof Dexie === 'undefined') {
 const db = new Dexie('JurnalAIDB');
 
 // Define Schema
-db.version(3).stores({
+db.version(5).stores({
     journals: 'id, mood, createdAt, updatedAt, synced',
     tasks: 'id, status, done, createdAt, updatedAt, synced',
     schedules: 'id, datetime, createdAt, updatedAt, synced',
@@ -16,6 +16,8 @@ db.version(3).stores({
     budgets: 'id, category, createdAt, updatedAt, synced',
     islamic_tracks: 'date, updatedAt, synced', // Primary key is date
     hse_vocab_bank: 'id, word, createdAt, updatedAt, synced',
+    oxford_mastery: 'id, level, status, updatedAt, synced',
+    oxford_words: 'id, word, level, trans, def, ipa, updatedAt, synced',
     saved_generations: 'id, title, category, type, createdAt, updatedAt, synced',
     rig_memos: 'id, updatedAt, synced',
     rig_inspection_state: 'id',

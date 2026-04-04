@@ -103,15 +103,32 @@ window.jarvisVoice = {
             // Immediate UI feedback
             if (typeof updateMicUI === 'function') updateMicUI(true);
             
-            // iOS CRITICAL: Must start synchronously in click handler
+            // iOS CRITICAL: Must start synchronously in click/pointer handler
             try {
                 this.recognition.start();
                 console.log("🎤 Recognition started (mode: " + mode + ")");
             } catch (e) {
                 console.error("Start failed:", e);
+                // Try one more time with a "warm-up"
+                this.prepare();
+                setTimeout(() => {
+                    try { this.recognition.start(); } catch(e2) { console.error("Retry failed:", e2); }
+                }, 50);
                 if (typeof updateMicUI === 'function') updateMicUI(false);
             }
         }
+    },
+
+    // iOS/Safari Warm-up to unlock AudioContext
+    prepare: function() {
+        if (!this.recognition) this.init();
+        if (this.synth) {
+            // Speak an empty string to unlock audio
+            const utter = new SpeechSynthesisUtterance("");
+            this.synth.speak(utter);
+        }
+        // Resume AudioContext if available (usually handled by window.webkitSpeechRecognition internally)
+        console.log("🔊 Voice system warmed up for gesture.");
     },
 
     forceStop: function() {

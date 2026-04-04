@@ -93,6 +93,8 @@ function renderAssistantMessage(text, sender) {
         let html = text
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\[REF: (.*?)\]/g, '<span class="tech-ref-badge">$1</span>')
+            .replace(/\[DISCLAIMER\]/g, '<span class="tech-ref-disclaimer">⚠️ Catatan: Ini adalah rujukan cepat. Verifikasi selalu dengan dokumen sertifikasi terbaru dan SOP Perusahaan Anda.</span>')
             .replace(/\n/g, '<br>')
             .replace(/^- (.*)/gm, '• $1');
         msgDiv.innerHTML = html;
@@ -125,12 +127,16 @@ async function aggregateUserContext() {
 
     // Last 14 days grouping
     const dailySnapshot = {};
+    const categorySpending = {};
+    let totalIncome14 = 0;
+    let totalExpense14 = 0;
+
     const now = new Date();
     for (let i = 0; i < 14; i++) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
-        dailySnapshot[dateStr] = { mood: null, tasksCompleted: 0, spending: 0, subuh: false };
+        dailySnapshot[dateStr] = { mood: null, tasksCompleted: 0, spending: 0, income: 0, subuh: false };
     }
 
     // Map Journals (last 14 days)
@@ -146,20 +152,42 @@ async function aggregateUserContext() {
     });
 
     // Map Transactions (last 14 days)
-    transactions.filter(t => t.type === 'expense').forEach(t => {
+    transactions.forEach(t => {
         const date = t.date;
-        if (dailySnapshot[date]) dailySnapshot[date].spending += (t.amount || 0);
+        if (dailySnapshot[date]) {
+            if (t.type === 'expense') {
+                dailySnapshot[date].spending += (t.amount || 0);
+                totalExpense14 += (t.amount || 0);
+                categorySpending[t.category] = (categorySpending[t.category] || 0) + t.amount;
+            } else {
+                dailySnapshot[date].income += (t.amount || 0);
+                totalIncome14 += (t.amount || 0);
+            }
+        }
     });
 
-    // Map Islamic Track (Subuh only for correlation)
+    // Map Islamic Track (Subuh only)
     Object.values(islamicTracks).forEach(t => {
         if (dailySnapshot[t.date]) dailySnapshot[t.date].subuh = t.prayers?.subuh || false;
     });
 
     const snapshotText = Object.entries(dailySnapshot)
         .sort((a, b) => b[0].localeCompare(a[0]))
-        .map(([date, data]) => `- ${date}: Mood ${data.mood || '?'}, Selesai ${data.tasksCompleted} tugas, Jajan Rp ${data.spending.toLocaleString('id-ID')}, Subuh: ${data.subuh ? 'Ya' : 'Tidak'}`)
+        .map(([date, data]) => `- ${date}: Mood ${data.mood || '?'}, Tugas ${data.tasksCompleted}, In: ${data.income.toLocaleString('id-ID')}, Out: ${data.spending.toLocaleString('id-ID')}, Subuh: ${data.subuh ? 'Ya' : 'Tidak'}`)
         .join('\n');
+
+    // Top 3 Categories
+    const topCategories = Object.entries(categorySpending)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([cat, amt]) => `${cat}: Rp ${amt.toLocaleString('id-ID')}`)
+        .join(', ');
+
+    // Budget Warnings
+    const budgetWarnings = budgets.filter(b => {
+        const spent = categorySpending[b.category] || 0;
+        return b.dailyLimit > 0 && spent > (b.dailyLimit * 7); // Rough week check
+    }).map(b => b.category).join(', ');
 
     const totalBalance = wallets.reduce((s, w) => s + (w.balance || 0), 0);
     const pendingTasksCount = tasks.filter(t => !t.done).length;
@@ -168,9 +196,16 @@ async function aggregateUserContext() {
 === KONTEKS ANALITIK (14 HARI TERAKHIR) ===
 ${snapshotText}
 
-RINGKASAN SAAT INI:
-Total Saldo: Rp ${totalBalance.toLocaleString('id-ID')}
-Tugas Pending: ${pendingTasksCount} item
+RINGKASAN FINANSIAL (14 HARI):
+- Total Pemasukan: Rp ${totalIncome14.toLocaleString('id-ID')}
+- Total Pengeluaran: Rp ${totalExpense14.toLocaleString('id-ID')}
+- Net Flow: Rp ${(totalIncome14 - totalExpense14).toLocaleString('id-ID')}
+- Pengeluaran Terbesar: ${topCategories || 'Belum ada data'}
+- Peringatan Budget: ${budgetWarnings || 'Semua aman'}
+
+STATUS SAAT INI:
+- Total Saldo (Semua Dompet): Rp ${totalBalance.toLocaleString('id-ID')}
+- Tugas Pending: ${pendingTasksCount} item
 ===========================================
     `;
 }
@@ -181,19 +216,20 @@ async function getGlobalAIResponse(userMessage) {
 
     const context = await aggregateUserContext();
     
-    const systemPrompt = `Kamu adalah "Jurnal AI Assistant - Personal Mentor". Tugasmu membantu pengguna sukses dengan menganalisis korelasi antar data mereka.
+    const systemPrompt = `Kamu adalah "Jurnal AI Assistant - Personal Finance Advisor & Wealth Planner". Tugasmu membantu pengguna sukses secara finansial dengan menganalisis data mereka.
 
 DATA KONTEKS (14 HARI TERAKHIR):
 ${context}
 
 STRATEGI ANALISIS:
-1. Cari hubungan antara Mood vs Pengeluaran (Contoh: "Kamu belanja impulsif saat mood Bad").
-2. Cari hubungan antara Sholat Subuh vs Produktivitas (Contoh: "Produktivitasmu naik 40% saat Subuh tepat waktu").
-3. Cari hubungan antara Saldo vs Mood.
+1. CARI KEBOCORAN: Analisis pengeluaran terbesar vs budget. Jika ada kategori "Waspada", berikan solusi.
+2. OPTIMASI CASHFLOW: Bandingkan In vs Out. Sarankan alokasi ke Dana Darurat atau Investasi jika ada surplus.
+3. KORELASI GAYA HIDUP: Hubungkan Mood vs Spending. (Contoh: "Kamu belanja impulsif saat mood Bad").
+4. PLANNING MASA DEPAN: Bantu proyeksi tabungan (misal: Tabungan Nikah) berdasarkan sisa saldo.
 
 ATURAN KOMUNIKASI:
-- Berikan insight yang "Aha!" (mengejutkan dan berguna).
-- Gunakan Bahasa Indonesia yang PADAT dan LANGSUNG KE INTI.
+- Berikan insight yang asertif dan berbasis angka (Jangan cuma "hemat ya").
+- Gunakan Bahasa Indonesia yang profesional namun suportif.
 - JANGAN berikan saran umum; gunakan angka dari data di atas.
 - Pastikan jawaban lengkap (tidak terpotong).`;
 

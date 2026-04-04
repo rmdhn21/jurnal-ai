@@ -95,6 +95,160 @@
             width: 0%;
             transition: width 0.3s ease;
         }
+
+        /* Voice Button iOS Suppression */
+        #mic-btn, 
+        #jarvis-global-fab,
+        #jarvis-input-mic,
+        .jarvis-quick-actions .qa-btn:first-child {
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+            touch-action: none !important;
+        }
+
+        /* Global FAB Styles */
+        #jarvis-global-fab {
+            position: fixed;
+            right: 20px;
+            bottom: 100px; /* Above Bottom Nav Bar */
+            width: 58px;
+            height: 58px;
+            background: linear-gradient(135deg, var(--primary), #fbbf24);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.4);
+            z-index: 999;
+            cursor: pointer;
+            animation: jarvis-pulse 3s infinite;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #jarvis-global-fab:active {
+            transform: scale(0.9);
+        }
+
+        @keyframes jarvis-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        /* Oxford 3000 Styles */
+        .oxford-level-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .oxford-level-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .oxford-level-card:active { transform: scale(0.95); }
+
+        .oxford-level-card.active {
+            border-color: var(--primary);
+            background: rgba(245, 158, 11, 0.05);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+        }
+
+        .oxford-level-card h4 { margin: 0; font-size: 1.2rem; }
+        .oxford-level-card p { margin: 4px 0 0; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+
+        .oxford-progress-mini {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .oxford-progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .oxford-word-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .oxford-word-item {
+            background: var(--surface-hover);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .oxford-word-item:active { transform: scale(0.95); }
+        .oxford-word-item.mastered { border-color: #38a169; background: rgba(56, 161, 105, 0.05); color: #38a169; }
+
+        .oxford-learning-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 400px;
+            z-index: 2000;
+            animation: modal-fade-in 0.3s;
+        }
+
+        /* Tech Reference Badge UI */
+        .tech-ref-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            color: #22d3ee;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 4px 0;
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.1);
+        }
+        .tech-ref-badge::before {
+            content: "📑";
+            font-size: 0.8rem;
+        }
+        .tech-ref-disclaimer {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-style: italic;
+            border-top: 1px dashed var(--border);
+            margin-top: 10px;
+            padding-top: 8px;
+            display: block;
+        }
     </style>
 </head>
 
@@ -245,9 +399,13 @@
                 <div class="jarvis-input-area" style="margin-top: 15px;">
                     <div class="ai-input-wrapper" style="position: relative; display: flex; align-items: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px;">
                         <textarea id="ai-assistant-input" placeholder="Perintah Jarvis (Gunakan @ untuk panggil modul)..." rows="1" style="flex: 1; background: transparent; border: none; color: white; outline: none; padding: 8px 0; font-size: 0.9rem; resize: none;"></textarea>
-                        <button id="send-ai-assistant-btn" class="send-btn" style="background: var(--primary); color: white; border: none; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                        </button>
+                        
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button id="jarvis-input-mic" class="icon-btn" title="Hold to Speak" style="padding: 0 5px; font-size: 1.3rem;">🎙️</button>
+                            <button id="send-ai-assistant-btn" class="send-btn" style="background: var(--primary); color: white; border: none; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -284,6 +442,10 @@
                     <button class="hub-btn" onclick="navigateToSubscreen('kanban')">
                         <div class="hub-icon" style="background: rgba(245, 101, 101, 0.1); color: #fc8181; border: 1px solid rgba(245, 101, 101, 0.2);">📊</div>
                         <span class="hub-label">Kanban</span>
+                    </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('oxford-vocab')">
+                        <div class="hub-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);">🇬🇧</div>
+                        <span class="hub-label">Oxford 3000</span>
                     </button>
                     <button class="hub-btn" onclick="navigateToSubscreen('journal')">
                         <div class="hub-icon" style="background: rgba(237, 137, 54, 0.1); color: #f6ad55; border: 1px solid rgba(237, 137, 54, 0.2);">📝</div>
@@ -982,8 +1144,29 @@
                             <input type="number" id="transaction-amount" placeholder="Jumlah" class="input">
                             <input type="date" id="transaction-date" class="input">
                         </div>
-                        <input type="text" id="transaction-category" placeholder="Kategori (misal: Gaji, Makan)"
-                            class="input">
+                        <div class="form-group">
+                            <label>Kategori</label>
+                            <select id="transaction-category" class="input">
+                                <option value="" disabled selected>Pilih Kategori...</option>
+                                <optgroup label="📥 Pemasukan (Inflows)">
+                                    <option value="Gaji">Gaji</option>
+                                    <option value="Profit Trading/Investasi">Profit Trading/Investasi</option>
+                                    <option value="Pemasukan Lainnya">Pemasukan Lainnya</option>
+                                </optgroup>
+                                <optgroup label="📤 Pengeluaran (Outflows)">
+                                    <option value="Makan & Minum">Makan & Minum</option>
+                                    <option value="Kebutuhan Harian/Bulanan">Kebutuhan Harian/Bulanan</option>
+                                    <option value="Transportasi">Transportasi</option>
+                                    <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                                    <option value="Tempat Tinggal">Tempat Tinggal</option>
+                                    <option value="Tabungan Nikah">Tabungan Nikah</option>
+                                    <option value="Edukasi & Pengembangan">Edukasi & Pengembangan</option>
+                                    <option value="Hiburan & Nongkrong">Hiburan & Nongkrong</option>
+                                    <option value="Sosial & Sedekah">Sosial & Sedekah</option>
+                                    <option value="Lain-lain / Tak Terduga">Lain-lain / Tak Terduga</option>
+                                </optgroup>
+                            </select>
+                        </div>
 
                         <input type="text" id="transaction-desc" placeholder="Deskripsi (opsional)" class="input">
                         <button id="add-transaction-btn" class="btn btn-primary">+ Tambah Transaksi</button>
@@ -992,7 +1175,45 @@
 
                 <!-- Transaction List -->
                 <div class="card">
-                    <h3>📜 Riwayat Transaksi</h3>
+                    <div class="card-header">
+                        <h3 style="margin: 0;">📜 Riwayat Transaksi</h3>
+                        <div class="flex-row gap-xs" style="margin-top: 5px;">
+                            <select id="filter-type" class="btn btn-small btn-secondary text-xs" style="border: 1px solid var(--border); background: var(--surface);">
+                                <option value="all">Semua Jenis</option>
+                                <option value="income">💵 Pemasukan</option>
+                                <option value="expense">💸 Pengeluaran</option>
+                            </select>
+                            <select id="filter-category" class="btn btn-small btn-secondary text-xs" style="border: 1px solid var(--border); background: var(--surface); max-width: 140px;">
+                                <option value="all">Semua Kategori</option>
+                                <optgroup label="📥 Pemasukan">
+                                    <option value="Gaji">Gaji</option>
+                                    <option value="Profit Trading/Investasi">Profit Trading/investasi</option>
+                                    <option value="Pemasukan Lainnya">Pemasukan Lainnya</option>
+                                </optgroup>
+                                <optgroup label="📤 Pengeluaran">
+                                    <option value="Makan & Minum">Makan & Minum</option>
+                                    <option value="Kebutuhan Harian/Bulanan">Kebutuhan Harian</option>
+                                    <option value="Transportasi">Transportasi</option>
+                                    <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                                    <option value="Tempat Tinggal">Tempat Tinggal</option>
+                                    <option value="Tabungan Nikah">Tabungan Nikah</option>
+                                    <option value="Edukasi & Pengembangan">Edukasi & Pengembangan</option>
+                                    <option value="Hiburan & Nongkrong">Hiburan & Nongkrong</option>
+                                    <option value="Sosial & Sedekah">Sosial & Sedekah</option>
+                                    <option value="Lain-lain / Tak Terduga">Lain-lain</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="form-group mb-sm" style="padding: 0 5px; margin-top: 10px;">
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <span style="position: absolute; left: 12px; color: var(--text-muted); font-size: 0.9rem;">🔍</span>
+                            <input type="text" id="filter-search" placeholder="Cari deskripsi atau kategori..." class="input" style="padding-left: 35px; border-radius: 20px; font-size: 0.85rem; height: 38px; margin: 0;">
+                        </div>
+                    </div>
+
                     <div id="transaction-list" class="transaction-list"></div>
                 </div>
 
@@ -1907,6 +2128,92 @@
                 </div>
             </div>
         </section>
+
+        <!-- Screen: Oxford 3000 Vocabulary Mastery -->
+        <section id="oxford-vocab-screen" class="screen">
+            <div class="card" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border: none; overflow: hidden; position: relative;">
+                <div style="position: absolute; top: -10px; right: -10px; opacity: 0.1; font-size: 5rem; pointer-events: none;">📖</div>
+                <h2>🇬🇧 Oxford 3000™ Mastery</h2>
+                <p class="text-muted" style="color: rgba(255,255,255,0.7) !important;">Kuasai 3000 kosakata paling penting dalam Bahasa Inggris sesuai level CEFR.</p>
+                
+                <div class="oxford-level-grid">
+                    <div class="oxford-level-card active" data-level="A1">
+                        <h4>A1</h4>
+                        <p>Beginner</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-A1"></div></div>
+                    </div>
+                    <div class="oxford-level-card" data-level="A2">
+                        <h4>A2</h4>
+                        <p>Elementary</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-A2"></div></div>
+                    </div>
+                    <div class="oxford-level-card" data-level="B1">
+                        <h4>B1</h4>
+                        <p>Intermediate</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-B1"></div></div>
+                    </div>
+                    <div class="oxford-level-card" data-level="B2">
+                        <h4>B2</h4>
+                        <p>Upper-Int</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-B2"></div></div>
+                    </div>
+                    <div class="oxford-level-card" data-level="C1">
+                        <h4>C1</h4>
+                        <p>Advanced</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-C1"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-md" style="min-height: 400px;">
+                <div class="flex-row" style="justify-content: space-between; align-items: center;">
+                    <h3 id="oxford-current-level-title">Level A1 Words</h3>
+                    <div style="text-align: right;">
+                        <span class="badge-ai" id="oxford-count-badge">0 / 0</span>
+                        <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 2px;">MASTERED / DISCOVERED</div>
+                    </div>
+                </div>
+                
+                <div id="oxford-word-list" class="oxford-word-list">
+                    <!-- Words injected here -->
+                    <div class="loading-spinner" style="margin: 40px auto;"></div>
+                </div>
+
+                <div class="text-center mt-lg">
+                    <button class="btn btn-primary" id="oxford-load-more-btn" style="border-radius: 50px; padding: 12px 25px; font-weight: 700; width: 100%;">🧠 Temukan Kata Baru (AI)</button>
+                    <p class="text-muted mt-sm" style="font-size: 0.75rem;">Setiap klik akan menemukan 10 kata baru dari daftar Oxford 3000™.</p>
+                </div>
+            </div>
+
+            <!-- Detail/Learning Modal (In-Screen) -->
+            <div id="oxford-learning-modal" class="modal hidden">
+                <div class="modal-content card" style="max-width: 400px; border-top: 4px solid var(--primary);">
+                    <div class="modal-header">
+                        <h3 id="oxford-modal-word" style="font-size: 1.5rem; color: var(--primary);">Word</h3>
+                        <button class="icon-btn" id="close-oxford-modal-btn">✕</button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div style="font-size: 1.1rem; margin-bottom: 20px;">
+                            <span id="oxford-modal-ipa" class="text-muted">/ipa/</span>
+                            <button id="oxford-modal-audio" class="icon-btn" style="font-size: 1.2rem; margin-left: 10px;">🔊</button>
+                        </div>
+                        <div id="oxford-modal-translation" style="font-weight: 600; font-size: 1.2rem; margin-bottom: 15px;">Terjemahan</div>
+                        <p id="oxford-modal-def" class="text-muted" style="font-size: 0.9rem; line-height: 1.5;">Definisi singkat...</p>
+                        
+                        <div id="oxford-ai-example" class="mt-md" style="background: var(--surface-hover); padding: 15px; border-radius: 10px; border-left: 3px solid var(--secondary); text-align: left; display: none;">
+                            <div style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-bottom: 5px;">NATURAL USAGE (AI)</div>
+                            <div id="oxford-ai-phrase" style="font-weight: 600; margin-bottom: 5px;">"Example sentence..."</div>
+                            <div id="oxford-ai-trans" class="text-muted italic" style="font-size: 0.85rem;">"Terjemahan contoh..."</div>
+                        </div>
+
+                        <div class="flex-row mt-lg">
+                            <button id="oxford-ai-gen-btn" class="btn btn-ai flex-1">🧠 Minta Contoh AI</button>
+                            <button id="oxford-mastery-btn" class="btn btn-primary flex-1">✅ Kuasai Kata</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
         <!-- Screen: English Fluency Coach (Beginner) -->
         <section id="english-fluency-screen" class="screen">
             <div class="card" style="background: linear-gradient(135deg, var(--primary), #fbbf24); color: white; border: none;">
@@ -2484,6 +2791,7 @@
     <script src="js/learn-coding.js"></script>
     <script src="js/learn-pertamina.js"></script>
     <script src="js/nutrition-tracker.js"></script>
+    <script src="js/oxford-3000.js"></script>
 
     <!-- HSE Rig Photo Full Viewer Modal -->
     <div id="rig-photo-modal" class="modal hidden" style="z-index: 99999; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
@@ -2509,6 +2817,9 @@
             });
         }
     </script>
+    <!-- Global Jarvis FAB -->
+    <button id="jarvis-global-fab" title="Hold Jarvis anytime">✨</button>
+
 </body>
 
 </html>

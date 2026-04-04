@@ -5,7 +5,9 @@ let speechMode = 'journal'; // 'journal' or 'jarvis' (universal)
 
 function initVoiceInput() {
     const journalMicBtn = document.getElementById('mic-btn');
-    const jarvisMicBtn = document.querySelector('.jarvis-quick-actions .qa-btn:first-child'); // The "Voice Command" button
+    const jarvisQuickMicBtn = document.querySelector('.jarvis-quick-actions .qa-btn:first-child'); 
+    const jarvisGlobalFab = document.getElementById('jarvis-global-fab');
+    const jarvisInputMic = document.getElementById('jarvis-input-mic');
 
     const setupPTT = (btn, mode) => {
         if (!btn) return;
@@ -14,15 +16,25 @@ function initVoiceInput() {
 
         const startHold = (e) => {
             // Only handle primary touch/mouse
-            if (e.type === 'mousedown' && e.button !== 0) return;
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            
+            // For Global FAB: Switch screen before recording starts or immediately
+            if (btn.id === 'jarvis-global-fab') {
+                if (typeof navigateToScreen === 'function') navigateToScreen('jarvis');
+            }
+            
+            // Warm up voice for Safari on immediate touch
+            if (window.jarvisVoice) window.jarvisVoice.prepare();
             
             isHolding = false;
             pressTimer = setTimeout(() => {
                 isHolding = true;
                 if (window.jarvisVoice && !window.jarvisVoice.isRecording) {
+                    // Small vibration feedback
+                    if ("vibrate" in navigator) navigator.vibrate(25);
                     window.jarvisVoice.toggle(mode);
                 }
-            }, 400); // 400ms threshold
+            }, 350); // Threshold for hold
         };
 
         const endHold = (e) => {
@@ -32,18 +44,25 @@ function initVoiceInput() {
                     window.jarvisVoice.forceStop();
                 }
                 isHolding = false;
+                if (e.cancelable) e.preventDefault(); // Prevent accidental clicks/scrolling after hold
             }
         };
 
-        btn.addEventListener('mousedown', startHold);
-        btn.addEventListener('touchstart', startHold, { passive: false });
-        btn.addEventListener('mouseup', endHold);
-        btn.addEventListener('touchend', endHold);
-        btn.addEventListener('mouseleave', endHold);
+        // Switch to Pointer Events for iOS/Safari cross-compatibility
+        btn.addEventListener('pointerdown', startHold);
+        btn.addEventListener('pointerup', endHold);
+        btn.addEventListener('pointerleave', endHold);
+        btn.addEventListener('pointercancel', endHold);
 
         // Click handles standard toggle (short tap)
         btn.addEventListener('click', (e) => {
-            if (isHolding) return;
+            if (isHolding) {
+                e.preventDefault();
+                return;
+            }
+            if (btn.id === 'jarvis-global-fab') {
+                if (typeof navigateToScreen === 'function') navigateToScreen('jarvis');
+            }
             if (window.jarvisVoice) {
                 window.jarvisVoice.toggle(mode);
             } else {
@@ -53,7 +72,9 @@ function initVoiceInput() {
     };
 
     setupPTT(journalMicBtn, 'journal');
-    setupPTT(jarvisMicBtn, 'command');
+    setupPTT(jarvisQuickMicBtn, 'command');
+    setupPTT(jarvisGlobalFab, 'command');
+    setupPTT(jarvisInputMic, 'command');
 }
 
 function startJarvisVoice() {

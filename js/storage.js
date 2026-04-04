@@ -270,13 +270,22 @@ async function deleteSchedule(id) {
 
 // ===== TRANSACTION OPERATIONS =====
 async function getTransactions(includeDeleted = false) {
+    let transactions = [];
     if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
         const data = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-        const transactions = data ? JSON.parse(data) : [];
-        return includeDeleted ? transactions : transactions.filter(t => !t.deleted);
+        transactions = data ? JSON.parse(data) : [];
+    } else {
+        transactions = await idbGetAll('transactions');
     }
-    const transactions = await idbGetAll('transactions');
-    return includeDeleted ? transactions : transactions.filter(t => !t.deleted);
+
+    const filtered = includeDeleted ? transactions : transactions.filter(t => !t.deleted);
+    
+    // Sort: Newest Date first, then Newest CreatedAt first
+    return filtered.sort((a, b) => {
+        const dateCompare = (b.date || "").localeCompare(a.date || "");
+        if (dateCompare !== 0) return dateCompare;
+        return (b.createdAt || "").localeCompare(a.createdAt || "");
+    });
 }
 
 async function saveTransaction(transaction) {

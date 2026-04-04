@@ -12,6 +12,15 @@ async function initFinanceUI() {
 
     addTransactionBtn.addEventListener('click', handleAddTransaction);
 
+    // Dynamic Category Filtering
+    const typeSelect = document.getElementById('transaction-type');
+    const categorySelect = document.getElementById('transaction-category');
+    if (typeSelect && categorySelect) {
+        typeSelect.addEventListener('change', filterCategoriesByType);
+        // Initial filter
+        filterCategoriesByType();
+    }
+
     // New Event Listeners
     const viewReportBtn = document.getElementById('view-pro-report-btn');
     if (viewReportBtn) viewReportBtn.addEventListener('click', renderProfessionalReport);
@@ -22,6 +31,18 @@ async function initFinanceUI() {
     });
 
     if (typeof setupChartToggle === 'function') setupChartToggle();
+
+    // Filter Listeners
+    const filterType = document.getElementById('filter-type');
+    const filterCategory = document.getElementById('filter-category');
+    const filterSearch = document.getElementById('filter-search');
+    const handleFilterChange = () => {
+        transactionPage = 1;
+        renderTransactionList();
+    };
+    if (filterType) filterType.addEventListener('change', handleFilterChange);
+    if (filterCategory) filterCategory.addEventListener('change', handleFilterChange);
+    if (filterSearch) filterSearch.addEventListener('input', handleFilterChange);
 
     transactionPage = 1;
     await renderTransactionList();
@@ -261,6 +282,9 @@ async function handleAddTransaction() {
     const recDate = document.getElementById('recurring-date');
     if (recDate) recDate.value = '';
 
+    // Re-filter categories based on default type (usually expense)
+    filterCategoriesByType();
+
     if (typeof updateBudgetUI === 'function') await updateBudgetUI();
     if (typeof updateGlobalBudgetUI === 'function') await updateGlobalBudgetUI();
 
@@ -277,10 +301,28 @@ async function renderTransactionList() {
     const listEl = document.getElementById('transaction-list');
     if (!listEl) return;
 
-    const transactions = await getTransactions();
+    let transactions = await getTransactions();
+
+    // --- APPLY FILTERS ---
+    const filterType = document.getElementById('filter-type')?.value || 'all';
+    const filterCategory = document.getElementById('filter-category')?.value || 'all';
+    const filterSearch = document.getElementById('filter-search')?.value.toLowerCase() || '';
+
+    if (filterType !== 'all') {
+        transactions = transactions.filter(t => t.type === filterType);
+    }
+    if (filterCategory !== 'all') {
+        transactions = transactions.filter(t => t.category === filterCategory);
+    }
+    if (filterSearch) {
+        transactions = transactions.filter(t => 
+            (t.description && t.description.toLowerCase().includes(filterSearch)) ||
+            (t.category && t.category.toLowerCase().includes(filterSearch))
+        );
+    }
 
     if (transactions.length === 0) {
-        listEl.innerHTML = '<div class="empty-state"><p>Belum ada transaksi</p></div>';
+        listEl.innerHTML = '<div class="empty-state"><p>Tidak ada transaksi yang cocok</p></div>';
         return;
     }
 
@@ -433,5 +475,30 @@ async function updateGlobalBudgetUI() {
         progressBar.classList.add('bg-warning');
     } else {
         progressBar.classList.add('bg-success');
+    }
+}
+
+function filterCategoriesByType() {
+    const type = document.getElementById('transaction-type').value;
+    const categorySelect = document.getElementById('transaction-category');
+    if (!categorySelect) return;
+
+    const optgroups = categorySelect.querySelectorAll('optgroup');
+    optgroups.forEach(group => {
+        if (type === 'income') {
+            const isIncomeGroup = group.label.includes('Pemasukan') || group.label.includes('Inflow');
+            group.style.display = isIncomeGroup ? '' : 'none';
+        } else {
+            const isExpenseGroup = group.label.includes('Pengeluaran') || group.label.includes('Outflow');
+            group.style.display = isExpenseGroup ? '' : 'none';
+        }
+    });
+
+    // Reset selection if the current one is now hidden
+    const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+    if (selectedOption && selectedOption.parentElement && selectedOption.parentElement.tagName === 'OPTGROUP') {
+        if (selectedOption.parentElement.style.display === 'none') {
+            categorySelect.value = "";
+        }
     }
 }
