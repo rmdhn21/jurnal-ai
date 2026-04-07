@@ -1,34 +1,6 @@
-/* ===== CSS Variables / Design Tokens (Eye-Care Premium Dark) ===== */
+/* ===== Jurnal AI - Dynamic Design System ===== */
 :root {
-    /* Colors - Softer Zinc Base */
-    --bg-primary: #09090b;        /* Zinc 950 (True deep dark, matte) */
-    --bg-secondary: #000000;      /* Deep black for contrast roots */
-    --bg-card: rgba(24, 24, 27, 0.75); /* Zinc 900 translucent, lower contrast */
-    --bg-card-hover: rgba(39, 39, 42, 0.85); /* Zinc 800 */
-
-    --border: rgba(255, 255, 255, 0.06); /* Very subtle, barely there borders */
-    
-    --text-primary: #d4d4d8;      /* Zinc 300 (Soft off-white to eliminate glare) */
-    --text-secondary: #a1a1aa;    /* Zinc 400 (Muted for reading) */
-    --text-muted: #71717a;        /* Zinc 500 */
-
-    /* Calm Accent (Muted Blue/Indigo) */
-    --primary: #3b82f6;           /* Calmer Blue */
-    --accent-primary: #60a5fa;    
-    --accent-secondary: #93c5fd;  
-    --accent-glow: rgba(59, 130, 246, 0.1); /* Very dim glow */
-    
-    --success: #10b981;
-    --warning: #d97706;           /* Dimmer gold */
-    --error: #ef4444;
-    --info: #3b82f6;
-
-    /* Gradients (Matte, seamless blending) */
-    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    --gradient-card: linear-gradient(145deg, rgba(24, 24, 27, 0.8) 0%, rgba(9, 9, 11, 0.9) 100%);
-    --gradient-glow: radial-gradient(ellipse at center, var(--accent-glow) 0%, transparent 50%);
-
-    /* Spacing */
+    /* Spacing & Shared Tokens */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
@@ -36,26 +8,17 @@
     --spacing-xl: 2rem;
     --spacing-2xl: 3rem;
 
-    /* Border Radius */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 24px;
 
-    /* Shadows (Deep and soft black, no bright rings) */
-    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
-    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
-    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.8);
-    --shadow-glow: 0 0 15px var(--accent-glow);
-
-    /* Transitions */
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;
     --transition-slow: 400ms ease;
 
-    /* Typography */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --app-scale: 1; /* Default scale */
+    --app-scale: 1;
     --font-size-xs: 0.75rem;
     --font-size-sm: 0.875rem;
     --font-size-md: 1rem;
@@ -64,12 +27,156 @@
     --font-size-2xl: 2rem;
 }
 
-/* Color Themes Locking */
-
-/* Color Picker UI (Hidden permanently) */
-.color-picker {
-    display: none !important;
+/* ===== Dark Theme (Default) ===== */
+[data-theme="dark"] {
+    --bg-primary: #09090b;
+    --bg-secondary: #000000;
+    --bg-card: rgba(24, 24, 27, 0.75);
+    --bg-card-hover: rgba(39, 39, 42, 0.85);
+    --border: rgba(255, 255, 255, 0.08);
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.8);
+    --gradient-card: linear-gradient(145deg, rgba(24, 24, 27, 0.8) 0%, rgba(9, 9, 11, 0.9) 100%);
 }
+
+/* ===== Light Theme ===== */
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;
+    --border: rgba(0, 0, 0, 0.08);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    --gradient-card: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%);
+}
+
+/* ===== Color Accents ===== */
+
+:root, [data-color="gold"] {
+    --primary: #f59e0b;
+    --accent-primary: #fbbf24;
+    --accent-secondary: #fcd34d;
+    --accent-glow: rgba(245, 158, 11, 0.15);
+    --gradient-primary: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+
+
+/* Pink Theme (Rose/Sakura) */
+[data-color="pink"] {
+    --primary: #ec4899;
+    --accent-primary: #f472b6;
+    --accent-secondary: #f9a8d4;
+    --accent-glow: rgba(236, 72, 153, 0.15);
+    --gradient-primary: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+}
+
+/* Specific Background Overrides for Pink Theme */
+/* Text is kept standard (dark/light) while only background is pink */
+[data-theme="light"][data-color="pink"] {
+    --bg-primary: #f3dce0; /* Ultra soft pink from user image */
+    --bg-secondary: #efc7d4; /* Soft pink from user image */
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --border: rgba(225, 29, 72, 0.1);
+    --text-primary: #0f172a; /* Standard dark text (not pink) */
+    --text-secondary: #334155; /* Standard dark text (not pink) */
+}
+
+[data-theme="dark"][data-color="pink"] {
+    --bg-primary: #1a0b10; /* Deep Rose-Black */
+    --bg-secondary: #000000;
+    --bg-card: rgba(45, 20, 25, 0.7);
+    --border: rgba(236, 72, 153, 0.1);
+    --text-primary: #f8fafc; /* Standard light text (not pink) */
+    --text-secondary: #cbd5e1; /* Standard light text (not pink) */
+}
+
+
+
+[data-color="lavender"] {
+    --primary: #8b5cf6;
+    --accent-primary: #a78bfa;
+    --accent-secondary: #c4b5fd;
+    --accent-glow: rgba(139, 92, 246, 0.15);
+    --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+[data-color="mint"] {
+    --primary: #10b981;
+    --accent-primary: #34d399;
+    --accent-secondary: #6ee7b7;
+    --accent-glow: rgba(16, 185, 129, 0.15);
+    --gradient-primary: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+[data-color="sky"] {
+    --primary: #0ea5e9;
+    --accent-primary: #38bdf8;
+    --accent-secondary: #7dd3fc;
+    --accent-glow: rgba(14, 165, 233, 0.15);
+    --gradient-primary: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+}
+
+:root {
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+    --shadow-glow: 0 0 15px var(--accent-glow);
+    --gradient-glow: radial-gradient(ellipse at center, var(--accent-glow) 0%, transparent 70%);
+}
+
+/* ===== Color Picker UI ===== */
+.color-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.color-option {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.color-option:hover {
+    transform: scale(1.2);
+}
+
+.color-option.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 15px var(--primary);
+    transform: scale(1.1);
+}
+
+/* Base adjustment for light mode cards */
+[data-theme="light"] .card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .nav.bottom-nav {
+    background: rgba(255, 255, 255, 0.9);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
+    color: #0f172a;
+}
+
 
 /* ===== Reset & Base ===== */
 *,
@@ -5995,4 +6102,35 @@ body::before {
     -khtml-user-select: none !important;
     -moz-user-select: none !important;
     -ms-user-select: none !important;
+}
+/* ===== 3D Rig Viewer Styles ===== */
+#rig-3d-viewer-screen {
+    padding: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.rig-3d-header {
+    background: rgba(9, 9, 11, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+#rig-3d-container canvas {
+    display: block;
+    outline: none;
+}
+
+#rig-3d-hud .card {
+    border-color: rgba(59, 130, 246, 0.2) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+    background: rgba(15, 15, 20, 0.9) !important;
+}
+
+#rig-part-specs span {
+    transition: all 0.2s ease;
+}
+
+#rig-part-specs span:hover {
+    background: rgba(245, 158, 11, 0.3) !important;
+    transform: scale(1.05);
 }

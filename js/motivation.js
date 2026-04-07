@@ -83,34 +83,39 @@ async function initMotivation() {
         </div>
     `;
 
-    try {
-        // 2. Fetch data (Menggunakan API Quotes yang sudah CORS- friendly bawaan)
-        // DummyJSON Random Quote API cukup konsisten dan cepat tanpa perlu blokir perantara AllOrigins
-        const response = await fetch('https://dummyjson.com/quotes/random');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // Timeout 3 detik
 
-        if (!response.ok) throw new Error('Gagal menghubungi server kutipan.');
+    try {
+        const apiUrl = 'https://dummyjson.com/quotes/random';
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        
+        // Coba ambil data, tapi jangan tunggu lama jika diblokir browser/CORS
+        const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), { 
+            signal: controller.signal,
+            mode: 'cors'
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error('Gagal menghubungi server.');
 
         const data = await response.json();
-
         if (data && data.quote) {
             renderMotivation(container, {
-                text: data.quote,           // String kutipannya
-                author: data.author,        // Penulisnya
-                category: 'general'         // Agar icon jadi api (🔥)
+                text: data.quote,
+                author: data.author,
+                category: 'general'
             });
             return;
-        } else {
-            throw new Error('Struktur data balasan kosong.');
         }
-
     } catch (error) {
-        console.error('🔥 ZenQuotes API gagal, memuat kutipan Offline/Fallback:', error);
+        clearTimeout(timeoutId);
+        // Jika diblokir CORS atau Timeout, gunakan data lokal tanpa menampilkan error merah besar
+        console.log('💡 Browser memblokir API/Internet offline. Menggunakan kutipan internal.');
 
-        // 3. Graceful Fallback (Jika internet mati, acak daftar lokal bawaan)
         const fallbackIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
-        const fallbackQuote = MOTIVATION_QUOTES[fallbackIndex];
-
-        renderMotivation(container, fallbackQuote);
+        renderMotivation(container, MOTIVATION_QUOTES[fallbackIndex]);
     }
 }
 

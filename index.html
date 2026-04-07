@@ -46,6 +46,12 @@
     <!-- html2pdf.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
+    <!-- Three.js for 3D Rig Viewer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+
     <!-- iOS Safe Area Styling -->
     <style>
         /* iOS Safe Area Support */
@@ -683,6 +689,58 @@
                         <span class="hub-label">Perpustakaan AI</span>
                         <p class="hub-desc">Simpan & kelola hasil generate AI Anda.</p>
                     </button>
+                    <!-- New 3D Rig Digital Twin -->
+                    <button class="hub-btn" onclick="navigateToSubscreen('rig-3d-viewer')" style="border: 1px solid var(--primary); background: rgba(245, 158, 11, 0.05);">
+                        <div class="hub-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white;">🏗️</div>
+                        <span class="hub-label">Digital Twin 3D</span>
+                        <p class="hub-desc">Visualisasi interaktif peralatan Rig dalam 3D.</p>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 3D Rig Viewer Screen -->
+            <section id="rig-3d-viewer-screen" class="screen">
+                <div class="rig-3d-header" style="padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg-card); gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <h2 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                            <span>🏗️</span> Rig Digital Twin <span id="rig-model-status" style="font-size: 0.6rem; color: #4ade80; background: rgba(74, 222, 128, 0.1); padding: 2px 6px; border-radius: 10px;">Procedural</span>
+                        </h2>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 8px;">
+                        <input type="text" id="rig-model-url" placeholder="Paste .glb URL here..." style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; width: 150px;">
+                        <button onclick="loadRigFromURL()" class="btn btn-primary" style="padding: 4px 10px; font-size: 0.7rem;">Load</button>
+                        <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.1);"></div>
+                        <button onclick="document.getElementById('rig-file-input').click()" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.7rem;">📁 Upload GLB</button>
+                        <input type="file" id="rig-file-input" accept=".glb,.gltf" style="display: none;" onchange="loadRigFromFile(event)">
+                    </div>
+
+                    <div id="rig-3d-loading" class="loading-spinner" style="width: 20px; height: 20px; display: none;"></div>
+                </div>
+
+                <div id="rig-3d-container" style="position: relative; width: 100%; height: calc(100vh - 150px); background: #050505; overflow: hidden; border-radius: 0 0 15px 15px;">
+                    <!-- Three.js Canvas will be here -->
+                    
+                    <!-- 3D HUD / Info Panel -->
+                    <div id="rig-3d-hud" style="position: absolute; bottom: 20px; left: 20px; right: 20px; pointer-events: none; z-index: 5;">
+                        <div class="card" style="background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); padding: 15px; pointer-events: auto; transform: translateY(100px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            <h4 id="rig-part-name" style="margin: 0; color: var(--primary);">Pilih Komponen</h4>
+                            <p id="rig-part-desc" class="text-muted" style="font-size: 0.8rem; margin: 8px 0;">Klik pada salah satu bagian Rig untuk melihat informasi teknis lebih lanjut.</p>
+                            <div id="rig-part-specs" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <!-- Specs chips -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Guide -->
+                    <div style="position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; pointer-events: none;">
+                        <div style="background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+                            🖱️ Drag to Rotate
+                        </div>
+                        <div style="background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+                            🤏 Pinch/Scroll to Zoom
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -1524,6 +1582,15 @@
                 </div>
                 <button id="save-settings-btn" class="btn btn-primary">💾 Simpan API Key</button>
 
+                <hr class="settings-divider">
+
+                <!-- Notifications Section -->
+                <div class="form-group">
+                    <label>🔔 Notifikasi Interaktif</label>
+                    <small class="settings-hint">Coba notifikasi premium yang muncul di layar kunci.</small>
+                    <button id="test-notif-btn" class="btn btn-secondary btn-full">🚀 Tes Notifikasi Layar Kunci</button>
+                </div>
+
                 <!-- App Lock Section -->
                 <div class="form-group">
                     <label>🛡️ App Lock (PIN)</label>
@@ -1547,17 +1614,12 @@
                 <div class="form-group">
                     <label>🎨 Tema Warna</label>
                     <small class="settings-hint">Pilih warna aksen aplikasi favoritmu.</small>
-                    <div class="color-picker">
-                        <button class="color-option" data-color="gold" style="background: #f59e0b;"
-                            title="Emas (Default)"></button>
-                        <button class="color-option" data-color="blue" style="background: #3b82f6;"
-                            title="Biru Langit"></button>
-                        <button class="color-option" data-color="green" style="background: #10b981;"
-                            title="Hijau Segar"></button>
-                        <button class="color-option" data-color="purple" style="background: #8b5cf6;"
-                            title="Ungu Misterius"></button>
-                        <button class="color-option" data-color="rose" style="background: #f43f5e;"
-                            title="Merah Rose"></button>
+                    <div class="color-picker-grid">
+                        <button class="color-option" data-color="gold" style="background: #f59e0b;" title="Amber Gold"></button>
+                        <button class="color-option" data-color="pink" style="background: #ec4899;" title="Rose Pink"></button>
+                        <button class="color-option" data-color="lavender" style="background: #8b5cf6;" title="Soft Lavender"></button>
+                        <button class="color-option" data-color="mint" style="background: #10b981;" title="Fresh Mint"></button>
+                        <button class="color-option" data-color="sky" style="background: #0ea5e9;" title="Clear Sky"></button>
                     </div>
                 </div>
                 <hr class="settings-divider">
@@ -2800,7 +2862,9 @@
     </div>
 
     <!-- App Initialization (must be last) -->
+    <script src="js/rig-3d-viewer.js"></script>
     <script src="js/dashboard-widgets.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/app-init.js"></script>
 
     <!-- Register Service Worker -->

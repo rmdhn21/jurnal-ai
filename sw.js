@@ -21,6 +21,7 @@ const urlsToCache = [
     './js/encryption.js',
     './js/auth.js',
     './js/charts.js',
+    './js/notifications.js',
     // UI Modules
     './js/backup-tags.js',
     './js/journal-ui.js',
@@ -131,5 +132,35 @@ self.addEventListener('fetch', (event) => {
                         }
                     });
             })
+    );
+});
+
+// Handling Notification Interactions
+self.addEventListener('notificationclick', function(event) {
+    console.log('[Service Worker] Notification click Received.', event);
+
+    event.notification.close(); // Close the notification
+
+    if (event.action === 'close') {
+        console.log('Notification closed by user via action button.');
+        return;
+    }
+
+    // Default action (or specific 'open' action) - try to focus the app or open it
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
+            // Check if there is already a window/tab open with the target URL
+            for (var i = 0; i < windowClients.length; i++) {
+                var client = windowClients[i];
+                // If so, just focus it.
+                if (client.url.includes(self.registration.scope) && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            // If not, then open the target URL in a new window/tab.
+            if (clients.openWindow) {
+                return clients.openWindow('./');
+            }
+        })
     );
 });

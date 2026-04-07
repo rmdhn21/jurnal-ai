@@ -1,7 +1,7 @@
 // ===== THEME MODULE =====
 function initTheme() {
     // 1. Light/Dark Theme
-    const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+    const savedTheme = localStorage.getItem('jurnal_ai_theme') || 'dark';
     setTheme(savedTheme);
 
     const toggleBtn = document.getElementById('theme-toggle-btn');
@@ -19,7 +19,7 @@ function initTheme() {
 
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem(STORAGE_KEYS.THEME, theme);
+    localStorage.setItem('jurnal_ai_theme', theme);
 
     const toggleBtn = document.getElementById('theme-toggle-btn');
     if (toggleBtn) {
@@ -28,7 +28,7 @@ function setTheme(theme) {
 }
 
 function toggleTheme() {
-    const currentTheme = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+    const currentTheme = localStorage.getItem('jurnal_ai_theme') || 'dark';
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
 }
@@ -56,3 +56,4 @@ function setupColorPicker() {
         });
     });
 }
+

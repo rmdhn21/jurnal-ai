@@ -31,6 +31,9 @@ function initNavigation() {
 function showScreen(targetScreen) {
     const screens = document.querySelectorAll('.screen');
     screens.forEach(screen => {
+        if (screen.id === 'rig-3d-viewer-screen' && screen.classList.contains('active') && targetScreen !== 'rig-3d-viewer') {
+            if (typeof stopRig3DViewer === 'function') stopRig3DViewer();
+        }
         screen.classList.remove('active');
         if (screen.id === `${targetScreen}-screen`) {
             screen.classList.add('active');
@@ -88,6 +91,8 @@ function showScreen(targetScreen) {
         if (typeof updateOxfordProgressBars === 'function') updateOxfordProgressBars();
     } else if (targetScreen === 'jmp-generator') {
         // No special entry logic needed yet
+    } else if (targetScreen === 'rig-3d-viewer') {
+        if (typeof initRig3DViewer === 'function') initRig3DViewer();
     }
 }
 
@@ -270,6 +275,20 @@ function initSettings() {
     const deleteAccountBtn = document.getElementById('delete-account-btn');
     if (deleteAccountBtn) {
         deleteAccountBtn.addEventListener('click', deleteCloudAccount);
+    }
+
+    // Test Notification
+    const testNotifBtn = document.getElementById('test-notif-btn');
+    if (testNotifBtn) {
+        testNotifBtn.addEventListener('click', () => {
+            if (typeof sendPremiumNotification === 'function') {
+                sendPremiumNotification('🚀 Jurnal AI: Fokus & Produktif!', {
+                    body: 'Notifikasi interaktif Anda sudah aktif. Gunakan aplikasi untuk memaksimalkan hari Anda.'
+                });
+            } else {
+                alert('Modul notifikasi belum siap.');
+            }
+        });
     }
 
     updateEncryptionStatus();
