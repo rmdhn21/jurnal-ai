@@ -224,18 +224,10 @@ function initSettings() {
 
         const widgetTimeToggle = document.getElementById('widget-time-toggle');
         const widgetReminderTime = document.getElementById('widget-reminder-time');
-        const cloudApiInput = document.getElementById('cloud-api-url');
         
         if (widgetTimeToggle && widgetReminderTime) {
             localStorage.setItem('jurnal_ai_widget_enabled', widgetTimeToggle.checked);
             localStorage.setItem('jurnal_ai_widget_time', widgetReminderTime.value);
-            if (cloudApiInput && cloudApiInput.value) {
-                // Hapus trailing slash jika ada
-                let finalUrl = cloudApiInput.value.trim().replace(/\/$/, '');
-                localStorage.setItem('jurnal_ai_cloud_api_url', finalUrl);
-            } else {
-                localStorage.removeItem('jurnal_ai_cloud_api_url');
-            }
 
             if (widgetTimeToggle.checked) {
                 if (typeof requestNotificationPermission === 'function') requestNotificationPermission();
@@ -265,16 +257,13 @@ function initSettings() {
     const widgetTimeToggle = document.getElementById('widget-time-toggle');
     const widgetReminderTime = document.getElementById('widget-reminder-time');
     const widgetTimeSetting = document.getElementById('widget-time-setting');
-    const cloudApiInput = document.getElementById('cloud-api-url');
 
     if (widgetTimeToggle && widgetReminderTime) {
         const enabled = localStorage.getItem('jurnal_ai_widget_enabled') !== 'false'; // Default true
         const timeVal = localStorage.getItem('jurnal_ai_widget_time') || '06:00';
-        const apiVal = localStorage.getItem('jurnal_ai_cloud_api_url') || '';
         
         widgetTimeToggle.checked = enabled;
         widgetReminderTime.value = timeVal;
-        if (cloudApiInput) cloudApiInput.value = apiVal;
         if (!enabled && widgetTimeSetting) widgetTimeSetting.classList.add('hidden');
 
         widgetTimeToggle.addEventListener('change', (e) => {

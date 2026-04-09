@@ -85,6 +85,7 @@ async function syncToCloud() {
             habits: await getHabits(true),
             goals: await getGoals(true),
             reminderSettings: getReminderSettings(),
+            pushSubscription: localStorage.getItem('jurnal_ai_push_subscription'),
             wallets: await getWallets(true),
             budgets: await getBudgets(true),
             islamicTracks: await getIslamicTracks(),
@@ -232,6 +233,7 @@ async function syncFromCloudReplace() {
         if (cloudData.budgets) localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(cloudData.budgets));
         if (cloudData.islamicTracks) localStorage.setItem(STORAGE_KEYS.ISLAMIC_TRACKS, JSON.stringify(cloudData.islamicTracks));
         if (cloudData.reminderSettings) localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
+        if (cloudData.pushSubscription) localStorage.setItem('jurnal_ai_push_subscription', cloudData.pushSubscription);
 
         console.log('✅ Cloud-Only Sync completed - local data replaced with cloud data');
 

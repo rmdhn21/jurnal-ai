@@ -86,7 +86,10 @@ function urlB64ToUint8Array(base64String) {
     return outputArray;
 }
 
-// Subscribe to Cloud Web Push (Anti-Kill)
+// Kunci VAPID Publik Statis Jurnal AI
+const VAPID_PUBLIC_KEY = 'BJ8G4SmhAxKyCDjBv7Qav4npvqhdp2QW48vR_yoMbv2YYW9k9qJnh3wrtMRdTG3A9Ux9ewB4Gv8AiIOj_YVwpWc';
+
+// Subscribe to Cloud Web Push (Serverless)
 async function subscribeToWebPush() {
     const hasPermission = await requestNotificationPermission();
     if (!hasPermission) return false;
@@ -98,25 +101,7 @@ async function subscribeToWebPush() {
 
     try {
         const registration = await navigator.serviceWorker.ready;
-        
-        // Baca API URL dari pengaturan pengguna (Default: localhost:3000)
-        let apiUrl = localStorage.getItem('jurnal_ai_cloud_api_url');
-        if (!apiUrl || apiUrl.trim() === '') {
-            apiUrl = 'http://localhost:3000';
-        }
-        
-        let publicKeyStr = '';
-        try {
-            const res = await fetch(`${apiUrl}/vapidPublicKey`);
-            const data = await res.json();
-            publicKeyStr = data.publicKey;
-        } catch (serverErr) {
-            console.warn(`Gagal menyambung ke API Cloud di: ${apiUrl}`);
-            alert(`Gagal berlangganan Push Server: Tidak bisa menghubungi ${apiUrl}. Pastikan URL valid dan server menyala.`);
-            return false;
-        }
-
-        const applicationServerKey = urlB64ToUint8Array(publicKeyStr);
+        const applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
 
         // Mendaftarkan Subscription Asli di Safari
         const subscription = await registration.pushManager.subscribe({
@@ -124,18 +109,17 @@ async function subscribeToWebPush() {
             applicationServerKey: applicationServerKey
         });
 
-        console.log('✅ Web Push Subscription successful:', JSON.stringify(subscription));
+        console.log('✅ Web Push Subscription successful.');
 
-        // Kirim hasil ini ke Server Push (Render/Vercel/Localhost)
-        await fetch(`${apiUrl}/subscribe`, {
-            method: 'POST',
-            body: JSON.stringify(subscription),
-            headers: {
-                'content-type': 'application/json'
-            }
-        });
+        // Simpan titik akhir (Endpoint) ke penyimpanan lokal agar diangkut ke Supabase Cloud Sync
+        localStorage.setItem('jurnal_ai_push_subscription', JSON.stringify(subscription));
 
-        alert(`Berhasil Daftar Cloud Push ke peladen: ${apiUrl}\nSaat server mengirim ping, HP Anda akan berbunyi di Lock Screen!`);
+        // Letupan sinkronisasi instan ke Supabase agar Vercel mendeteksi pendaftaran ini
+        if (typeof syncToCloud === 'function') {
+            await syncToCloud();
+        }
+
+        alert('Berhasil Daftar Notifikasi Cloud 24/7!\n\nSaat mesin awan mendeteksi jam alarm, HP Anda akan bergetar meski PWA tertutup!');
         return true;
     } catch (error) {
         console.error('Gagal saat berlangganan Push:', error);
