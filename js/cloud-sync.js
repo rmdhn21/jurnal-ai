@@ -74,36 +74,35 @@ async function syncToCloud() {
 
     try {
         console.log('🔄 Pre-sync: Pulling latest data from cloud...');
-        await syncFromCloud();
+        await syncFromCloud(); // Merge remote data first
 
+        // Gather all data from IDB
         const data = {
-            journals: getJournals(true),
-            tasks: getTasks(true),
-            schedules: getSchedules(true),
-            transactions: getTransactions(true),
-            habits: getHabits(true),
-            goals: getGoals(true),
+            journals: await getJournals(true),
+            tasks: await getTasks(true),
+            schedules: await getSchedules(true),
+            transactions: await getTransactions(true),
+            habits: await getHabits(true),
+            goals: await getGoals(true),
             reminderSettings: getReminderSettings(),
-            wallets: getWallets(true),
-            budgets: getBudgets(true),
-            islamicTracks: getIslamicTracks(),
+            pushSubscription: localStorage.getItem('jurnal_ai_push_subscription'),
+            wallets: await getWallets(true),
+            budgets: await getBudgets(true),
+            islamicTracks: await getIslamicTracks(),
             updatedAt: new Date().toISOString(),
-            version: '1.4'
+            version: '2.0-idb'
         };
 
         console.log('📤 Pushing merged data to cloud...');
         const { error } = await supabaseClient
             .from('user_data')
-            .upsert({ user_id: userId, data: data }, { onConflict: 'user_id' });
+            .upsert({ user_id: userId, data: data, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 
         if (error) {
             console.error('Sync ERROR:', error);
             updateSyncStatus('Error');
-            if (error.code === '42501') {
-                alert('Sync Gagal: Permission Denied. Pastikan RLS Policies sudah diset!');
-            }
         } else {
-            console.log('✅ Synced to cloud successfully (Pull+Push)');
+            console.log('✅ Synced to cloud successfully (IDB)');
             updateSyncStatus('Synced');
         }
     } catch (err) {
@@ -119,7 +118,7 @@ async function syncFromCloud() {
     if (!session) return false;
 
     const userId = session.user.id;
-    console.log('Downloading data for user:', userId);
+    console.log('Downloading cloud data for user:', userId);
 
     try {
         const { data, error } = await supabaseClient
@@ -129,108 +128,59 @@ async function syncFromCloud() {
             .single();
 
         if (error) {
+            if (error.code === 'PGRST116') return false; // No data yet
             console.error('Download ERROR:', error);
             return false;
         }
 
-        if (!data) {
-            console.log('No data found in cloud');
-            return false;
-        }
+        if (!data || !data.data) return false;
 
         const cloudData = data.data;
-        console.log('Cloud data received:', cloudData);
+        console.log('Cloud data received, merging...');
 
-        function mergeArrays(localArr, cloudArr) {
+        // Functional Merge helper
+        const mergeAndSave = async (tableName, localItems, cloudItems) => {
             const merged = new Map();
-            localArr.forEach(item => { merged.set(item.id, item); });
-            cloudArr.forEach(cloudItem => {
+            localItems.forEach(item => merged.set(item.id, item));
+            
+            let changed = false;
+            cloudItems.forEach(cloudItem => {
                 const localItem = merged.get(cloudItem.id);
                 if (!localItem) {
                     merged.set(cloudItem.id, cloudItem);
+                    changed = true;
                 } else {
-                    const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
-                    const cloudTime = new Date(cloudItem.updatedAt || cloudItem.createdAt || 0).getTime();
+                    const localTime = new Date(localItem.updatedAt || 0).getTime();
+                    const cloudTime = new Date(cloudItem.updatedAt || 0).getTime();
                     if (cloudTime > localTime) {
                         merged.set(cloudItem.id, cloudItem);
+                        changed = true;
                     }
                 }
             });
-            return Array.from(merged.values());
-        }
 
-        function mergeHabits(localHabits, cloudHabits) {
-            const merged = new Map();
-            localHabits.forEach(h => merged.set(h.id, { ...h }));
-            cloudHabits.forEach(cloudHabit => {
-                const localHabit = merged.get(cloudHabit.id);
-                if (!localHabit) {
-                    merged.set(cloudHabit.id, cloudHabit);
-                } else {
-                    const mergedCompletions = {
-                        ...cloudHabit.completions,
-                        ...localHabit.completions
-                    };
-                    merged.set(cloudHabit.id, {
-                        ...cloudHabit,
-                        ...localHabit,
-                        completions: mergedCompletions
-                    });
-                }
-            });
-            return Array.from(merged.values());
-        }
+            if (changed) {
+                await idbBulkSave(tableName, Array.from(merged.values()));
+            }
+        };
 
-        if (cloudData.journals) {
-            const merged = mergeArrays(getJournals(true), cloudData.journals);
-            localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(merged));
-        }
-        if (cloudData.tasks) {
-            const merged = mergeArrays(getTasks(true), cloudData.tasks);
-            localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(merged));
-        }
-        if (cloudData.schedules) {
-            const merged = mergeArrays(getSchedules(true), cloudData.schedules);
-            localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(merged));
-        }
-        if (cloudData.transactions) {
-            const merged = mergeArrays(getTransactions(true), cloudData.transactions);
-            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(merged));
-        }
-        if (cloudData.habits) {
-            const merged = mergeHabits(getHabits(true), cloudData.habits);
-            localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(merged));
-        }
-        if (cloudData.goals) {
-            const merged = mergeArrays(getGoals(true), cloudData.goals);
-            localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(merged));
-        }
-        if (cloudData.reminderSettings) {
-            localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
-        }
-        if (cloudData.wallets) {
-            const merged = mergeArrays(getWallets(true), cloudData.wallets);
-            localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(merged));
-        }
-        if (cloudData.budgets) {
-            const merged = mergeArrays(getBudgets(true), cloudData.budgets);
-            localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(merged));
-        }
+        // Merge all tables
+        if (cloudData.journals) await mergeAndSave('journals', await getJournals(true), cloudData.journals);
+        if (cloudData.tasks) await mergeAndSave('tasks', await getTasks(true), cloudData.tasks);
+        if (cloudData.schedules) await mergeAndSave('schedules', await getSchedules(true), cloudData.schedules);
+        if (cloudData.transactions) await mergeAndSave('transactions', await getTransactions(true), cloudData.transactions);
+        if (cloudData.habits) await mergeAndSave('habits', await getHabits(true), cloudData.habits);
+        if (cloudData.goals) await mergeAndSave('goals', await getGoals(true), cloudData.goals);
+        if (cloudData.wallets) await mergeAndSave('wallets', await getWallets(true), cloudData.wallets);
+        if (cloudData.budgets) await mergeAndSave('budgets', await getBudgets(true), cloudData.budgets);
+
         if (cloudData.islamicTracks) {
-            const localTracks = getIslamicTracks();
+            const localTracks = await getIslamicTracks();
             const mergedTracks = { ...localTracks, ...cloudData.islamicTracks };
-            localStorage.setItem(STORAGE_KEYS.ISLAMIC_TRACKS, JSON.stringify(mergedTracks));
+            await idbBulkSave('islamic_tracks', Object.values(mergedTracks));
         }
 
-        console.log('✅ Smart sync from cloud completed');
-
-        initJournalUI();
-        initPlannerUI();
-        initFinanceUI();
-        initHabitsUI();
-        initDashboard();
-        if (typeof initIslamTrackerUI === 'function') initIslamTrackerUI();
-
+        console.log('✅ Smart IDB Sync from cloud completed');
         return true;
     } catch (err) {
         console.error('Sync from cloud failed:', err);
@@ -283,6 +233,7 @@ async function syncFromCloudReplace() {
         if (cloudData.budgets) localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(cloudData.budgets));
         if (cloudData.islamicTracks) localStorage.setItem(STORAGE_KEYS.ISLAMIC_TRACKS, JSON.stringify(cloudData.islamicTracks));
         if (cloudData.reminderSettings) localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
+        if (cloudData.pushSubscription) localStorage.setItem('jurnal_ai_push_subscription', cloudData.pushSubscription);
 
         console.log('✅ Cloud-Only Sync completed - local data replaced with cloud data');
 

@@ -88,17 +88,32 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('generate-jsa-btn')?.addEventListener('click', generateJSADocument);
     document.getElementById('copy-jsa-btn')?.addEventListener('click', copyJsaText);
     document.getElementById('translate-jsa-btn')?.addEventListener('click', translateJSADocument);
+    document.getElementById('export-excel-jsa-btn')?.addEventListener('click', exportJSAToExcel);
+    document.getElementById('export-pdf-jsa-btn')?.addEventListener('click', exportJSAToPDF);
+    document.getElementById('save-jsa-lib-btn')?.addEventListener('click', () => {
+        const docType = document.getElementById('jsa-doc-type')?.value || 'JSA';
+        const jobDesc = document.getElementById('jsa-job-desc')?.value || '';
+        saveCurrentViewToLibrary(`${docType}: ${jobDesc.substring(0, 30)}...`, '#jsa-content', 'HSE');
+    });
 
     // AI Incident Investigator (RCA)
     document.getElementById('generate-rca-btn')?.addEventListener('click', generateRCADocument);
     document.getElementById('copy-rca-btn')?.addEventListener('click', copyRcaText);
     document.getElementById('translate-rca-btn')?.addEventListener('click', translateRCADocument);
+    document.getElementById('save-rca-lib-btn')?.addEventListener('click', () => {
+        const incidentDesc = document.getElementById('rca-incident-desc')?.value || '';
+        saveCurrentViewToLibrary(`RCA: ${incidentDesc.substring(0, 30)}...`, '#rca-content', 'HSE');
+    });
     document.getElementById('rca-mic-btn')?.addEventListener('click', toggleRcaVoiceInput);
 
     // AI Daily TBT & P5M Briefing Generator
     document.getElementById('generate-tbt-btn')?.addEventListener('click', generateTBTDocument);
     document.getElementById('copy-tbt-btn')?.addEventListener('click', copyTbtText);
     document.getElementById('translate-tbt-btn')?.addEventListener('click', translateTBTDocument);
+    document.getElementById('save-tbt-lib-btn')?.addEventListener('click', () => {
+        const opDesc = document.getElementById('tbt-operation-desc')?.value || '';
+        saveCurrentViewToLibrary(`TBT: ${opDesc.substring(0, 30)}...`, '#tbt-content', 'HSE');
+    });
 
     // AI HSE Regulation Expert (Chatbot)
     document.getElementById('send-hse-chat-btn')?.addEventListener('click', sendHseChatMessage);
@@ -142,6 +157,7 @@ JANGAN TAMBAHKAN TEKS APAPUN SELAIN JSON TERSEBUT. PASTIKAN BISA DI-PARSE.`;
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -184,13 +200,13 @@ JANGAN TAMBAHKAN TEKS APAPUN SELAIN JSON TERSEBUT. PASTIKAN BISA DI-PARSE.`;
 }
 
 // Vocab Bank Logic
-function saveCurrentVocab() {
+async function saveCurrentVocab() {
     if (!window.currentGeneratedVocab) return;
 
     // Requires storage.js to have saveVocabToBank
     if (typeof saveVocabToBank === 'function') {
-        saveVocabToBank(window.currentGeneratedVocab);
-        renderVocabBank(); // Update UI
+        await saveVocabToBank(window.currentGeneratedVocab);
+        await renderVocabBank(); // Update UI
 
         // Visual feedback
         const saveBtn = document.getElementById('save-vocab-btn');
@@ -209,7 +225,7 @@ function saveCurrentVocab() {
     }
 }
 
-function renderVocabBank() {
+async function renderVocabBank() {
     const vocabListContainer = document.getElementById('vocab-bank-list');
     const vocabCountElem = document.getElementById('vocab-bank-count');
     const quizBtn = document.getElementById('start-vocab-quiz-btn');
@@ -218,7 +234,7 @@ function renderVocabBank() {
 
     let bank = [];
     if (typeof getVocabBank === 'function') {
-        bank = getVocabBank();
+        bank = await getVocabBank();
     }
 
     if (vocabCountElem) {
@@ -260,11 +276,11 @@ function renderVocabBank() {
     `).join('');
 }
 
-window.deleteVocabCard = function (id) {
+window.deleteVocabCard = async function (id) {
     if (confirm('Hapus kosakata ini dari bank?')) {
         if (typeof deleteVocabFromBank === 'function') {
-            deleteVocabFromBank(id);
-            renderVocabBank();
+            await deleteVocabFromBank(id);
+            await renderVocabBank();
         }
     }
 };
@@ -274,8 +290,8 @@ let quizQuestions = [];
 let currentQuizIndex = 0;
 let score = 0;
 
-function startVocabQuiz() {
-    let bank = typeof getVocabBank === 'function' ? getVocabBank() : [];
+async function startVocabQuiz() {
+    let bank = typeof getVocabBank === 'function' ? await getVocabBank() : [];
     if (bank.length < 3) {
         alert("Minimal butuh 3 kosakata tersimpan untuk mulai kuis.");
         return;
@@ -410,13 +426,12 @@ Silakan mulai sekarang.` }]
 
     try {
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: roleplayChatHistory, generationConfig: { temperature: 0.7 } })
         });
-
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan.');
         const data = await response.json();
 
         if (data.candidates && data.candidates[0].content) {
@@ -479,13 +494,12 @@ async function sendRoleplayMessage() {
 
     try {
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: roleplayChatHistory, generationConfig: { temperature: 0.7 } })
         });
-
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan.');
         const data = await response.json();
 
         if (data.candidates && data.candidates[0].content) {
@@ -612,6 +626,7 @@ Tampilkan struktur respon:
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -640,6 +655,16 @@ Tampilkan struktur respon:
                 speakBtn.onclick = () => playPronunciation(englishTextOnly, 'en-US');
                 resultDiv.insertBefore(speakBtn, resultDiv.firstChild);
             }
+
+            // Add Save Button
+            const saveBtn = document.createElement('button');
+            saveBtn.innerHTML = '💾 Simpan ke Perpustakaan';
+            saveBtn.className = 'btn btn-ai mt-sm';
+            saveBtn.style.display = 'block';
+            saveBtn.style.width = '100%';
+            saveBtn.style.background = 'var(--secondary)';
+            saveBtn.onclick = () => saveCurrentViewToLibrary('HSE Report Translation', '#hse-report-result', 'HSE');
+            resultDiv.appendChild(saveBtn);
         } else {
             resultDiv.innerHTML = '<span class="text-danger">Gagal memproses laporan. Silakan coba lagi.</span>';
         }
@@ -773,6 +798,7 @@ Format HANYA berupa JSON valid dengan struktur:
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -911,15 +937,16 @@ let hseChatHistory = [
 ];
 
 let listeningAudio = null;
-async function generateJSADocument() {
+async function generateJSADocument(manualDesc = null, manualType = null) {
+    if (manualDesc instanceof Event) manualDesc = null;
     const jobDescInput = document.getElementById('jsa-job-desc');
     const docTypeSelect = document.getElementById('jsa-doc-type');
     const resultArea = document.getElementById('jsa-result-area');
     const contentArea = document.getElementById('jsa-content');
     const btn = document.getElementById('generate-jsa-btn');
 
-    const jobDesc = jobDescInput ? jobDescInput.value.trim() : '';
-    const docType = docTypeSelect ? docTypeSelect.value : 'JSA';
+    const jobDesc = manualDesc || (jobDescInput ? jobDescInput.value.trim() : '');
+    const docType = manualType || (docTypeSelect ? docTypeSelect.value : 'JSA');
 
     if (!jobDesc) {
         alert("Mohon isi deskripsi pekerjaan terlebih dahulu.");
@@ -1040,6 +1067,7 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code.`
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5 } }) // Lower temp for more analytical/standard output
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu sejenak.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1048,6 +1076,9 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code.`
         if (responseText) {
             // Clean up backticks if model still sends them
             responseText = responseText.replace(/```html/g, '').replace(/```/g, '').trim();
+            
+            // Parse markdown bold specifically since the model tends to output **bold**
+            responseText = responseText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
             // Add basic table styling if not provided by AI
             if (!responseText.includes('<style>')) {
@@ -1117,6 +1148,7 @@ ${currentJsaContentEn}`;
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1157,6 +1189,186 @@ function copyJsaText() {
         console.error('Failed to copy text: ', err);
         alert('Gagal menyalin teks.');
     });
+}
+
+function exportJSAToExcel() {
+    const contentArea = document.getElementById('jsa-content');
+    if (!contentArea || !contentArea.innerHTML) {
+        alert('Gagal mengekspor: Dokumen kosong.');
+        return;
+    }
+
+    // Clean up empty paragraphs
+    let htmlContent = contentArea.innerHTML.replace(/<p><\/p>/g, '');
+
+    const excelContent = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" 
+      xmlns:x="urn:schemas-microsoft-com:office:excel" 
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+    <!--[if gte mso 9]>
+    <xml>
+        <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                    <x:Name>JSA_PTW</x:Name>
+                    <x:WorksheetOptions>
+                        <x:DisplayGridlines/>
+                    </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+    </xml>
+    <![endif]-->
+    <meta charset="utf-8">
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <td colspan="7" style="text-align:center; font-size: 20px; font-weight:bold; padding:20px;">
+                HSE DEPARTMENT - AI Generated Job Safety Analysis & Permit to Work
+            </td>
+        </tr>
+    </table>
+    ${htmlContent}
+</body>
+</html>
+    `;
+
+    // Create a Blob containing the Excel data
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+
+    // Create a download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Set dynamic filename
+    const now = new Date();
+    const dateStr = now.getFullYear() + (now.getMonth() + 1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0');
+    link.download = `JSA_PTW_${dateStr}.xls`;
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+async function exportJSAToPDF() {
+    const contentArea = document.getElementById('jsa-content');
+    if (!contentArea || !contentArea.innerHTML) {
+        alert('Gagal mengekspor: Dokumen kosong.');
+        return;
+    }
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    // Grab the raw HTML content and strip dark-theme inline styles
+    let rawHtml = contentArea.innerHTML;
+    rawHtml = rawHtml.replace(/<style[\s\S]*?<\/style>/gi, '');
+    rawHtml = rawHtml.replace(/color\s*:\s*#[0-9a-fA-F]{6}\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/background-color\s*:\s*#2d3748\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/background-color\s*:\s*rgba\(255,255,255,0\.05\)\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/border\s*:\s*1px solid rgba\(255,255,255,0\.2\)\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/border\s*:\s*1px solid #4a5568\s*;?/gi, '');
+    rawHtml = rawHtml.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Create a new window for printing
+    const printWindow = window.open('', '', 'height=800,width=1200');
+    if (!printWindow) {
+        alert("Browser Anda memblokir Popup! Izinkan popup untuk aplikasi ini agar fitur Print/PDF bisa berjalan.");
+        return;
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>JSA_PTW_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    padding: 20px; 
+                    color: #000; 
+                    background: #fff; 
+                    font-size: 12px;
+                }
+                table { 
+                    border-collapse: collapse; 
+                    width: 100%; 
+                    margin-bottom: 20px; 
+                    page-break-inside: auto; 
+                }
+                tr { 
+                    page-break-inside: avoid; 
+                    page-break-after: auto; 
+                }
+                th, td { 
+                    border: 1px solid #000; 
+                    padding: 8px; 
+                    text-align: left; 
+                    vertical-align: top; 
+                    word-wrap: break-word;
+                }
+                th { 
+                    background-color: #f0f0f0 !important; 
+                    text-align: center; 
+                    font-weight: bold;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .risk-badge { 
+                    color: #000 !important; 
+                    font-weight: bold; 
+                    padding: 4px; 
+                    display: inline-block; 
+                    border-radius: 4px; 
+                    border: 1px solid #000;
+                }
+                @media print {
+                    @page { 
+                        size: landscape; 
+                        margin: 10mm; 
+                    }
+                    body { 
+                        padding: 0; 
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #3182ce; padding-bottom: 10px;">
+                <h2 style="margin: 0; color: #3182ce;">HSE DEPARTMENT</h2>
+                <p style="margin: 5px 0 0 0; color: #4a5568; font-size: 14px;">AI Generated Job Safety Analysis & Permit to Work</p>
+            </div>
+            <div style="margin-bottom: 20px; font-size: 12px; color: #555;">
+                <strong>Tanggal:</strong> ${dateStr} &nbsp; | &nbsp; <strong>Waktu:</strong> ${timeStr} WIB
+            </div>
+            ${rawHtml}
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Tunggu sebentar agar gambar/tabel sepenuhnya di-render sebelum memanggil dialog Print Chrome/Safari
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
 }
 
 // ==========================================
@@ -1250,8 +1462,9 @@ function toggleRcaVoiceInput() {
     }
 }
 
-async function generateRCADocument() {
-    const incidentDesc = document.getElementById('rca-incident-desc').value.trim();
+async function generateRCADocument(manualDesc = null) {
+    if (manualDesc instanceof Event) manualDesc = null;
+    const incidentDesc = manualDesc || document.getElementById('rca-incident-desc').value.trim();
     const btn = document.getElementById('generate-rca-btn');
     const resultArea = document.getElementById('rca-result-area');
     const contentArea = document.getElementById('rca-content');
@@ -1317,6 +1530,7 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code s
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1379,6 +1593,7 @@ ${currentRcaContentEn}`;
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1424,8 +1639,9 @@ function copyRcaText() {
 // AI Daily TBT & P5M Briefing Generator LOGIC
 // ==========================================
 
-async function generateTBTDocument() {
-    const operationDesc = document.getElementById('tbt-operation-desc').value.trim();
+async function generateTBTDocument(manualTopic = null) {
+    if (manualTopic instanceof Event) manualTopic = null;
+    const operationDesc = manualTopic || document.getElementById('tbt-operation-desc').value.trim();
     const btn = document.getElementById('generate-tbt-btn');
     const resultArea = document.getElementById('tbt-result-area');
     const contentArea = document.getElementById('tbt-content');
@@ -1481,6 +1697,7 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code s
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6 } }) // Slightly higher temp for more natural speaking tone
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1543,6 +1760,7 @@ ${currentTbtContentEn}`;
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();
@@ -1730,6 +1948,7 @@ async function sendHseChatMessage() {
             })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
         if (!response.ok) throw new Error('API Error');
 
         const data = await response.json();

@@ -198,32 +198,37 @@ function renderProfileCard() {
     const progress = Math.min(100, Math.max(0, ((xp - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100));
 
     card.innerHTML = `
-        <div class="profile-header">
-            <div class="profile-avatar-container" onclick="showShopModal()" style="cursor: pointer; position: relative;">
-                <img src="${avatarUrl}" alt="AI Tamagotchi Avatar" class="profile-avatar" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.src=''; this.alt='🤖';">
-                <div class="profile-level-badge">${level}</div>
+        <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">👤</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; position: relative; z-index: 1;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                <span>👤</span> Executive Profile
+            </h3>
+            <span style="font-size: 0.65rem; font-weight: 800; color: #818cf8; background: rgba(99, 102, 241, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.3); text-transform: uppercase;">LEVEL ${level}</span>
+        </div>
+        
+        <div class="profile-header" style="position: relative; z-index: 1; display: flex; gap: 15px; align-items: center; margin-bottom: 20px;">
+            <div class="profile-avatar-container" onclick="showShopModal()" style="cursor: pointer; position: relative; width: 60px; height: 60px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--border); padding: 5px;">
+                <img src="${avatarUrl}" alt="AI Avatar" class="profile-avatar" style="width: 100%; height: 100%; object-fit: contain;">
             </div>
-            <div class="profile-info">
-                <h3>Pengguna</h3>
-                <div class="xp-bar-container">
-                    <div class="xp-bar-fill" style="width: ${progress}%"></div>
+            <div class="profile-info" style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Experience Points</span>
+                    <span style="font-size: 0.85rem; font-weight: bold; color: var(--primary);">${xp} / ${nextLevelXP} XP</span>
                 </div>
-                <div class="xp-text">
-                    ${xp} / ${nextLevelXP} XP 
-                    <button onclick="showShopModal()" style="float:right; background:none; border:none; color:var(--primary); cursor:pointer; font-size: 0.9em;">
-                        🛒 Shop
-                    </button>
+                <div class="xp-bar-container" style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                    <div class="xp-bar-fill" style="width: ${progress}%; height: 100%; background: var(--gradient-primary); border-radius: 3px;"></div>
                 </div>
             </div>
         </div>
-        <div class="profile-stats">
-            <div class="p-stat">
-                <div class="p-val">${JSON.parse(localStorage.getItem('jurnal_ai_journals') || '[]').length}</div>
-                <div class="p-lbl">Journal</div>
+
+        <div class="profile-stats" style="position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="p-stat" style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--border); text-align: center;" onclick="showProfileModal()">
+                <div class="p-val" style="font-size: 1.2rem; font-weight: bold; color: var(--text-primary);">${JSON.parse(localStorage.getItem('jurnal_ai_journals') || '[]').length}</div>
+                <div class="p-lbl" style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Journals</div>
             </div>
-            <div class="p-stat">
-                <div class="p-val">${JSON.parse(localStorage.getItem('jurnal_ai_tasks') || '[]').filter(t => t.done).length}</div>
-                <div class="p-lbl">Task</div>
+            <div class="p-stat" style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--border); text-align: center;" onclick="showShopModal()">
+                <div class="p-val" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">🛒</div>
+                <div class="p-lbl" style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Marketplace</div>
             </div>
         </div>
     `;

@@ -1,8 +1,8 @@
 // ===== DASHBOARD MODULE =====
-function initDashboard() {
-    updateDashboardStats();
-    updateDashboardReminders();
-    initMoodChart();
+async function initDashboard() {
+    await updateDashboardStats();
+    await updateDashboardReminders();
+    if (typeof initMoodChart === 'function') await initMoodChart();
 
     updateDashboardPrayerCard(); // Initial render
     setInterval(updateDashboardPrayerCard, 60000); // Update every minute for next prayer check
@@ -10,8 +10,12 @@ function initDashboard() {
     // Start distinct countdown interval
     startPrayerCountdown();
 
-    document.getElementById('get-daily-insight-btn').addEventListener('click', getDailyInsight);
+    const dailyInsightBtn = document.getElementById('get-daily-insight-btn');
+    if (dailyInsightBtn) {
+        dailyInsightBtn.addEventListener('click', getDailyInsight);
+    }
 }
+
 
 // Global variable for countdown interval
 let prayerCountdownInterval;
@@ -122,9 +126,10 @@ function startPrayerCountdown() {
 }
 
 
-function updateDashboardStats() {
-    const journals = getJournals();
-    document.getElementById('stat-journals').textContent = journals.length;
+async function updateDashboardStats() {
+    const journals = await getJournals();
+    const statJournals = document.getElementById('stat-journals');
+    if (statJournals) statJournals.textContent = journals.length;
 
     // Aggregate Pending Items (Belum Dilakukan)
     let totalPending = 0;
@@ -132,11 +137,11 @@ function updateDashboardStats() {
     const todayStr = getTodayString();
 
     // 1. Kanban Pending
-    const tasks = getTasks();
+    const tasks = await getTasks();
     totalPending += tasks.filter(t => !t.done && t.status !== 'done').length;
 
     // 2. Habits Pending Today
-    const habits = getHabits();
+    const habits = await getHabits();
     totalPending += habits.filter(h => {
         if (h.completions && h.completions[todayStr]) return false;
         if (h.completedDates && h.completedDates.includes(todayStr)) return false;
@@ -153,21 +158,28 @@ function updateDashboardStats() {
     }
 
     // 4. Upcoming Schedules (Planner)
-    const schedules = getSchedules();
+    const schedules = await getSchedules();
     totalPending += schedules.filter(s => new Date(s.datetime) > now).length;
 
-    document.getElementById('stat-tasks').textContent = totalPending;
+    const statTasks = document.getElementById('stat-tasks');
+    if (statTasks) statTasks.textContent = totalPending;
 
-    const transactions = getTransactions();
+    const transactions = await getTransactions();
     const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-    document.getElementById('stat-balance').textContent = formatCurrency(income - expense);
+    
+    const wallets = await getWallets();
+    const totalBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
+    
+    const statBalance = document.getElementById('stat-balance');
+    if (statBalance) statBalance.textContent = formatCurrency(totalBalance);
 
     const bestStreak = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
-    document.getElementById('current-streak').textContent = bestStreak;
+    const currentStreak = document.getElementById('current-streak');
+    if (currentStreak) currentStreak.textContent = bestStreak;
 }
 
-function updateDashboardReminders() {
+async function updateDashboardReminders() {
     const container = document.getElementById('dashboard-reminders');
     if (!container) return;
 
@@ -183,7 +195,7 @@ function updateDashboardReminders() {
     };
 
     // 1. Schedules (Upcoming)
-    const schedules = getSchedules();
+    const schedules = await getSchedules();
     const upcomingSchedules = schedules
         .filter(s => new Date(s.datetime) > now)
         .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))
@@ -198,7 +210,8 @@ function updateDashboardReminders() {
             icon: '📅',
             title: s.title,
             timeLabel: `${timeStr} - ${dateStr}`,
-            sortWeight: date.getTime()
+            sortWeight: date.getTime(),
+            targetScreen: 'planner'
         });
     });
 
@@ -219,14 +232,15 @@ function updateDashboardReminders() {
                     icon: '✅',
                     title: t.text,
                     timeLabel: `To-Do: ${priorityLabel}`,
-                    sortWeight: now.getTime() + extraWeight
+                    sortWeight: now.getTime() + extraWeight,
+                    targetScreen: 'todo-today'
                 });
             });
         } catch (e) { }
     }
 
     // 3. Kanban
-    const tasks = getTasks();
+    const tasks = await getTasks();
     const pendingTasks = tasks.filter(t => !t.done && t.status !== 'done');
     pendingTasks.forEach(t => {
         allReminders.push({
@@ -234,12 +248,13 @@ function updateDashboardReminders() {
             icon: '📋',
             title: t.title,
             timeLabel: 'Kanban',
-            sortWeight: now.getTime() + 1000
+            sortWeight: now.getTime() + 1000,
+            targetScreen: 'kanban'
         });
     });
 
     // 4. Habits
-    const habits = getHabits();
+    const habits = await getHabits();
     const undoneHabits = habits.filter(h => {
         if (h.completions && h.completions[todayStr]) return false;
         if (h.completedDates && h.completedDates.includes(todayStr)) return false;
@@ -252,7 +267,8 @@ function updateDashboardReminders() {
             icon: '🌱',
             title: h.name,
             timeLabel: 'Habit',
-            sortWeight: now.getTime() + 2000
+            sortWeight: now.getTime() + 2000,
+            targetScreen: 'habits'
         });
     });
 
@@ -266,7 +282,9 @@ function updateDashboardReminders() {
 
     // Limit to 10 max
     container.innerHTML = allReminders.slice(0, 10).map(r => `
-        <div class="reminder-item" style="display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+        <div class="reminder-item" 
+             style="display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer;"
+             onclick="navigateToScreen('${r.targetScreen}')">
             <div style="font-size: 1.5rem; background: var(--bg-color); padding: 8px; border-radius: 8px; border: 1px solid var(--border);">${r.icon}</div>
             <div style="display: flex; flex-direction: column;">
                 <span class="reminder-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-color);">${r.title}</span>
@@ -287,11 +305,11 @@ async function getDailyInsight() {
     const insightBox = document.getElementById('quick-insight');
     insightBox.innerHTML = '<p class="text-muted">Menganalisis data Anda...</p>';
 
-    const journals = getJournals();
-    const tasks = getTasks();
-    const habits = getHabits();
+    const journals = await getJournals();
+    const tasks = await getTasks();
+    const habits = await getHabits();
 
-    const prompt = `Berdasarkan data pengguna: ${journals.length} jurnal, ${tasks.filter(t => t.completed).length}/${tasks.length} task selesai, ${habits.length} habits.
+    const prompt = `Berdasarkan data pengguna: ${journals.length} jurnal, ${tasks.filter(t => t.completed || t.done || t.status === 'done').length}/${tasks.length} task selesai, ${habits.length} habits.
 
 Tulis TEPAT 2 kalimat motivasi singkat dalam bahasa Indonesia. Maksimal 50 kata total. Langsung tulis kalimatnya tanpa pembuka.`;
 
@@ -353,7 +371,7 @@ async function analyzeWithAI(type) {
     switch (type) {
         case 'planner':
             title = '🧠 Analisis Produktivitas';
-            data = { tasks: getTasks(), schedules: getSchedules() };
+            data = { tasks: await getTasks(), schedules: await getSchedules() };
             prompt = `Analisis data produktivitas berikut dan berikan insight:
             
 Tasks: ${JSON.stringify(data.tasks)}
@@ -374,33 +392,46 @@ Gunakan bahasa Indonesia yang hangat dan memotivasi.`;
 
         case 'finance':
             title = '🧠 Analisis Keuangan';
-            data = getTransactions();
+            data = await getTransactions();
             const income = data.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
             const expense = data.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
-            prompt = `Analisis data keuangan berikut:
+            const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
+            const budgets = await getBudgets();
 
-Transactions: ${JSON.stringify(data)}
-Total Income: ${income}
-Total Expense: ${expense}
-Balance: ${income - expense}
+            prompt = `Anda adalah CFO/Penasihat Keuangan Profesional. Berikan analisis mendalam terhadap data keuangan berikut:
 
-Berikan analisis dalam format HTML dengan struktur:
-<h4>📊 Ringkasan Keuangan</h4>
-<p>overview singkat</p>
-<h4>📈 Pola Pengeluaran</h4>
-<ul><li>kategori terbesar</li></ul>
-<h4>💰 Tips Penghematan</h4>
-<ul><li>tips praktis</li></ul>
-<h4>🎯 Target Bulan Depan</h4>
-<p>rekomendasi target</p>
+            Pemasukan: ${formatCurrency(income)}
+            Pengeluaran: ${formatCurrency(expense)}
+            Arus Kas Bersih: ${formatCurrency(income - expense)}
+            Savings Rate: ${Math.round(savingsRate)}%
+            Batas Anggaran (Budget): ${JSON.stringify(budgets)}
+            Daftar Transaksi: ${JSON.stringify(data.slice(0, 20))}
 
-Gunakan bahasa Indonesia dan format currency IDR.`;
+            Berikan laporan profesional dalam format HTML:
+            <div class="pro-analysis">
+                <h4>📊 Executive Summary</h4>
+                <p>Analisis kondisi kesehatan finansial saat ini menggunakan metrik standar industri.</p>
+                
+                <h4>🔍 Breakdown & Efisiensi</h4>
+                <p>Evaluasi efisiensi pengeluaran. Identifikasi kategori yang melebihi budget atau menunjukkan anomali.</p>
+                
+                <h4>💡 Strategi Wealth Management</h4>
+                <ul>
+                    <li>Actionable step 1: Penghematan/Optimasi.</li>
+                    <li>Actionable step 2: Alokasi surplus (jika ada) ke instrumen investasi/dana darurat.</li>
+                </ul>
+                
+                <h4>🎯 KPI & Target</h4>
+                <p>Rekomendasi target finansial spesifik untuk periode berikutnya untuk mencapai kebebasan finansial.</p>
+            </div>
+
+            Gunakan bahasa Indonesia yang formal namun elegan, layaknya laporan dari bank prioritas atau firma konsultasi keuangan.`;
             break;
 
         case 'habits':
             title = '🧠 Analisis Kebiasaan';
-            data = getHabits();
+            data = await getHabits();
 
             prompt = `Analisis data kebiasaan/habits berikut:
 
@@ -522,31 +553,28 @@ function saveReminderSettingsHandler() {
 function checkAndTriggerReminders() {
     const settings = getReminderSettings();
 
-    setInterval(() => {
+    setInterval(async () => {
         const now = new Date();
         const currentTime = now.toTimeString().slice(0, 5);
 
         if (settings.habitsEnabled && currentTime === settings.habitsTime) {
-            const habits = getHabits();
+            const habits = await getHabits();
             const today = getTodayString();
             const undone = habits.filter(h => !h.completedDates?.includes(today));
 
             if (undone.length > 0) {
-                showNotification('🔔 Reminder Habits', `Kamu punya ${undone.length} habits yang belum selesai hari ini!`);
+                if (typeof sendPremiumNotification === 'function') {
+                    sendPremiumNotification('🔔 Reminder Habits', {
+                        body: `Kamu punya ${undone.length} habits yang belum selesai hari ini!`,
+                        tag: 'habit-reminder'
+                    });
+                } else {
+                    showNotification('🔔 Reminder Habits', `Kamu punya ${undone.length} habits yang belum selesai hari ini!`);
+                }
             }
         }
 
-        if (settings.scheduleEnabled) {
-            const schedules = getSchedules();
-            const in15Min = new Date(now.getTime() + 15 * 60000);
-
-            schedules.forEach(s => {
-                const scheduleTime = new Date(s.datetime);
-                if (Math.abs(scheduleTime - in15Min) < 60000) {
-                    showNotification('📅 Jadwal Mendatang', `${s.title} dalam 15 menit!`);
-                }
-            });
-        }
+        // Note: Schedule and Prayer reminders are now managed by checkScheduledWidget in js/notifications.js
     }, 60000);
 }
 
@@ -559,3 +587,288 @@ function showNotification(title, body) {
         });
     }
 }
+
+// ===== DAILY SCHEDULE WIDGET MODULE =====
+async function updateDailyScheduleWidget() {
+    const container = document.getElementById('daily-schedule-list');
+    if (!container) return;
+
+    let events = [];
+    const now = new Date();
+    const todayStr = getTodayString();
+    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const currentDayName = dayNames[now.getDay()];
+
+    // 1. Get Prayer Data
+    const prayerData = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRAYER_DATA) || '{}');
+    let timings = {};
+    if (prayerData.key && prayerData.key.includes(todayStr) && prayerData.timings) {
+        timings = prayerData.timings;
+    } else {
+        timings = { 'Fajr': '04:30', 'Dhuhr': '12:00', 'Asr': '15:15', 'Maghrib': '18:00', 'Isha': '19:15' };
+    }
+
+    const addMinutes = (timeStr, mins) => {
+        let [h, m] = timeStr.split(':').map(Number);
+        let date = new Date(2000, 1, 1, h, m);
+        date.setMinutes(date.getMinutes() + mins);
+        return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    };
+
+    // 2. Base Routines
+    events.push({ time: addMinutes(timings['Fajr'], -40), title: 'Bangun Tidur & Tahajud', icon: '⏰', type: 'routine' });
+    events.push({ time: addMinutes(timings['Fajr'], -10), title: 'Persiapan & Sedekah Subuh', icon: '💦', type: 'routine' });
+    events.push({ time: timings['Fajr'], title: 'Sholat Subuh', icon: '🕌', type: 'prayer' });
+    
+    events.push({ time: '06:30', title: 'Mandi Pagi & Persiapan', icon: '🚿', type: 'routine' });
+    events.push({ time: '07:00', title: 'Sarapan Pagi (Nutrisi)', icon: '🍳', type: 'routine' });
+    
+    events.push({ time: '08:00', title: 'Mulai Kerja / Selesaikan Todo', icon: '💼', type: 'routine' });
+    
+    events.push({ time: timings['Dhuhr'], title: 'Sholat Dzuhur', icon: '🕌', type: 'prayer' });
+    events.push({ time: addMinutes(timings['Dhuhr'], 30), title: 'Makan Siang (Nutrisi)', icon: '🍱', type: 'routine' });
+    
+    events.push({ time: timings['Asr'], title: 'Sholat Ashar', icon: '🕌', type: 'prayer' });
+    events.push({ time: timings['Maghrib'], title: 'Sholat Maghrib', icon: '🕌', type: 'prayer' });
+    events.push({ time: timings['Isha'], title: 'Sholat Isya', icon: '🕌', type: 'prayer' });
+    events.push({ time: addMinutes(timings['Isha'], 30), title: 'Makan Malam (Nutrisi)', icon: '🍽️', type: 'routine' });
+    events.push({ time: '22:00', title: 'Evaluasi Jurnal & Tidur', icon: '😴', type: 'routine' });
+
+    // 3. Workout Logic (Pagi jam 05:30)
+    if (typeof workoutSchedule !== 'undefined') {
+        const todayWorkout = workoutSchedule.find(w => w.day === currentDayName);
+        if (todayWorkout && todayWorkout.type !== 'rest') {
+            events.push({ time: '05:30', title: `Workout: ${todayWorkout.title}`, icon: '💪', type: 'workout' });
+        }
+    }
+
+    // 4. Planner/Schedules
+    const schedules = await getSchedules();
+    const todaySchedules = schedules.filter(s => s.datetime && s.datetime.startsWith(todayStr));
+    todaySchedules.forEach(s => {
+        const timeStr = s.datetime.split('T')[1].slice(0, 5);
+        events.push({ time: timeStr, title: s.title, icon: '📅', type: 'schedule' });
+    });
+
+    events.sort((a, b) => a.time.localeCompare(b.time));
+
+    container.innerHTML = events.map((e, index) => {
+        const isPast = e.time < now.toTimeString().slice(0, 5);
+        return `
+            <div class="timeline-item" style="display: flex; gap: 12px; align-items: stretch; position: relative;">
+                <div style="width: 45px; text-align: right; font-size: 0.85rem; font-weight: 700; color: ${isPast ? 'var(--text-muted)' : 'var(--primary)'}; padding-top: 14px; opacity: ${isPast ? '0.6' : '1'};">
+                    ${e.time}
+                </div>
+                <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 2px; height: 14px; background: ${index === 0 ? 'transparent' : 'var(--border)'};"></div>
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: ${isPast ? 'var(--bg-card)' : 'var(--surface)'}; border: 2px solid ${isPast ? 'var(--border)' : 'var(--primary)'}; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; z-index: 2; opacity: ${isPast ? '0.6' : '1'};">
+                        ${e.icon}
+                    </div>
+                    ${index !== events.length - 1 ? `<div style="width: 2px; flex: 1; background: var(--border);"></div>` : `<div style="width: 2px; height: 14px; background: transparent;"></div>`}
+                </div>
+                <div style="flex: 1; padding: 10px 0; margin-bottom: 2px; opacity: ${isPast ? '0.6' : '1'};">
+                    <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); text-decoration: ${e.type === 'routine' && isPast ? 'line-through' : 'none'};">${e.title}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ===== WEEKLY EXECUTIVE REPORT =====
+async function generateWeeklyExecutiveReport() {
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+    if (!apiKey) {
+        alert('Atur API key dulu di Settings!');
+        if (typeof showSettings === 'function') showSettings();
+        return;
+    }
+
+    if (typeof showAnalysisModal === 'function') {
+        showAnalysisModal('📈 Meracik Rapor Mingguan...');
+    }
+
+    const today = new Date();
+    const dates = [];
+    for(let i=6; i>=0; i--) {
+        let d = new Date();
+        d.setDate(today.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+    }
+
+    // 1. Finance
+    const txs = await getTransactions();
+    const recentTxs = txs.filter(t => dates.includes(t.date));
+    const income = recentTxs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+    const expense = recentTxs.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+
+    // 2. Habits
+    const habits = await getHabits();
+    let habitData = habits.map(h => {
+        const doneCount = (h.completedDates || []).filter(d => dates.includes(d)).length;
+        return { name: h.name, doneCount_out_of_7: doneCount };
+    });
+
+    // 3. Tasks
+    const tasks = await getTasks();
+    const doneRecent = tasks.filter(t => t.done && t.updatedAt && dates.includes(t.updatedAt.split('T')[0])).length;
+    const pendingCount = tasks.filter(t => !t.done).length;
+
+    // 4. Journals
+    const journals = await getJournals();
+    const recentJournals = journals.filter(j => dates.includes(j.createdAt.split('T')[0]));
+    const moodCounts = {};
+    recentJournals.forEach(j => {
+        let m = j.mood || 'biasa';
+        moodCounts[m] = (moodCounts[m] || 0) + 1;
+    });
+
+    // 5. Islamic
+    let subuhCount = 0;
+    if(typeof getIslamicTrackByDate === 'function') {
+        for(let d of dates) {
+            let tr = await getIslamicTrackByDate(d);
+            if (tr?.prayers?.subuh) subuhCount++;
+        }
+    }
+
+    // 6. Workout
+    let workoutCount = 0;
+    if(typeof workoutState !== 'undefined' && workoutState.history) {
+        workoutCount = dates.filter(d => workoutState.history[d]).length;
+    }
+
+    const compiledData = JSON.stringify({
+        dateRange: `${dates[0]} to ${dates[6]}`,
+        finance: { income, expense, net: income - expense },
+        tasks: { completedThisWeek: doneRecent, currentlyPending: pendingCount },
+        habits: habitData,
+        moods: moodCounts,
+        spiritual: { subuhCompleted: subuhCount },
+        fitness: { workoutDays: workoutCount }
+    });
+
+    const prompt = `Anda adalah "Senior Executive Consultant" pribadi. Berdasarkan data 7 hari terakhir, buatlah Laporan Eksekutif (Rapor) untuk dikirim ke CEO (pengguna).
+    Analisis data mentah berikut secara Kritis dan Tajam:
+    ${compiledData}
+
+    FORMAT HTML OUTPUT (Wajib Rapi dan Profesional):
+    <div id="executive-pdf-content" style="font-family: Arial, sans-serif; color: #1e293b;">
+        <h2 style="color: #0f172a; text-align: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px;">Executive Weekly Report</h2>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <span>Periode: ${dates[0]} s/d ${dates[6]}</span>
+            <span style="font-weight: bold; font-size: 1.2rem; background: #4f46e5; color: white; padding: 4px 12px; border-radius: 4px;">GRADE: [Nilai A/B/C/D]</span>
+        </div>
+        
+        <h3 style="color: #334155;">📊 Executive Summary</h3>
+        <p>[2 paragraf padat berisi inti kinerja minggu ini. Beri pujian jika bagus, kritik keras jika jelek/malas.]</p>
+        
+        <h3 style="color: #334155;">🔍 Performance Breakdown</h3>
+        <ul style="line-height: 1.6;">
+            <li><b>💰 Keuangan:</b> [Analisis arus kas berserta angka]</li>
+            <li><b>⚡ Produktivitas & Habit:</b> [Analisis penyelesaian task & kebiasaan]</li>
+            <li><b>🧘 Kebugaran & Mental:</b> [Analisis mood & workout]</li>
+            <li><b>🕌 Spiritual:</b> [Analisis kelengkapan ibadah, beri teguran jika Subuh bolong]</li>
+        </ul>
+        
+        <h3 style="color: #334155; border-top: 1px solid #cbd5e1; padding-top: 10px;">💡 Top 3 Tactic & Strategy (Minggu Depan)</h3>
+        <ol style="line-height: 1.6;">
+            <li>[Strategi konkrit 1 berdasarkan kelemahan/peluang minggu ini]</li>
+            <li>[Strategi konkrit 2]</li>
+            <li>[Strategi konkrit 3]</li>
+        </ol>
+    </div>
+    
+    Jangan berikan kata pembuka/penutup seperti "Tentu,". Hanya kembalikan elemen HTML murni (tanpa tag \`\`\`html).`;
+
+    try {
+        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+            })
+        });
+
+        if (!response.ok) throw new Error('API Error');
+
+        const result = await response.json();
+        let text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal memproses.';
+        text = text.replace(/```html/gi, '').replace(/```/g, '');
+
+        const contentDiv = document.getElementById('analysis-content');
+        if (contentDiv) {
+            // Wrapping AI response in a guaranteed ID container for PDF export
+            const wrappedContent = `
+                <div id="executive-pdf-content" style="font-family: Arial, sans-serif; color: #1e293b; background: white; padding: 30px;">
+                    ${text}
+                </div>
+            `;
+
+            contentDiv.innerHTML = wrappedContent + `
+            <div style="margin-top: 25px; text-align: center;">
+                <button class="btn btn-primary" onclick="exportReportToPDF()" style="background: #10b981; border: none; font-weight: bold; padding: 10px 20px; font-size: 1rem;">
+                    📥 Unduh PDF Laporan
+                </button>
+            </div>`;
+            document.getElementById('analysis-loading').classList.add('hidden');
+            document.getElementById('analysis-title').textContent = '📈 Weekly CEO Report';
+        }
+
+
+    } catch (e) {
+        console.error(e);
+        const contentDiv = document.getElementById('analysis-content');
+        if (contentDiv) {
+            contentDiv.innerHTML = `<p style="color: red;">Gagal mengambil data laporan: ${e.message}</p>`;
+            document.getElementById('analysis-loading').classList.add('hidden');
+        }
+    }
+}
+
+async function exportReportToPDF() {
+    const el = document.getElementById('executive-pdf-content') || document.getElementById('analysis-content');
+    if (!el) {
+        alert('Laporan tidak ditemukan.');
+        return;
+    }
+
+    // Ensure the element is visible and has white background for capture
+    const originalBackground = el.style.background;
+    el.style.background = 'white';
+    el.style.color = '#1e293b';
+
+    const opt = {
+        margin:       0.5,
+        filename:     `JurnalAI_Weekly_Report_${getTodayString()}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            letterRendering: true
+        },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    
+    const triggerExport = (lib) => {
+        lib().set(opt).from(el).toPdf().get('pdf').then(function (pdf) {
+            // Restore styles after rendering
+            el.style.background = originalBackground;
+        }).save();
+    };
+
+    if (typeof html2pdf === 'function') {
+        triggerExport(html2pdf);
+    } else {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = () => {
+            triggerExport(html2pdf);
+        };
+        document.head.appendChild(script);
+    }
+}
+

@@ -72,40 +72,50 @@ async function initMotivation() {
 
     // 1. Loading State (Animasi Saat Realtime Fetch)
     container.innerHTML = `
-        <div class="motivation-content" style="text-align: center; padding: 15px;">
+        <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">💡</div>
+        <div style="position: relative; z-index: 1; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;"><span>💡</span> Motivasi Harian</h3>
+            <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); text-transform: uppercase;">MINDSET</span>
+        </div>
+        <div class="motivation-content" style="position: relative; z-index: 1; text-align: center; padding: 15px;">
             <div class="loading-spinner" style="display: inline-block; margin-bottom: 15px;"></div>
             <p class="text-muted" style="margin: 0; font-size: 0.9em; animation: pulse 1.5s infinite;">Mencari kutipan penuh makna...</p>
         </div>
     `;
 
-    try {
-        // 2. Fetch data (Menggunakan API Quotes yang sudah CORS- friendly bawaan)
-        // DummyJSON Random Quote API cukup konsisten dan cepat tanpa perlu blokir perantara AllOrigins
-        const response = await fetch('https://dummyjson.com/quotes/random');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // Timeout 3 detik
 
-        if (!response.ok) throw new Error('Gagal menghubungi server kutipan.');
+    try {
+        const apiUrl = 'https://dummyjson.com/quotes/random';
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        
+        // Coba ambil data, tapi jangan tunggu lama jika diblokir browser/CORS
+        const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), { 
+            signal: controller.signal,
+            mode: 'cors'
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error('Gagal menghubungi server.');
 
         const data = await response.json();
-
         if (data && data.quote) {
             renderMotivation(container, {
-                text: data.quote,           // String kutipannya
-                author: data.author,        // Penulisnya
-                category: 'general'         // Agar icon jadi api (🔥)
+                text: data.quote,
+                author: data.author,
+                category: 'general'
             });
             return;
-        } else {
-            throw new Error('Struktur data balasan kosong.');
         }
-
     } catch (error) {
-        console.error('🔥 ZenQuotes API gagal, memuat kutipan Offline/Fallback:', error);
+        clearTimeout(timeoutId);
+        // Jika diblokir CORS atau Timeout, gunakan data lokal tanpa menampilkan error merah besar
+        console.log('💡 Browser memblokir API/Internet offline. Menggunakan kutipan internal.');
 
-        // 3. Graceful Fallback (Jika internet mati, acak daftar lokal bawaan)
         const fallbackIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
-        const fallbackQuote = MOTIVATION_QUOTES[fallbackIndex];
-
-        renderMotivation(container, fallbackQuote);
+        renderMotivation(container, MOTIVATION_QUOTES[fallbackIndex]);
     }
 }
 
@@ -113,10 +123,16 @@ function renderMotivation(container, quote) {
     const icon = quote.category === 'islamic' ? '☪️' : '🔥';
 
     container.innerHTML = `
-        <div class="motivation-content">
-            <div class="motivation-icon">${icon}</div>
-            <p class="motivation-text">"${quote.text}"</p>
-            <p class="motivation-author">— ${quote.author}</p>
+        <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">${icon}</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                <span>${icon}</span> Motivasi Harian
+            </h3>
+            <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); text-transform: uppercase;">MINDSET</span>
+        </div>
+        <div class="motivation-content" style="position: relative; z-index: 1;">
+            <p class="motivation-text" style="font-style: italic; margin-bottom: 8px;">"${quote.text}"</p>
+            <p class="motivation-author" style="font-weight: bold; color: var(--primary);">— ${quote.author}</p>
         </div>
     `;
 }

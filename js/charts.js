@@ -19,11 +19,11 @@ const MOOD_EMOJIS = {
     'terrible': '😢'
 };
 
-function initMoodChart() {
+async function initMoodChart() {
     const ctx = document.getElementById('mood-chart');
     if (!ctx) return;
 
-    const journals = getJournals();
+    const journals = await getJournals();
     const weeklyData = getWeeklyMoodData(journals);
 
     if (moodChart) { moodChart.destroy(); }
@@ -105,7 +105,7 @@ function getWeeklyMoodData(journals) {
 
 let currentChartPeriod = 'month';
 
-function initFinanceChart(period) {
+async function initFinanceChart(period) {
     if (period) currentChartPeriod = period;
 
     const ctx = document.getElementById('finance-chart');
@@ -125,12 +125,12 @@ function initFinanceChart(period) {
         `;
         ctx.parentElement.insertBefore(filterContainer, ctx);
 
-        filterContainer.addEventListener('click', (e) => {
+        filterContainer.addEventListener('click', async (e) => {
             const btn = e.target.closest('.chart-filter-btn');
             if (!btn) return;
             filterContainer.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            initFinanceChart(btn.dataset.period);
+            await initFinanceChart(btn.dataset.period);
         });
     } else {
         // Update active state
@@ -139,7 +139,7 @@ function initFinanceChart(period) {
         });
     }
 
-    const transactions = getTransactions();
+    const transactions = await getTransactions();
     const chartData = getFinanceDataByPeriod(transactions, currentChartPeriod);
 
     if (financeChart) { financeChart.destroy(); }
@@ -267,11 +267,11 @@ function getMonthlyFinanceData(transactions) {
     };
 }
 
-function initHabitsChart() {
+async function initHabitsChart() {
     const ctx = document.getElementById('habits-chart');
     if (!ctx) return;
 
-    const habits = getHabits();
+    const habits = await getHabits();
     const weeklyData = getWeeklyHabitData(habits);
 
     if (habitsChart) { habitsChart.destroy(); }
@@ -318,4 +318,86 @@ function getWeeklyHabitData(habits) {
     }
 
     return { labels, completions };
+}
+let categoryChart = null;
+
+async function initCategoryChart() {
+    const ctx = document.getElementById('category-chart');
+    if (!ctx) return;
+
+    const transactions = await getTransactions();
+    const expenseData = transactions.filter(t => t.type === 'expense');
+    
+    // Group by category
+    const categoryTotals = {};
+    expenseData.forEach(t => {
+        const cat = t.category || 'Lainnya';
+        categoryTotals[cat] = (categoryTotals[cat] || 0) + t.amount;
+    });
+
+    const labels = Object.keys(categoryTotals);
+    const data = Object.values(categoryTotals);
+
+    if (categoryChart) { categoryChart.destroy(); }
+
+    if (labels.length === 0) {
+        // Handle empty state if needed
+        return;
+    }
+
+    categoryChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', 
+                    '#ec4899', '#06b6d4', '#4ade80', '#f43f5e', '#6366f1'
+                ],
+                borderWidth: 2,
+                borderColor: 'var(--bg-card)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#a0a0b0', padding: 20, font: { size: 11 } }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+}
+
+function setupChartToggle() {
+    const barBtn = document.getElementById('show-bar-chart-btn');
+    const pieBtn = document.getElementById('show-pie-chart-btn');
+    const barContainer = document.getElementById('finance-bar-chart-container');
+    const pieContainer = document.getElementById('finance-pie-chart-container');
+
+    if (!barBtn || !pieBtn) return;
+
+    barBtn.addEventListener('click', async () => {
+        barBtn.classList.add('btn-primary');
+        barBtn.classList.remove('btn-secondary');
+        pieBtn.classList.add('btn-secondary');
+        pieBtn.classList.remove('btn-primary');
+        barContainer.classList.remove('hidden');
+        pieContainer.classList.add('hidden');
+        await initFinanceChart();
+    });
+
+    pieBtn.addEventListener('click', async () => {
+        pieBtn.classList.add('btn-primary');
+        pieBtn.classList.remove('btn-secondary');
+        barBtn.classList.add('btn-secondary');
+        barBtn.classList.remove('btn-primary');
+        pieContainer.classList.remove('hidden');
+        barContainer.classList.add('hidden');
+        await initCategoryChart();
+    });
 }

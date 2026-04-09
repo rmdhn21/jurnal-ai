@@ -16,7 +16,7 @@ function closeEditModal() {
     currentEditId = null;
 }
 
-function showEditModal(type, id) {
+async function showEditModal(type, id) {
     currentEditType = type;
     currentEditId = id;
 
@@ -32,7 +32,7 @@ function showEditModal(type, id) {
     let item = null;
 
     if (type === 'transaction') {
-        const transactions = getTransactions();
+        const transactions = await getTransactions();
         item = transactions.find(t => t.id === id);
         if (!item) return;
 
@@ -60,13 +60,13 @@ function showEditModal(type, id) {
 
         // Populate wallets
         const walletSelect = document.getElementById('edit-transaction-wallet');
-        const wallets = getWallets();
+        const wallets = await getWallets();
         walletSelect.innerHTML = wallets.map(w =>
             `<option value="${w.id}" ${w.id === item.walletId ? 'selected' : ''}>${w.name} (${formatCurrency(w.balance)})</option>`
         ).join('');
 
     } else if (type === 'todo') {
-        const tasks = getTasks();
+        const tasks = await getTasks();
         item = tasks.find(t => t.id === id);
         if (!item) return;
 
@@ -76,7 +76,7 @@ function showEditModal(type, id) {
         `;
 
     } else if (type === 'schedule') {
-        const schedules = getSchedules();
+        const schedules = await getSchedules();
         item = schedules.find(s => s.id === id);
         if (!item) return;
 
@@ -94,7 +94,7 @@ function showEditModal(type, id) {
         `;
 
     } else if (type === 'goal') {
-        const goals = getGoals();
+        const goals = await getGoals();
         item = goals.find(g => g.id === id);
         if (!item) return;
 
@@ -125,11 +125,11 @@ function showEditModal(type, id) {
     modal.classList.remove('hidden');
 }
 
-function handleSaveEdit() {
+async function handleSaveEdit() {
     if (!currentEditId || !currentEditType) return;
 
     if (currentEditType === 'transaction') {
-        const transactions = getTransactions();
+        const transactions = await getTransactions();
         const item = transactions.find(t => t.id === currentEditId);
         if (!item) return;
 
@@ -149,20 +149,22 @@ function handleSaveEdit() {
             return;
         }
 
-        // Revert old balance
-        updateWalletBalance(oldWalletId, -oldAmount, oldType); // cancel old effect
+        // Revert old balance: reverse the old transaction effect
+        await updateWalletBalance(oldWalletId, oldAmount, oldType === 'income' ? 'expense' : 'income');
         // Apply new balance
-        updateWalletBalance(item.walletId, item.amount, item.type);
+        await updateWalletBalance(item.walletId, item.amount, item.type);
 
-        saveTransaction(item); // Update existing
+        await saveTransaction(item); // Update existing
 
-        renderTransactionList();
-        updateFinanceSummary();
-        renderWalletListSummary();
-        initFinanceChart();
+        await renderTransactionList();
+        await updateFinanceSummary();
+        if (typeof renderWalletListSummary === 'function') await renderWalletListSummary();
+        if (typeof updateWalletSelectOptions === 'function') await updateWalletSelectOptions();
+        if (typeof initFinanceChart === 'function') await initFinanceChart();
+        if (typeof updateFinancialHealthScore === 'function') await updateFinancialHealthScore();
 
     } else if (currentEditType === 'todo') {
-        const tasks = getTasks();
+        const tasks = await getTasks();
         const item = tasks.find(t => t.id === currentEditId);
         if (!item) return;
 
@@ -172,11 +174,11 @@ function handleSaveEdit() {
             return;
         }
 
-        saveTask(item);
+        await saveTask(item);
         if (typeof renderKanbanBoard === 'function') renderKanbanBoard();
 
     } else if (currentEditType === 'schedule') {
-        const schedules = getSchedules();
+        const schedules = await getSchedules();
         const item = schedules.find(s => s.id === currentEditId);
         if (!item) return;
 
@@ -189,11 +191,11 @@ function handleSaveEdit() {
             return;
         }
 
-        saveSchedule(item);
-        renderScheduleList();
+        await saveSchedule(item);
+        if (typeof renderScheduleList === 'function') renderScheduleList();
 
     } else if (currentEditType === 'goal') {
-        const goals = getGoals();
+        const goals = await getGoals();
         const item = goals.find(g => g.id === currentEditId);
         if (!item) return;
 
@@ -208,8 +210,8 @@ function handleSaveEdit() {
             return;
         }
 
-        saveGoal(item);
-        renderGoalsList();
+        await saveGoal(item);
+        if (typeof renderGoalsList === 'function') renderGoalsList();
         if (typeof updateGoalsStats === 'function') updateGoalsStats();
     }
 

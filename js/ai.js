@@ -62,6 +62,7 @@ async function getAIResponse(journalText) {
             body: JSON.stringify(requestBody)
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
         if (!response.ok) {
             const error = await response.json();
             console.error('API Error:', error);

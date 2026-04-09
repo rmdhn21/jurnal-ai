@@ -31,6 +31,9 @@ function initNavigation() {
 function showScreen(targetScreen) {
     const screens = document.querySelectorAll('.screen');
     screens.forEach(screen => {
+        if (screen.id === 'rig-3d-viewer-screen' && screen.classList.contains('active') && targetScreen !== 'rig-3d-viewer') {
+            if (typeof stopRig3DViewer === 'function') stopRig3DViewer();
+        }
         screen.classList.remove('active');
         if (screen.id === `${targetScreen}-screen`) {
             screen.classList.add('active');
@@ -62,6 +65,34 @@ function showScreen(targetScreen) {
     } else if (targetScreen === 'goals') {
         renderGoalsList();
         updateGoalsStats();
+    } else if (targetScreen === 'epls') {
+        if (typeof initEplsHabitTracker === 'function') initEplsHabitTracker();
+        if (typeof updateEplsProgressUI === 'function') updateEplsProgressUI();
+    } else if (targetScreen === 'physics') {
+        if (typeof updatePhysicsProgressUI === 'function') updatePhysicsProgressUI();
+    } else if (targetScreen === 'hsse') {
+        if (typeof updateHsseProgressUI === 'function') updateHsseProgressUI();
+    } else if (targetScreen === 'automotive') {
+        if (typeof updateAutoProgressUI === 'function') updateAutoProgressUI();
+    } else if (targetScreen === 'psychology') {
+        if (typeof updatePsyProgressUI === 'function') updatePsyProgressUI();
+    } else if (targetScreen === 'investment') {
+        if (typeof updateInvProgressUI === 'function') updateInvProgressUI();
+    } else if (targetScreen === 'coding') {
+        if (typeof updateCodeProgressUI === 'function') updateCodeProgressUI();
+    } else if (targetScreen === 'pertamina') {
+        if (typeof updatePtmProgressUI === 'function') updatePtmProgressUI();
+    } else if (targetScreen === 'library') {
+        if (typeof refreshLibraryUI === 'function') refreshLibraryUI();
+    } else if (targetScreen === 'workout-tracker') {
+        if (typeof initWorkoutTracker === 'function') initWorkoutTracker();
+    } else if (targetScreen === 'oxford-vocab') {
+        if (typeof renderOxfordWordList === 'function') renderOxfordWordList();
+        if (typeof updateOxfordProgressBars === 'function') updateOxfordProgressBars();
+    } else if (targetScreen === 'jmp-generator') {
+        // No special entry logic needed yet
+    } else if (targetScreen === 'rig-3d-viewer') {
+        if (typeof initRig3DViewer === 'function') initRig3DViewer();
     }
 }
 
@@ -103,6 +134,10 @@ function navigateToJSAGenerator() {
     }, 200);
 }
 
+function navigateToJMPGenerator() {
+    navigateToSubscreen('jmp-generator');
+}
+
 function handleBackButton() {
     // Return to the last clicked Hub
     showScreen(currentHub);
@@ -115,20 +150,28 @@ function handleBackButton() {
     }
 }
 
-// ===== SETTINGS =====
+// ===== SETTINGS & UI SCALING =====
 function initSettings() {
     const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
     const closeSettingsBtn = document.getElementById('close-settings');
+
+    if (settingsBtn && settingsModal) {
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+        });
+        
+        closeSettingsBtn?.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+    }
+
+    // UI Scaling Logic
+    initUIScaling();
+
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     const apiKeyInput = document.getElementById('api-key-input');
     const modal = document.getElementById('settings-modal');
-
-    settingsBtn.addEventListener('click', showSettings);
-
-    closeSettingsBtn.addEventListener('click', hideSettings);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) hideSettings();
-    });
 
     // Save City Button
     const cityInput = document.getElementById('city-input');
@@ -179,6 +222,19 @@ function initSettings() {
         const apiKey = apiKeyInput.value.trim();
         const dailyBudget = parseInt(document.getElementById('global-daily-budget-input').value);
 
+        const widgetTimeToggle = document.getElementById('widget-time-toggle');
+        const widgetReminderTime = document.getElementById('widget-reminder-time');
+        
+        if (widgetTimeToggle && widgetReminderTime) {
+            localStorage.setItem('jurnal_ai_widget_enabled', widgetTimeToggle.checked);
+            localStorage.setItem('jurnal_ai_widget_time', widgetReminderTime.value);
+
+            if (widgetTimeToggle.checked) {
+                if (typeof requestNotificationPermission === 'function') requestNotificationPermission();
+                if (typeof subscribeToWebPush === 'function') subscribeToWebPush();
+            }
+        }
+
         if (apiKey) {
             saveApiKey(apiKey);
         }
@@ -196,6 +252,24 @@ function initSettings() {
         alert('Pengaturan berhasil disimpan!');
         hideSettings();
     });
+
+    // Load widget settings
+    const widgetTimeToggle = document.getElementById('widget-time-toggle');
+    const widgetReminderTime = document.getElementById('widget-reminder-time');
+    const widgetTimeSetting = document.getElementById('widget-time-setting');
+
+    if (widgetTimeToggle && widgetReminderTime) {
+        const enabled = localStorage.getItem('jurnal_ai_widget_enabled') !== 'false'; // Default true
+        const timeVal = localStorage.getItem('jurnal_ai_widget_time') || '06:00';
+        
+        widgetTimeToggle.checked = enabled;
+        widgetReminderTime.value = timeVal;
+        if (!enabled && widgetTimeSetting) widgetTimeSetting.classList.add('hidden');
+
+        widgetTimeToggle.addEventListener('change', (e) => {
+            if (widgetTimeSetting) widgetTimeSetting.classList.toggle('hidden', !e.target.checked);
+        });
+    }
 
     // Save Cloud Config
     const saveCloudBtn = document.getElementById('save-cloud-config-btn');
@@ -234,6 +308,22 @@ function initSettings() {
         deleteAccountBtn.addEventListener('click', deleteCloudAccount);
     }
 
+    // Test Notification
+    const testNotifBtn = document.getElementById('test-notif-btn');
+    if (testNotifBtn) {
+        testNotifBtn.addEventListener('click', () => {
+            if (typeof generateDailyLockscreenWidget === 'function') {
+                generateDailyLockscreenWidget();
+            } else if (typeof sendPremiumNotification === 'function') {
+                sendPremiumNotification('🚀 Jurnal AI: Fokus & Produktif!', {
+                    body: 'Notifikasi interaktif Anda sudah aktif. Gunakan aplikasi untuk memaksimalkan hari Anda.'
+                });
+            } else {
+                alert('Modul notifikasi belum siap.');
+            }
+        });
+    }
+
     updateEncryptionStatus();
 }
 
@@ -246,6 +336,62 @@ function showSettings() {
 function hideSettings() {
     document.getElementById('settings-modal').classList.add('hidden');
 }
+
+/**
+ * UI SCALING - "Ctrl +/-" for your App
+ */
+let appScale = 1.0;
+
+function initUIScaling() {
+    const scaleDownBtn = document.getElementById('ui-scale-down-btn');
+    const scaleUpBtn = document.getElementById('ui-scale-up-btn');
+    const scaleLabel = document.getElementById('ui-scale-label');
+
+    // Load saved scale
+    const savedScale = localStorage.getItem('app-ui-scale');
+    if (savedScale) {
+        appScale = parseFloat(savedScale);
+        applyUIScale();
+    }
+
+    if (scaleDownBtn && scaleUpBtn) {
+        scaleDownBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (appScale > 0.7) {
+                appScale -= 0.1;
+                applyUIScale();
+                saveUIScale();
+            }
+        });
+
+        scaleUpBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (appScale < 1.5) {
+                appScale += 0.1;
+                applyUIScale();
+                saveUIScale();
+            }
+        });
+    }
+}
+
+function applyUIScale() {
+    // 1. Set CSS Variable
+    document.documentElement.style.setProperty('--app-scale', appScale);
+    
+    // 2. Update Label
+    const scaleLabel = document.getElementById('ui-scale-label');
+    if (scaleLabel) {
+        scaleLabel.innerText = Math.round(appScale * 100) + '%';
+    }
+    
+    console.log(`📏 UI Scale applied: ${appScale}`);
+}
+
+function saveUIScale() {
+    localStorage.setItem('app-ui-scale', appScale.toFixed(1));
+}
+
 
 // ===== GLOBAL SEARCH =====
 function initGlobalSearch() {
@@ -264,8 +410,8 @@ function initGlobalSearch() {
             return;
         }
 
-        searchTimeout = setTimeout(() => {
-            performSearch(query);
+        searchTimeout = setTimeout(async () => {
+            await performSearch(query);
         }, 300);
     });
 
@@ -275,19 +421,19 @@ function initGlobalSearch() {
         }
     });
 
-    searchInput.addEventListener('focus', () => {
+    searchInput.addEventListener('focus', async () => {
         if (searchInput.value.trim().length >= 2) {
-            performSearch(searchInput.value.trim());
+            await performSearch(searchInput.value.trim());
         }
     });
 }
 
-function performSearch(query) {
+async function performSearch(query) {
     const searchResults = document.getElementById('search-results');
     const queryLower = query.toLowerCase();
     let results = [];
 
-    const journals = getJournals();
+    const journals = await getJournals();
     journals.forEach(journal => {
         if (journal.text.toLowerCase().includes(queryLower)) {
             results.push({
@@ -299,7 +445,7 @@ function performSearch(query) {
         }
     });
 
-    const goals = getGoals();
+    const goals = await getGoals();
     goals.forEach(goal => {
         if (goal.title.toLowerCase().includes(queryLower) ||
             (goal.notes && goal.notes.toLowerCase().includes(queryLower))) {
@@ -312,7 +458,7 @@ function performSearch(query) {
         }
     });
 
-    const tasks = getTasks();
+    const tasks = await getTasks();
     tasks.forEach(task => {
         if (task.title.toLowerCase().includes(queryLower)) {
             results.push({
@@ -324,7 +470,7 @@ function performSearch(query) {
         }
     });
 
-    const schedules = getSchedules();
+    const schedules = await getSchedules();
     schedules.forEach(schedule => {
         if (schedule.title.toLowerCase().includes(queryLower)) {
             results.push({
@@ -336,17 +482,69 @@ function performSearch(query) {
         }
     });
 
-    const habits = getHabits();
+    const habits = await getHabits();
     habits.forEach(habit => {
         if (habit.name.toLowerCase().includes(queryLower)) {
             results.push({
-                type: 'Habit', icon: '✅',
+                type: 'Habit', icon: '🌱',
                 title: habit.name,
                 preview: `🔥 ${habit.streak || 0} hari streak`,
                 screen: 'habits', id: habit.id
             });
         }
     });
+
+    const transactions = await getTransactions();
+    transactions.forEach(t => {
+        if ((t.description && t.description.toLowerCase().includes(queryLower)) || 
+            (t.category && t.category.toLowerCase().includes(queryLower))) {
+            results.push({
+                type: 'Transaksi', icon: t.type === 'income' ? '💰' : '💸',
+                title: t.description || t.category,
+                preview: `${t.type === 'income' ? '+' : '-'} Rp ${Number(t.amount).toLocaleString()}`,
+                screen: 'finance', id: t.id
+            });
+        }
+    });
+
+    const wallets = await getWallets();
+    wallets.forEach(w => {
+        if (w.name.toLowerCase().includes(queryLower)) {
+            results.push({
+                type: 'Dompet', icon: '💳',
+                title: w.name,
+                preview: `Saldo: Rp ${Number(w.balance).toLocaleString()}`,
+                screen: 'finance', id: w.id
+            });
+        }
+    });
+
+    const libraryItems = await getSavedGenerations();
+    libraryItems.forEach(item => {
+        if ((item.title && item.title.toLowerCase().includes(queryLower)) || 
+            (item.type && item.type.toLowerCase().includes(queryLower))) {
+            results.push({
+                type: 'Library', icon: '📚',
+                title: item.title,
+                preview: `Tipe: ${item.type}`,
+                screen: 'library', id: item.id
+            });
+        }
+    });
+
+    const vocab = await getVocabBank();
+    vocab.forEach(v => {
+        if (v.word.toLowerCase().includes(queryLower) || 
+            v.meaning.toLowerCase().includes(queryLower)) {
+            results.push({
+                type: 'Vocab', icon: '📖',
+                title: v.word,
+                preview: v.meaning,
+                screen: 'english-hse', id: v.id
+            });
+        }
+    });
+
 
     if (results.length === 0) {
         searchResults.innerHTML = '<div class="search-no-results">Tidak ada hasil untuk "' + query + '"</div>';
@@ -373,8 +571,28 @@ function performSearch(query) {
 }
 
 function navigateToScreen(screenName) {
-    const navBtn = document.querySelector(`.nav-btn[data-screen="${screenName}"]`);
-    if (navBtn) {
-        navBtn.click();
+    // 1. Show the screen
+    showScreen(screenName);
+
+    // 2. Sync Bottom Nav (if it's a main hub)
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.screen === screenName);
+    });
+
+    // 3. Handle Back Button visibility
+    const backBtn = document.getElementById('header-back-btn');
+    const mainHubs = ['activity-hub', 'learning-hub', 'finance', 'workout-tracker', 'dashboard', 'jarvis'];
+    
+    if (backBtn) {
+        if (!mainHubs.includes(screenName)) {
+            // It's a sub-screen, show back button
+            backBtn.classList.remove('hidden');
+            backBtn.style.display = 'flex';
+        } else {
+            // It's a main hub, hide back button
+            backBtn.classList.add('hidden');
+            backBtn.style.display = 'none';
+        }
     }
 }

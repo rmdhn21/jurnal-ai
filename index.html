@@ -9,9 +9,11 @@
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#f59e0b">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Jurnal AI">
+
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -33,8 +35,22 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Dexie.js for IndexedDB -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
+    <!-- Markmap & D3 for Interactive Mind-Maps -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
+
     <!-- html2pdf.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- Three.js for 3D Rig Viewer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 
     <!-- iOS Safe Area Styling -->
     <style>
@@ -52,10 +68,207 @@
                 padding-top: calc(var(--spacing-md) + env(safe-area-inset-top));
             }
         }
+        /* Migration Overlay */
+        .migration-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(15px);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .migration-progress-bar {
+            width: 200px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        #migration-fill {
+            height: 100%;
+            background: var(--accent-primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Voice Button iOS Suppression */
+        #mic-btn, 
+        #jarvis-global-fab,
+        #jarvis-input-mic,
+        .jarvis-quick-actions .qa-btn:first-child {
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+            touch-action: none !important;
+        }
+
+        /* Global FAB Styles */
+        #jarvis-global-fab {
+            position: fixed;
+            right: 20px;
+            bottom: 100px; /* Above Bottom Nav Bar */
+            width: 58px;
+            height: 58px;
+            background: linear-gradient(135deg, var(--primary), #fbbf24);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.4);
+            z-index: 999;
+            cursor: pointer;
+            animation: jarvis-pulse 3s infinite;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #jarvis-global-fab:active {
+            transform: scale(0.9);
+        }
+
+        @keyframes jarvis-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        /* Oxford 3000 Styles */
+        .oxford-level-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .oxford-level-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .oxford-level-card:active { transform: scale(0.95); }
+
+        .oxford-level-card.active {
+            border-color: var(--primary);
+            background: rgba(245, 158, 11, 0.05);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+        }
+
+        .oxford-level-card h4 { margin: 0; font-size: 1.2rem; }
+        .oxford-level-card p { margin: 4px 0 0; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+
+        .oxford-progress-mini {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .oxford-progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .oxford-word-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .oxford-word-item {
+            background: var(--surface-hover);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .oxford-word-item:active { transform: scale(0.95); }
+        .oxford-word-item.mastered { border-color: #38a169; background: rgba(56, 161, 105, 0.05); color: #38a169; }
+
+        .oxford-learning-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 400px;
+            z-index: 2000;
+            animation: modal-fade-in 0.3s;
+        }
+
+        /* Tech Reference Badge UI */
+        .tech-ref-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            color: #22d3ee;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 4px 0;
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.1);
+        }
+        .tech-ref-badge::before {
+            content: "📑";
+            font-size: 0.8rem;
+        }
+        .tech-ref-disclaimer {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-style: italic;
+            border-top: 1px dashed var(--border);
+            margin-top: 10px;
+            padding-top: 8px;
+            display: block;
+        }
     </style>
 </head>
 
 <body>
+    <!-- Migration Overlay (Hidden by default) -->
+    <div id="migration-overlay" class="migration-overlay hidden">
+        <div class="login-logo">🚀</div>
+        <h2>Migrasi Data</h2>
+        <p class="text-muted" id="migration-status">Memindahkan data ke database baru yang lebih cepat...</p>
+        <div class="migration-progress-bar">
+            <div id="migration-fill"></div>
+        </div>
+    </div>
+
     <!-- Login Screen -->
     <div id="login-screen" class="login-screen">
         <div class="login-container">
@@ -120,10 +333,12 @@
             </div>
 
             <div class="header-actions">
+                <button id="reload-app-btn" class="icon-btn" title="Refresh App" style="margin-right: 5px;">🔄</button>
                 <button id="theme-toggle-btn" class="icon-btn" title="Ganti Tema">🌙</button>
                 <button id="logout-btn" class="icon-btn" title="Logout">🚪</button>
                 <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
             </div>
+
         </header>
 
         <!-- Main Navigation (Bottom Bar - 4 Hubs) -->
@@ -131,6 +346,10 @@
             <button class="nav-btn active" data-screen="dashboard">
                 <span class="nav-icon">📊</span>
                 <span class="nav-label">Dashboard</span>
+            </button>
+            <button class="nav-btn" data-screen="jarvis">
+                <span class="nav-icon">✨</span>
+                <span class="nav-label">Jarvis AI</span>
             </button>
             <button class="nav-btn" data-screen="activity-hub">
                 <span class="nav-icon">⚡</span>
@@ -144,62 +363,277 @@
                 <span class="nav-icon">💰</span>
                 <span class="nav-label">Keuangan</span>
             </button>
+            <button class="nav-btn" data-screen="workout-tracker">
+                <span class="nav-icon">🏋️</span>
+                <span class="nav-label">Workout</span>
+            </button>
         </nav>
 
         <!-- Main Content (Added bottom padding for the new fixed nav) -->
-        <main class="main" style="padding-bottom: 80px;">
+        <main class="main" style="padding-bottom: 85px;">
+            <!-- Dashboard Screen -->
+            <section id="dashboard-screen" class="screen active">
+                <div class="dashboard-header">
+                    <h1 class="welcome-text">Halo User, <span>Siap produktif?</span></h1>
+                </div>
+            </section>
+
+            <!-- Jarvis AI Screen -->
+            <section id="jarvis-screen" class="screen jarvis-hub">
+                <div class="card" style="position: relative; overflow: hidden; margin-bottom: 15px;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">✨</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; position: relative; z-index: 1;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>✨</span> Jarvis Center
+                        </h2>
+                        <span class="ribbon" style="font-size: 0.55rem; padding: 4px 10px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; border-radius: 20px; font-weight: 800; text-transform: uppercase;">Neural Active</span>
+                    </div>
+                    <p class="text-muted" style="position: relative; z-index: 1; font-size: 0.85rem;">Asisten AI Global dengan akses ke seluruh jurnal, keuangan, dan habit Anda.</p>
+                </div>
+
+                <div class="jarvis-chat-container card" style="display: flex; flex-direction: column; height: calc(100vh - 350px); min-height: 400px; padding: 0; overflow: hidden; background: rgba(255,255,255,0.02);">
+                    <div id="ai-assistant-chat-history" class="ai-chat-history" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                        <div class="bot-message" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 12px 16px; border-radius: 15px 15px 15px 5px; font-size: 0.9rem; align-self: flex-start; max-width: 85%;">Halo! Saya asisten AI Anda. Saya memiliki akses ke seluruh data Anda untuk memberikan saran yang lebih personal. Apa yang ingin Anda tanyakan hari ini?</div>
+                    </div>
+                    <div id="ai-quick-actions" class="jarvis-quick-actions" style="display: flex; gap: 10px; padding: 15px; overflow-x: auto; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.1);">
+                        <button class="qa-btn" style="white-space: nowrap; padding: 8px 16px; border-radius: 20px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; font-size: 0.75rem; font-weight: 700; cursor: pointer;">🎙️ Voice Command</button>
+                        <button class="qa-btn" data-query="Analisis mood vs pengeluaran saya minggu ini" style="white-space: nowrap; padding: 8px 16px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem; font-weight: 700; cursor: pointer;">📊 Mood vs Jajan</button>
+                        <button class="qa-btn" data-query="Kenapa produktivitas saya rendah hari ini?" style="white-space: nowrap; padding: 8px 16px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem; font-weight: 700; cursor: pointer;">💡 Produktivitas</button>
+                    </div>
+                </div>
+
+                <div class="jarvis-input-area" style="margin-top: 15px;">
+                    <div class="ai-input-wrapper" style="position: relative; display: flex; align-items: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px;">
+                        <textarea id="ai-assistant-input" placeholder="Perintah Jarvis (Gunakan @ untuk panggil modul)..." rows="1" style="flex: 1; background: transparent; border: none; color: white; outline: none; padding: 8px 0; font-size: 0.9rem; resize: none;"></textarea>
+                        
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button id="jarvis-input-mic" class="icon-btn" title="Hold to Speak" style="padding: 0 5px; font-size: 1.3rem;">🎙️</button>
+                            <button id="send-ai-assistant-btn" class="send-btn" style="background: var(--primary); color: white; border: none; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Activity Hub Screen -->
             <section id="activity-hub-screen" class="screen">
-                <div class="card">
-                    <h2>⚡ Activity Hub</h2>
-                    <p class="text-muted">Kelola rutinitas dan tugas harian Anda.</p>
+                <div class="card" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">⚡</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>⚡</span> Activity Hub
+                        </h2>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #38a169; background: rgba(56, 161, 105, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(56, 161, 105, 0.3); text-transform: uppercase;">Active Hub</span>
+                    </div>
+                    <p class="text-muted" style="position: relative; z-index: 1;">Kelola rutinitas dan tugas harian Anda.</p>
                 </div>
                 <div class="hub-grid mt-md">
                     <button class="hub-btn" onclick="navigateToSubscreen('todo-today')">
-                        <div class="hub-icon" style="background: #e6fffa; color: #319795;">✅</div>
+                        <div class="hub-icon" style="background: rgba(56, 178, 172, 0.1); color: #4fd1c5; border: 1px solid rgba(56, 178, 172, 0.2);">✅</div>
                         <span class="hub-label">To Do List</span>
                     </button>
                     <button class="hub-btn" onclick="navigateToSubscreen('islam')">
-                        <div class="hub-icon" style="background: #f0fff4; color: #38a169;">☪️</div>
+                        <div class="hub-icon" style="background: rgba(72, 187, 120, 0.1); color: #68d391; border: 1px solid rgba(72, 187, 120, 0.2);">☪️</div>
                         <span class="hub-label">Ibadah</span>
                     </button>
                     <button class="hub-btn" onclick="navigateToSubscreen('habits')">
-                        <div class="hub-icon" style="background: #ebf8ff; color: #3182ce;">🌱</div>
+                        <div class="hub-icon" style="background: rgba(66, 153, 225, 0.1); color: #63b3ed; border: 1px solid rgba(66, 153, 225, 0.2);">🌱</div>
                         <span class="hub-label">Habits</span>
                     </button>
                     <button class="hub-btn" onclick="navigateToSubscreen('planner')">
-                        <div class="hub-icon" style="background: #faf5ff; color: #805ad5;">📋</div>
+                        <div class="hub-icon" style="background: rgba(159, 122, 234, 0.1); color: #b794f4; border: 1px solid rgba(159, 122, 234, 0.2);">📋</div>
                         <span class="hub-label">Planner</span>
                     </button>
                     <button class="hub-btn" onclick="navigateToSubscreen('kanban')">
-                        <div class="hub-icon" style="background: #fff5f5; color: #e53e3e;">📊</div>
+                        <div class="hub-icon" style="background: rgba(245, 101, 101, 0.1); color: #fc8181; border: 1px solid rgba(245, 101, 101, 0.2);">📊</div>
                         <span class="hub-label">Kanban</span>
                     </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('oxford-vocab')">
+                        <div class="hub-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);">🇬🇧</div>
+                        <span class="hub-label">Oxford 3000</span>
+                    </button>
                     <button class="hub-btn" onclick="navigateToSubscreen('journal')">
-                        <div class="hub-icon" style="background: #fffaf0; color: #dd6b20;">📝</div>
+                        <div class="hub-icon" style="background: rgba(237, 137, 54, 0.1); color: #f6ad55; border: 1px solid rgba(237, 137, 54, 0.2);">📝</div>
                         <span class="hub-label">Jurnal</span>
                     </button>
                     <button class="hub-btn" onclick="navigateToSubscreen('goals')">
-                        <div class="hub-icon" style="background: #fff5f7; color: #d53f8c;">🎯</div>
+                        <div class="hub-icon" style="background: rgba(237, 100, 166, 0.1); color: #f687b3; border: 1px solid rgba(237, 100, 166, 0.2);">🎯</div>
                         <span class="hub-label">Goals</span>
                     </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('workout-tracker')">
+                        <div class="hub-icon" style="background: rgba(66, 153, 225, 0.1); color: #63b3ed; border: 1px solid rgba(66, 153, 225, 0.2);">🏋️</div>
+                        <span class="hub-label">Workout</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Library Screen -->
+            <section id="library-screen" class="screen">
+                <div class="card" style="background: linear-gradient(135deg, #742a2a, #9b2c2c); color: white; border: none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h2 style="color:white;">📖 Perpustakaan AI</h2>
+                            <p style="opacity:0.9;">Hasil generate (Lesson, JSA, Mind-Map, dll) yang Anda simpan.</p>
+                        </div>
+                        <div style="font-size: 2.5rem;">📚</div>
+                    </div>
+                </div>
+                
+                <div class="library-filters mt-md">
+                    <div class="tabs-scroll" id="library-category-tabs">
+                        <button class="tab-btn active" data-category="all">Semua</button>
+                        <button class="tab-btn" data-category="EPLS">EPLS</button>
+                        <button class="tab-btn" data-category="HSE">HSE</button>
+                        <button class="tab-btn" data-category="Mind-Map">Mind-Map</button>
+                        <button class="tab-btn" data-category="Flashcards">Flashcards</button>
+                        <button class="tab-btn" data-category="Brain Boost">Brain Boost</button>
+                    </div>
+                </div>
+
+                <div id="library-items-grid" class="mt-md" style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                    <!-- Items injected by library-ui.js -->
+                    <div class="text-center p-md text-muted">Belum ada item yang disimpan.</div>
+                </div>
+            </section>
+
+            <!-- Library View Modal (Detail View) -->
+            <div id="library-view-modal" class="mastery-modal hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--background); z-index:40000; overflow-y:auto; padding:20px; padding-top: calc(env(safe-area-inset-top) + 30px);">
+                <div style="max-width:800px; margin:0 auto; padding-bottom: 100px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; background: var(--surface); padding: 15px; border-radius: 12px; border: 1px solid var(--border); position: sticky; top: 0; z-index: 10;">
+                        <h2 id="lib-view-title" style="margin:0; font-size:1.1rem; color: var(--primary);">Judul Item</h2>
+                        <button class="btn btn-secondary" style="padding: 10px 20px; font-weight: bold; border-radius: 30px;" onclick="document.getElementById('library-view-modal').classList.add('hidden')">✕ Tutup</button>
+                    </div>
+                    <div id="lib-settings-bar" class="mt-sm mb-sm" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-hover); padding:10px; border-radius:12px; border:1px solid var(--border); font-size:0.85rem; flex-wrap: wrap; gap: 10px;">
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button id="lib-edit-toggle" class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="toggleLibraryEdit()">📝 Edit</button>
+                            <button id="lib-save-edits" class="btn btn-primary hidden" style="padding:6px 12px; font-size:0.8rem;" onclick="saveLibraryEdits()">💾 Simpan</button>
+                        </div>
+                        <div style="display:flex; gap:12px; align-items:center; border-left:1px solid var(--border); padding-left:12px;">
+                            <span class="text-muted">Font:</span>
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem; height: 30px; display: flex; align-items: center; justify-content: center; width: 30px;" onclick="adjustLibFontSize(-1)">-</button>
+                                <span id="lib-font-size-text" style="font-weight:bold; min-width:35px; text-align:center;">14px</span>
+                                <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem; height: 30px; display: flex; align-items: center; justify-content: center; width: 30px;" onclick="adjustLibFontSize(1)">+</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; border-left:1px solid var(--border); padding-left:12px;">
+                            <span class="text-muted">Arah:</span>
+                            <select id="lib-orientation-select" class="btn btn-secondary" style="padding:5px; font-size:0.8rem; background:transparent;" onchange="updateLibOrientation()">
+                                <option value="portrait" style="background:var(--background);">📄 Tegak</option>
+                                <option value="landscape" style="background:var(--background);">▱ Miring</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="lib-view-content" class="card" style="background:var(--surface); min-height:400px; padding:25px; border:1px solid var(--border); font-size: 14px; overflow-x: auto;">
+                        <!-- Content injected by JS -->
+                    </div>
+                    <div class="mt-md" style="display:flex; gap:10px;">
+                        <button id="lib-delete-btn" class="btn btn-danger" style="flex:1;">🗑️ Hapus</button>
+                        <button class="btn btn-primary" onclick="exportLibraryPDF()" style="flex:1;">🖨️ Cetak / PDF</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workout Tracker Screen -->
+            <section id="workout-tracker-screen" class="screen">
+                <div class="card" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">🏋️</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🏋️</span> Hybrid Athlete
+                        </h2>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #3b82f6; background: rgba(59, 130, 246, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.3); text-transform: uppercase;">Elite Performance</span>
+                    </div>
+                    <p class="text-muted" style="position: relative; z-index: 1; font-size: 0.85rem;">Gym Power + Silent Home Routine (Bola & Voli)</p>
+                </div>
+
+                <!-- Tab Navigation in Screen -->
+                <div class="tabs-scroll mb-md" id="workout-tabs">
+                    <button class="tab-btn active" data-tab="jadwal">📅 Jadwal</button>
+                    <button class="tab-btn" data-tab="nutrisi">🍲 Nutrisi</button>
+                    <button class="tab-btn" data-tab="rules">📜 Rules</button>
+                    <button class="tab-btn" data-tab="gym1">💪 Gym 1</button>
+                    <button class="tab-btn" data-tab="gym2">🏋️ Gym 2</button>
+                    <button class="tab-btn" data-tab="home1">🏠 Home 1</button>
+                    <button class="tab-btn" data-tab="home2">🩹 Home 2</button>
+                </div>
+
+
+                <div id="workout-content-area" class="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <!-- Dynamic content injected by workout-tracker.js -->
                 </div>
             </section>
 
             <!-- Learning Hub Screen -->
             <section id="learning-hub-screen" class="screen">
-                <div class="card">
-                    <h2>📚 Learning Hub</h2>
-                    <p class="text-muted">Tingkatkan karir dan karisma diri Anda dengan belajar.</p>
-                </div>
-                <!-- Moving the AI Tutors card from the dashboard to here -->
-                <div class="card mt-md" id="ai-tutor-card" style="border-left: 4px solid var(--secondary);">
-                    <div class="brain-header-row">
-                        <h3>🎓 Guru Privat AI</h3>
-                        <span class="badge-ai" id="tutor-status-badge">Tersedia</span>
+                <div class="card" style="position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">📚</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>📚</span> Learning Hub
+                        </h2>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #818cf8; background: rgba(129, 140, 248, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(129, 140, 248, 0.3); text-transform: uppercase;">Learning Center</span>
                     </div>
-                    <p class="text-muted" style="font-size: 0.9rem; margin-top: 5px; margin-bottom: 12px;">Pilih topik
-                        mikro untuk dipelajari hari ini. Beri AI beberapa detik untuk menyusun modul pendek.</p>
+                    <p class="text-muted" style="position: relative; z-index: 1;">Tingkatkan karir dan karisma diri Anda dengan belajar.</p>
+                </div>
+
+                <!-- Global Mastery Bar -->
+                <div class="card mt-md" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(0, 0, 0, 0.2)); border: 1px solid rgba(59, 130, 246, 0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 1px;">Global Mastery Level</span>
+                        <span id="global-mastery-percent" style="font-size: 0.85rem; font-weight: 800; color: white;">0%</span>
+                    </div>
+                    <div class="progress-bar-bg" style="height: 6px; background: rgba(255, 255, 255, 0.05);">
+                        <div id="global-mastery-bar" class="progress-bar-fill" style="width: 0%; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);"></div>
+                    </div>
+                    <div id="mastery-rank-text" style="font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; font-style: italic;">Memulai perjalanan keahlian...</div>
+                </div>
+
+                <!-- Mastery 2.0: Hexagon Dashboard (Skill Tree) -->
+                <div class="card mt-md" style="padding: 0; overflow: visible; background: transparent; border: none;">
+                    <div class="card-header" style="padding: 20px 0 0 0;">
+                        <h3 style="display: flex; align-items: center; gap: 8px;">✨ Elite Skill Tree</h3>
+                    </div>
+                    <div id="mastery-hexagon-dashboard" style="position: relative; min-height: 600px; margin-top: 20px;">
+                        <!-- SVG Connection Layer -->
+                        <svg id="mastery-tree-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;"></svg>
+                        <!-- Hexagons will be rendered here by JS -->
+                    </div>
+                </div>
+
+                <!-- Elite Mastery Tree Footer: AI Recommendation -->
+                <div id="mastery-ai-advice" class="card mt-md" style="background: rgba(59, 130, 246, 0.03); border: 1px dashed rgba(59, 130, 246, 0.2); display: none; animation: fadeIn 0.8s ease;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <span style="font-size: 1.5rem;">🧙‍♂️</span>
+                        <div>
+                            <h4 style="margin: 0; font-size: 0.85rem; color: #60a5fa;">AI Mastery Guide</h4>
+                            <p id="mastery-suggestion-text" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Module List (Collapsible / Secondary) -->
+                <div class="card mt-md minimized" id="mastery-list-container">
+                    <div class="card-header" onclick="this.parentElement.classList.toggle('minimized')" style="cursor:pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0;">📋 Detailed Modules</h3>
+                        <span style="font-size: 0.8rem; opacity: 0.6;">▼</span>
+                    </div>
+                    <div class="mastery-list-content" id="mastery-detailed-list" style="padding: 15px;">
+                        <!-- Content injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Moving the AI Tutors card from the dashboard to here -->
+                <div class="card mt-md" id="ai-tutor-card" style="position: relative; overflow: hidden; border-left: 4px solid var(--secondary);">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">🎓</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🎓</span> Guru Privat AI
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); text-transform: uppercase;">AI Tutor</span>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-top: 5px; margin-bottom: 12px; position: relative; z-index: 1;">Pilih topik mikro untuk dipelajari hari ini. Beri AI beberapa detik untuk menyusun modul pendek.</p>
 
                     <div class="tutor-actions" id="tutor-action-btn-group"
                         style="display: flex; gap: 10px; margin-bottom: 15px;">
@@ -240,167 +674,92 @@
                         <span class="hub-label">PJSM Generator</span>
                         <p class="hub-desc">Generate Pre-Job Safety Meeting otomatis.</p>
                     </button>
+                    <button class="hub-btn" onclick="navigateToJMPGenerator()">
+                        <div class="hub-icon" style="background: #fff1f2; color: #e11d48;">🗺️</div>
+                        <span class="hub-label">JMP Generator</span>
+                        <p class="hub-desc">Tabel Hazard Register Journey Management Plan.</p>
+                    </button>
                     <button class="hub-btn" onclick="navigateToJSAGenerator()">
                         <div class="hub-icon" style="background: #ebf8ff; color: #2b6cb0;">📑</div>
                         <span class="hub-label">AI JSA & PTW</span>
                         <p class="hub-desc">Buat dokumen JSA / Risk Assessment via AI.</p>
                     </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('library')">
+                        <div class="hub-icon" style="background: #fdf2f2; color: #9b2c2c;">📖</div>
+                        <span class="hub-label">Perpustakaan AI</span>
+                        <p class="hub-desc">Simpan & kelola hasil generate AI Anda.</p>
+                    </button>
+                    <!-- New 3D Rig Digital Twin -->
+                    <button class="hub-btn" onclick="navigateToSubscreen('rig-3d-viewer')" style="border: 1px solid var(--primary); background: rgba(245, 158, 11, 0.05);">
+                        <div class="hub-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white;">🏗️</div>
+                        <span class="hub-label">Digital Twin 3D</span>
+                        <p class="hub-desc">Visualisasi interaktif peralatan Rig dalam 3D.</p>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 3D Rig Viewer Screen -->
+            <section id="rig-3d-viewer-screen" class="screen">
+                <div class="rig-3d-header" style="padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg-card); gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <h2 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                            <span>🏗️</span> Rig Digital Twin <span id="rig-model-status" style="font-size: 0.6rem; color: #4ade80; background: rgba(74, 222, 128, 0.1); padding: 2px 6px; border-radius: 10px;">Procedural</span>
+                        </h2>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 8px;">
+                        <input type="text" id="rig-model-url" placeholder="Paste .glb URL here..." style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; width: 150px;">
+                        <button onclick="loadRigFromURL()" class="btn btn-primary" style="padding: 4px 10px; font-size: 0.7rem;">Load</button>
+                        <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.1);"></div>
+                        <button onclick="document.getElementById('rig-file-input').click()" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.7rem;">📁 Upload GLB</button>
+                        <input type="file" id="rig-file-input" accept=".glb,.gltf" style="display: none;" onchange="loadRigFromFile(event)">
+                    </div>
+
+                    <div id="rig-3d-loading" class="loading-spinner" style="width: 20px; height: 20px; display: none;"></div>
+                </div>
+
+                <div id="rig-3d-container" style="position: relative; width: 100%; height: calc(100vh - 150px); background: #050505; overflow: hidden; border-radius: 0 0 15px 15px;">
+                    <!-- Three.js Canvas will be here -->
+                    
+                    <!-- 3D HUD / Info Panel -->
+                    <div id="rig-3d-hud" style="position: absolute; bottom: 20px; left: 20px; right: 20px; pointer-events: none; z-index: 5;">
+                        <div class="card" style="background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); padding: 15px; pointer-events: auto; transform: translateY(100px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            <h4 id="rig-part-name" style="margin: 0; color: var(--primary);">Pilih Komponen</h4>
+                            <p id="rig-part-desc" class="text-muted" style="font-size: 0.8rem; margin: 8px 0;">Klik pada salah satu bagian Rig untuk melihat informasi teknis lebih lanjut.</p>
+                            <div id="rig-part-specs" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <!-- Specs chips -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Guide -->
+                    <div style="position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; pointer-events: none;">
+                        <div style="background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+                            🖱️ Drag to Rotate
+                        </div>
+                        <div style="background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+                            🤏 Pinch/Scroll to Zoom
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <!-- Screen 0: Dashboard -->
             <section id="dashboard-screen" class="screen active">
-                <!-- Gamification Profile Card -->
-                <div id="user-profile-card">
-                    <!-- Injected by gamification.js -->
+                <div class="dashboard-header-row mb-md">
+                    <div class="welcome-text">
+                        <h2 style="margin:0;">Dashboard</h2>
+                        <p class="text-xs text-muted">Selamat datang kembali!</p>
+                    </div>
+                    <button class="icon-btn" onclick="openWidgetCustomizer()" title="Atur Dashboard" style="background: var(--surface); border: 1px solid var(--border); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">⚙️</button>
                 </div>
-
-                <!-- Overview Cards -->
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <div class="dashboard-icon">📝</div>
-                        <div class="dashboard-stat" id="stat-journals">0</div>
-                        <div class="dashboard-label">Total Jurnal</div>
+                
+                <div id="dashboard-widgets-container" class="dashboard-widgets-container">
+                    <!-- Widgets injected by dashboard-widgets.js -->
+                    <div class="loading-spinner-container">
+                        <div class="loading-spinner"></div>
+                        <p class="text-muted mt-sm">Menyusun widget Anda...</p>
                     </div>
-                    <div class="dashboard-card">
-                        <div class="dashboard-icon">⏳</div>
-                        <div class="dashboard-stat" id="stat-tasks">0</div>
-                        <div class="dashboard-label">Belum Dilakukan</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="dashboard-icon">💰</div>
-                        <div class="dashboard-stat" id="stat-balance">Rp 0</div>
-                        <div class="dashboard-label">Saldo</div>
-                    </div>
-                    <div class="dashboard-card" id="streak-card">
-                        <div class="dashboard-icon">🔥</div>
-                        <div class="dashboard-stat" id="current-streak">0</div>
-                        <div class="dashboard-label">Best Streak</div>
-                    </div>
-
-                    <div class="dashboard-card" id="prayer-card">
-                        <div class="prayer-card-header">
-                            <div class="prayer-card-left">
-                                <span class="prayer-card-icon">🕌</span>
-                                <div>
-                                    <div class="prayer-card-location" id="prayer-location">Jakarta</div>
-                                    <div class="prayer-card-name" id="next-prayer-name">Subuh</div>
-                                </div>
-                            </div>
-                            <div class="prayer-card-right">
-                                <div class="prayer-card-time" id="next-prayer-time">--:--</div>
-                                <div class="prayer-card-countdown" id="next-prayer-countdown">-00:00:00</div>
-                            </div>
-                        </div>
-                        <div class="prayer-list-mini" id="prayer-list-mini">
-                            <!-- Injected by JS -->
-                            <div>Subuh<br>04:30</div>
-                            <div>Dzuhur<br>12:00</div>
-                            <div>Ashar<br>15:15</div>
-                            <div>Maghrib<br>18:00</div>
-                            <div>Isya<br>19:15</div>
-                        </div>
-                    </div>
-                </div>
-
-
-
-
-                <!-- Daily Discipline Motivation -->
-                <div class="card mt-md" id="motivation-card">
-                    <!-- Injected by JS -->
-                    <p class="text-muted">Memuat motivasi...</p>
-                </div>
-
-                <!-- Daily Brain Boost -->
-                <div class="card mt-md" id="brain-boost-card">
-                    <div class="brain-header-row">
-                        <h3>🧠 Brain Boost</h3>
-                        <span class="badge-ai">Daily XP</span>
-                    </div>
-
-                    <div class="brain-tabs">
-                        <button class="brain-tab active" id="tab-fact" onclick="switchTab('fact')">💡 Fakta</button>
-                        <button class="brain-tab" id="tab-vocab" onclick="switchTab('vocab')">🇬🇧 Vocab</button>
-                        <button class="brain-tab" id="tab-math" onclick="switchTab('math')">🧮 Math</button>
-                        <button class="brain-tab" id="tab-logic" onclick="switchTab('logic')">🧩 Logic</button>
-                        <button class="brain-tab" id="tab-myth" onclick="switchTab('myth')">🕵️ Mitos</button>
-                    </div>
-
-                    <div id="brain-content" class="brain-content mt-sm">
-                        <!-- Injected by JS -->
-                        <p class="text-muted">Memuat data...</p>
-                    </div>
-                </div>
-
-                <!-- Daily Hadith -->
-                <div class="card mt-md hadith-card-container">
-                    <h3>✨ Hadits Harian</h3>
-                    <div id="hadith-content" class="hadith-content">
-                        <p class="text-muted">Memuat hadits...</p>
-                    </div>
-                </div>
-
-
-                <!-- Global Daily Budget -->
-                <div class="card mt-md" id="global-budget-card">
-                    <div class="budget-card-header">
-                        <h3>📉 Budget Harian</h3>
-                        <span id="global-budget-text" class="text-muted">Rp 0 / Rp 0</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div id="global-budget-progress" class="progress-fill" style="width: 0%"></div>
-                    </div>
-                    <small class="text-muted budget-card-hint">
-                        Pengeluaran hari ini dari semua wallet.
-                    </small>
-                </div>
-
-                <!-- Dashboard Reminders -->
-                <div class="card">
-                    <h3>🔔 Reminder & Jadwal</h3>
-                    <div id="dashboard-reminders" class="reminder-list" style="max-height: 300px; overflow-y: auto;">
-                        <p class="text-muted">Tidak ada reminder</p>
-                    </div>
-                </div>
-
-                <!-- Mood History Chart -->
-                <div class="card">
-                    <h3>🎭 Mood Minggu Ini</h3>
-                    <div class="mood-chart-container">
-                        <canvas id="mood-chart" height="150"></canvas>
-                    </div>
-                </div>
-
-                <!-- Dashboard Calendar Section (Synced with Planner) -->
-                <div class="card calendar-card">
-                    <div class="calendar-view" style="padding:0; margin:0; border:none; box-shadow:none;">
-                        <div class="calendar-header">
-                            <h3 id="dashboard-calendar-month-year">...</h3>
-                            <div class="calendar-nav">
-                                <button id="dashboard-prev-month">◀</button>
-                                <button id="dashboard-next-month">▶</button>
-                            </div>
-                        </div>
-                        <div class="calendar-grid" id="dashboard-calendar-grid">
-                            <!-- Injected by JS -->
-                        </div>
-                        <div id="dashboard-selected-date-events" class="selected-date-events" style="display: none; margin-top: 15px;">
-                            <h4 id="dashboard-selected-date-label">Events</h4>
-                            <ul id="dashboard-selected-date-list" class="date-events-list">
-                                <!-- Injected by JS -->
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick AI Insight -->
-                <div class="card">
-                    <h3>🧠 Quick AI Insight</h3>
-                    <div id="quick-insight" class="insight-box">
-                        <p class="text-muted">Klik tombol di bawah untuk insight harian</p>
-                    </div>
-                    <button id="get-daily-insight-btn" class="btn btn-ai btn-full">✨ Dapatkan Insight Harian</button>
                 </div>
             </section>
 
@@ -709,6 +1068,28 @@
 
             <!-- Screen 4: Finance -->
             <section id="finance-screen" class="screen">
+                <!-- Financial Health Score Card -->
+                <div class="card animate-in fade-in" style="position: relative; overflow: hidden; margin-bottom: 20px;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">💰</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; position: relative; z-index: 1;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>📊</span> Financial Health
+                        </h2>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); text-transform: uppercase;">PRO ANALYTICS</span>
+                    </div>
+                    
+                    <div class="health-score-container" style="position: relative; z-index: 1; display: flex; gap: 20px; align-items: center;">
+                        <div id="health-score-circle" class="health-score-circle good" style="flex-shrink: 0;">
+                            <span id="health-score-value" class="health-score-value">--</span>
+                            <span class="health-score-label">Skor</span>
+                        </div>
+                        <div class="health-info">
+                            <div id="health-status-text" class="health-status-text" style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">Menganalisis...</div>
+                            <div id="health-advice" class="health-advice" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">Lakukan beberapa transaksi untuk melihat analisis kesehatan keuangan Anda.</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Wallet Summary -->
                 <div class="card">
                     <div class="card-header">
@@ -738,10 +1119,34 @@
 
                 <!-- Chart -->
                 <div class="card">
-                    <h3>📊 Grafik Bulanan</h3>
-                    <div class="chart-container">
+                    <div class="card-header">
+                        <h3>📊 Grafik & Analisis</h3>
+                        <div class="flex-row gap-sm">
+                            <button id="show-bar-chart-btn" class="btn btn-small btn-primary">Tren</button>
+                            <button id="show-pie-chart-btn" class="btn btn-small btn-secondary">Kategori</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="finance-bar-chart-container">
                         <canvas id="finance-chart"></canvas>
                     </div>
+                    <div class="chart-container hidden" id="finance-pie-chart-container">
+                        <div class="category-chart-wrapper">
+                            <canvas id="category-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="finance-stats-grid">
+                        <div class="finance-stat-mini">
+                            <span class="stat-mini-label">Savings Rate</span>
+                            <span id="stat-savings-rate" class="stat-mini-value">--%</span>
+                        </div>
+                        <div class="finance-stat-mini">
+                            <span class="stat-mini-label">Saran Utama</span>
+                            <span id="stat-main-advice" class="stat-mini-value">Tetap Catat</span>
+                        </div>
+                    </div>
+
+                    <button id="view-pro-report-btn" class="btn btn-report mt-md">📄 Buka Laporan Keuangan Profesional</button>
                 </div>
 
                 <!-- Global Budget Card -->
@@ -797,8 +1202,29 @@
                             <input type="number" id="transaction-amount" placeholder="Jumlah" class="input">
                             <input type="date" id="transaction-date" class="input">
                         </div>
-                        <input type="text" id="transaction-category" placeholder="Kategori (misal: Gaji, Makan)"
-                            class="input">
+                        <div class="form-group">
+                            <label>Kategori</label>
+                            <select id="transaction-category" class="input">
+                                <option value="" disabled selected>Pilih Kategori...</option>
+                                <optgroup label="📥 Pemasukan (Inflows)">
+                                    <option value="Gaji">Gaji</option>
+                                    <option value="Profit Trading/Investasi">Profit Trading/Investasi</option>
+                                    <option value="Pemasukan Lainnya">Pemasukan Lainnya</option>
+                                </optgroup>
+                                <optgroup label="📤 Pengeluaran (Outflows)">
+                                    <option value="Makan & Minum">Makan & Minum</option>
+                                    <option value="Kebutuhan Harian/Bulanan">Kebutuhan Harian/Bulanan</option>
+                                    <option value="Transportasi">Transportasi</option>
+                                    <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                                    <option value="Tempat Tinggal">Tempat Tinggal</option>
+                                    <option value="Tabungan Nikah">Tabungan Nikah</option>
+                                    <option value="Edukasi & Pengembangan">Edukasi & Pengembangan</option>
+                                    <option value="Hiburan & Nongkrong">Hiburan & Nongkrong</option>
+                                    <option value="Sosial & Sedekah">Sosial & Sedekah</option>
+                                    <option value="Lain-lain / Tak Terduga">Lain-lain / Tak Terduga</option>
+                                </optgroup>
+                            </select>
+                        </div>
 
                         <input type="text" id="transaction-desc" placeholder="Deskripsi (opsional)" class="input">
                         <button id="add-transaction-btn" class="btn btn-primary">+ Tambah Transaksi</button>
@@ -807,7 +1233,45 @@
 
                 <!-- Transaction List -->
                 <div class="card">
-                    <h3>📜 Riwayat Transaksi</h3>
+                    <div class="card-header">
+                        <h3 style="margin: 0;">📜 Riwayat Transaksi</h3>
+                        <div class="flex-row gap-xs" style="margin-top: 5px;">
+                            <select id="filter-type" class="btn btn-small btn-secondary text-xs" style="border: 1px solid var(--border); background: var(--surface);">
+                                <option value="all">Semua Jenis</option>
+                                <option value="income">💵 Pemasukan</option>
+                                <option value="expense">💸 Pengeluaran</option>
+                            </select>
+                            <select id="filter-category" class="btn btn-small btn-secondary text-xs" style="border: 1px solid var(--border); background: var(--surface); max-width: 140px;">
+                                <option value="all">Semua Kategori</option>
+                                <optgroup label="📥 Pemasukan">
+                                    <option value="Gaji">Gaji</option>
+                                    <option value="Profit Trading/Investasi">Profit Trading/investasi</option>
+                                    <option value="Pemasukan Lainnya">Pemasukan Lainnya</option>
+                                </optgroup>
+                                <optgroup label="📤 Pengeluaran">
+                                    <option value="Makan & Minum">Makan & Minum</option>
+                                    <option value="Kebutuhan Harian/Bulanan">Kebutuhan Harian</option>
+                                    <option value="Transportasi">Transportasi</option>
+                                    <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                                    <option value="Tempat Tinggal">Tempat Tinggal</option>
+                                    <option value="Tabungan Nikah">Tabungan Nikah</option>
+                                    <option value="Edukasi & Pengembangan">Edukasi & Pengembangan</option>
+                                    <option value="Hiburan & Nongkrong">Hiburan & Nongkrong</option>
+                                    <option value="Sosial & Sedekah">Sosial & Sedekah</option>
+                                    <option value="Lain-lain / Tak Terduga">Lain-lain</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="form-group mb-sm" style="padding: 0 5px; margin-top: 10px;">
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <span style="position: absolute; left: 12px; color: var(--text-muted); font-size: 0.9rem;">🔍</span>
+                            <input type="text" id="filter-search" placeholder="Cari deskripsi atau kategori..." class="input" style="padding-left: 35px; border-radius: 20px; font-size: 0.85rem; height: 38px; margin: 0;">
+                        </div>
+                    </div>
+
                     <div id="transaction-list" class="transaction-list"></div>
                 </div>
 
@@ -1021,6 +1485,51 @@
                 </div>
             </section>
 
+            <!-- Screen: JMP Generator -->
+            <section id="jmp-generator-screen" class="screen">
+                <div class="card" style="border-left: 4px solid #e11d48;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <span>🗺️</span> JMP Generator
+                        </h2>
+                        <span class="badge-ai">HSSE Expert</span>
+                    </div>
+                    <p class="text-muted mt-sm" style="font-size: 0.85rem;">Ubah catatan survei lapangan menjadi Tabel Hazard Register JMP profesional secara otomatis.</p>
+                </div>
+
+                <div class="card mt-md">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; color: var(--primary);">📝 Catatan Hasil Survei / Kondisi Jalan:</label>
+                    <textarea id="jmp-input" class="form-control" rows="6" placeholder="Contoh: KM 12 amblas, ada tiang listrik miring, jembatan KM 15 sempit..."></textarea>
+                    
+                    <button id="generate-jmp-btn" class="btn btn-primary w-100 mt-md" onclick="generateJMP()">
+                        ⚡ Generate Tabel Hazard Register JMP
+                    </button>
+                </div>
+
+                <!-- JMP Result Area -->
+                <div id="jmp-result-area" class="hidden mt-lg">
+                    <div class="card" style="background: var(--surface-hover); border: 1px solid var(--primary);">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
+                            <h3 style="margin: 0; font-size: 1rem;">🛡️ Hasil Hazard Register JMP</h3>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-secondary btn-xs" onclick="copyJMP()">📋 Copy</button>
+                                <button class="btn btn-secondary btn-xs" onclick="saveJMPToLibrary()">💾 Simpan</button>
+                            </div>
+                        </div>
+                        <div id="jmp-content" class="p-md" style="font-size: 0.9rem; overflow-x: auto;">
+                            <!-- AI Result Table Table will go here -->
+                        </div>
+                        <div class="card-footer" style="padding-top: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
+                            <button class="btn btn-ai w-100" onclick="exportJMPToPDF()">📄 Export PDF Professional</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="jmp-loading" class="hidden text-center p-xl">
+                    <div class="loading-spinner" style="margin: 0 auto 15px;"></div>
+                    <p class="text-muted">Sedang menganalisis 10 Hazard Energy & mitigasi...</p>
+                </div>
+            </section>
         </main>
 
         <!-- AI Analysis Modal -->
@@ -1073,6 +1582,25 @@
                 </div>
                 <button id="save-settings-btn" class="btn btn-primary">💾 Simpan API Key</button>
 
+                <hr class="settings-divider">
+
+                <!-- Notifications Section -->
+                <div class="form-group">
+                    <label>🔔 Notifikasi Interaktif & Lockscreen</label>
+                    <small class="settings-hint">Atur jam kapan ringkasan harianmu dikirim otomatis.</small>
+                    <div class="reminder-settings" style="margin-top: 10px; margin-bottom: 10px;">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="widget-time-toggle" checked>
+                            <span>Kirim Otomatis (Setiap Hari)</span>
+                        </label>
+                        <div id="widget-time-setting" class="sub-setting">
+                            <label>Pilih Jam:</label>
+                            <input type="time" id="widget-reminder-time" class="input" value="06:00">
+                        </div>
+                    </div>
+                    <button id="test-notif-btn" class="btn btn-secondary btn-full mt-sm">🚀 Tembak Alarm Serverless Vercel</button>
+                </div>
+
                 <!-- App Lock Section -->
                 <div class="form-group">
                     <label>🛡️ App Lock (PIN)</label>
@@ -1096,17 +1624,12 @@
                 <div class="form-group">
                     <label>🎨 Tema Warna</label>
                     <small class="settings-hint">Pilih warna aksen aplikasi favoritmu.</small>
-                    <div class="color-picker">
-                        <button class="color-option" data-color="gold" style="background: #f59e0b;"
-                            title="Emas (Default)"></button>
-                        <button class="color-option" data-color="blue" style="background: #3b82f6;"
-                            title="Biru Langit"></button>
-                        <button class="color-option" data-color="green" style="background: #10b981;"
-                            title="Hijau Segar"></button>
-                        <button class="color-option" data-color="purple" style="background: #8b5cf6;"
-                            title="Ungu Misterius"></button>
-                        <button class="color-option" data-color="rose" style="background: #f43f5e;"
-                            title="Merah Rose"></button>
+                    <div class="color-picker-grid">
+                        <button class="color-option" data-color="gold" style="background: #f59e0b;" title="Amber Gold"></button>
+                        <button class="color-option" data-color="pink" style="background: #ec4899;" title="Rose Pink"></button>
+                        <button class="color-option" data-color="lavender" style="background: #8b5cf6;" title="Soft Lavender"></button>
+                        <button class="color-option" data-color="mint" style="background: #10b981;" title="Fresh Mint"></button>
+                        <button class="color-option" data-color="sky" style="background: #0ea5e9;" title="Clear Sky"></button>
                     </div>
                 </div>
                 <hr class="settings-divider">
@@ -1137,6 +1660,16 @@
 
                 <hr class="settings-divider">
 
+                <!-- UI Scaling Section -->
+                <div class="form-group">
+                    <label>🔍 Ukuran Tampilan & Zoom</label>
+                    <small class="settings-hint">Sesuaikan ukuran tulisan dan elemen aplikasi (mirip Ctrl +/- di komputer).</small>
+                    <div class="flex-row-sm" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; justify-content: center; gap: 20px;">
+                        <button id="ui-scale-down-btn" class="icon-btn" style="background: var(--surface-hover); width: 40px; height: 40px; font-weight: bold;">−</button>
+                        <span id="ui-scale-label" style="font-weight: 800; min-width: 60px; text-align: center; color: var(--accent-primary);">100%</span>
+                        <button id="ui-scale-up-btn" class="icon-btn" style="background: var(--surface-hover); width: 40px; height: 40px; font-weight: bold;">+</button>
+                    </div>
+                </div>
                 <hr class="settings-divider">
 
                 <!-- Export Data (CSV) Section -->
@@ -1240,6 +1773,70 @@
 
                 <div id="budget-management-list" class="budget-list mt-md">
                     <!-- List of budgets with delete buttons -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Financial Report Modal -->
+        <div id="pro-report-modal" class="modal hidden">
+            <div class="modal-content card report-modal-content">
+                <div class="modal-header">
+                    <h3>📄 Laporan Keuangan Profesional</h3>
+                    <button id="close-pro-report-modal" class="icon-btn">✕</button>
+                </div>
+                
+                <div id="pro-report-body" class="report-body">
+                    <div class="report-header-info text-center">
+                        <h2 id="report-period-title">Laporan Keuangan - Maret 2026</h2>
+                        <p class="text-muted" id="report-date-generated">Generated on: 2026-03-28</p>
+                    </div>
+
+                    <div class="report-grid">
+                        <!-- Summary Section -->
+                        <div class="report-section">
+                            <div class="report-section-title">💰 Ringkasan Kas</div>
+                            <table class="report-table">
+                                <tr><td>Total Pemasukan</td><td id="report-total-income" class="income">Rp 0</td></tr>
+                                <tr><td>Total Pengeluaran</td><td id="report-total-expense" class="expense">Rp 0</td></tr>
+                                <tr style="border-top: 2px solid rgba(255,255,255,0.1)">
+                                    <td><strong>Arus Kas Bersih</strong></td>
+                                    <td id="report-net-cash" class="balance">Rp 0</td>
+                                </tr>
+                                <tr><td>Savings Rate</td><td id="report-savings-rate">0%</td></tr>
+                            </table>
+                        </div>
+
+                        <!-- Budget Adherence -->
+                        <div class="report-section">
+                            <div class="report-section-title">📉 Kepatuhan Anggaran</div>
+                            <div id="report-budget-list">
+                                <!-- Budget adherence list injected here -->
+                                <p class="text-muted text-xs">Belum ada budget yang diatur.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-grid mt-md">
+                        <!-- Top Expenses -->
+                        <div class="report-section">
+                            <div class="report-section-title">🔼 Pengeluaran Terbesar</div>
+                            <div id="report-top-expenses">
+                                <!-- Top expense categories injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Advisor Notes -->
+                        <div class="report-section">
+                            <div class="report-section-title">🧠 Catatan Analis AI</div>
+                            <p id="report-ai-advice" class="text-sm italic">Menganalisis data keuangan Anda untuk memberikan saran profesional...</p>
+                            <div id="report-summary-table" class="mt-md"></div>
+                        </div>
+                    </div>
+
+                    <div class="report-footer">
+                        <p>Dokumen ini dihasilkan secara otomatis oleh <strong>Jurnal AI Professional</strong>.</p>
+                        <button class="btn btn-secondary btn-small mt-sm" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1417,9 +2014,11 @@
                 <div id="tbt-result-area" class="mt-md hidden">
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <button id="copy-tbt-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy</button>
                         <button id="translate-tbt-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Trans</button>
+                        <button id="save-tbt-lib-btn" class="btn btn-ai"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px; background: var(--secondary);">💾 Simpan</button>
                     </div>
                     <div id="tbt-content"
                         style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.6; overflow-x: auto;">
@@ -1453,11 +2052,12 @@
                 <button id="generate-jsa-btn" class="btn btn-primary btn-full mt-sm">Mulai Generate Dokumen ⚡</button>
 
                 <div id="jsa-result-area" class="mt-md hidden">
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button id="copy-jsa-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
-                        <button id="translate-jsa-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+                        <button id="copy-jsa-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px;">📋 Copy</button>
+                        <button id="translate-jsa-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px;">🇮🇩 Indo</button>
+                        <button id="export-excel-jsa-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px;">📊 XL</button>
+                        <button id="export-pdf-jsa-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px;">📄 PDF</button>
+                        <button id="save-jsa-lib-btn" class="btn btn-ai" style="font-size: 0.8rem; padding: 6px; background: var(--secondary); grid-column: span 2;">💾 Simpan ke Perpustakaan</button>
                     </div>
                     <div id="jsa-content"
                         style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
@@ -1496,9 +2096,11 @@
                 <div id="rca-result-area" class="mt-md hidden">
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <button id="copy-rca-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Text</button>
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy</button>
                         <button id="translate-rca-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Terjemahkan</button>
+                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Indo</button>
+                        <button id="save-rca-lib-btn" class="btn btn-ai"
+                            style="flex: 1; font-size: 0.85rem; padding: 8px; background: var(--secondary);">💾 Simpan</button>
                     </div>
                     <div id="rca-content"
                         style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
@@ -1598,6 +2200,92 @@
                 </div>
             </div>
         </section>
+
+        <!-- Screen: Oxford 3000 Vocabulary Mastery -->
+        <section id="oxford-vocab-screen" class="screen">
+            <div class="card" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border: none; overflow: hidden; position: relative;">
+                <div style="position: absolute; top: -10px; right: -10px; opacity: 0.1; font-size: 5rem; pointer-events: none;">📖</div>
+                <h2>🇬🇧 Oxford 3000™ Mastery</h2>
+                <p class="text-muted" style="color: rgba(255,255,255,0.7) !important;">Kuasai 3000 kosakata paling penting dalam Bahasa Inggris sesuai level CEFR.</p>
+                
+                <div class="oxford-level-grid">
+                    <div class="oxford-level-card active" data-level="A1">
+                        <h4>A1</h4>
+                        <p>Beginner</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-A1"></div></div>
+                    </div>
+                    <div class="oxford-level-card" data-level="A2">
+                        <h4>A2</h4>
+                        <p>Elementary</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-A2"></div></div>
+                    </div>
+                    <div class="oxford-level-card" data-level="B1">
+                        <h4>B1</h4>
+                        <p>Intermediate</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-B1"></div></div>
+                    </div>
+                    <div class="oxford-level-card" data-level="B2">
+                        <h4>B2</h4>
+                        <p>Upper-Int</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-B2"></div></div>
+                    </div>
+                    <div class="oxford-level-card" data-level="C1">
+                        <h4>C1</h4>
+                        <p>Advanced</p>
+                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-C1"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-md" style="min-height: 400px;">
+                <div class="flex-row" style="justify-content: space-between; align-items: center;">
+                    <h3 id="oxford-current-level-title">Level A1 Words</h3>
+                    <div style="text-align: right;">
+                        <span class="badge-ai" id="oxford-count-badge">0 / 0</span>
+                        <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 2px;">MASTERED / DISCOVERED</div>
+                    </div>
+                </div>
+                
+                <div id="oxford-word-list" class="oxford-word-list">
+                    <!-- Words injected here -->
+                    <div class="loading-spinner" style="margin: 40px auto;"></div>
+                </div>
+
+                <div class="text-center mt-lg">
+                    <button class="btn btn-primary" id="oxford-load-more-btn" style="border-radius: 50px; padding: 12px 25px; font-weight: 700; width: 100%;">🧠 Temukan Kata Baru (AI)</button>
+                    <p class="text-muted mt-sm" style="font-size: 0.75rem;">Setiap klik akan menemukan 10 kata baru dari daftar Oxford 3000™.</p>
+                </div>
+            </div>
+
+            <!-- Detail/Learning Modal (In-Screen) -->
+            <div id="oxford-learning-modal" class="modal hidden">
+                <div class="modal-content card" style="max-width: 400px; border-top: 4px solid var(--primary);">
+                    <div class="modal-header">
+                        <h3 id="oxford-modal-word" style="font-size: 1.5rem; color: var(--primary);">Word</h3>
+                        <button class="icon-btn" id="close-oxford-modal-btn">✕</button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div style="font-size: 1.1rem; margin-bottom: 20px;">
+                            <span id="oxford-modal-ipa" class="text-muted">/ipa/</span>
+                            <button id="oxford-modal-audio" class="icon-btn" style="font-size: 1.2rem; margin-left: 10px;">🔊</button>
+                        </div>
+                        <div id="oxford-modal-translation" style="font-weight: 600; font-size: 1.2rem; margin-bottom: 15px;">Terjemahan</div>
+                        <p id="oxford-modal-def" class="text-muted" style="font-size: 0.9rem; line-height: 1.5;">Definisi singkat...</p>
+                        
+                        <div id="oxford-ai-example" class="mt-md" style="background: var(--surface-hover); padding: 15px; border-radius: 10px; border-left: 3px solid var(--secondary); text-align: left; display: none;">
+                            <div style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-bottom: 5px;">NATURAL USAGE (AI)</div>
+                            <div id="oxford-ai-phrase" style="font-weight: 600; margin-bottom: 5px;">"Example sentence..."</div>
+                            <div id="oxford-ai-trans" class="text-muted italic" style="font-size: 0.85rem;">"Terjemahan contoh..."</div>
+                        </div>
+
+                        <div class="flex-row mt-lg">
+                            <button id="oxford-ai-gen-btn" class="btn btn-ai flex-1">🧠 Minta Contoh AI</button>
+                            <button id="oxford-mastery-btn" class="btn btn-primary flex-1">✅ Kuasai Kata</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
         <!-- Screen: English Fluency Coach (Beginner) -->
         <section id="english-fluency-screen" class="screen">
             <div class="card" style="background: linear-gradient(135deg, var(--primary), #fbbf24); color: white; border: none;">
@@ -1676,6 +2364,11 @@
                     <button class="brain-tab rig-tab" onclick="switchRigChapter('poster', this)">🖼️ Poster</button>
                     <button class="brain-tab rig-tab" onclick="switchRigChapter('gas', this)">🔥 Gas & Fire</button>
                     <button class="brain-tab rig-tab" onclick="switchRigChapter('inspection', this)">✅ Inspeksi</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('lifecycle', this)">🔄 Lifecycle</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('sequence', this)">⚙️ Operasi</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('parameters', this)">📊 Parameter</button>
+                    <button class="brain-tab rig-tab" onclick="switchRigChapter('oversight', this)">🛡️ Supervisor</button>
+
                     <button class="brain-tab rig-tab" onclick="switchRigChapter('pjsm', this)">📢 PJSM</button>
                 </div>
             </div>
@@ -1816,7 +2509,10 @@
             <div id="rig-chapter-inspection" class="rig-chapter hidden">
                 <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <h3 style="margin: 0;">✅ Form Inspeksi Rig</h3>
+                        <div style="display: flex; flex-direction: column;">
+                            <h3 style="margin: 0;">✅ Form Inspeksi Rig</h3>
+                            <div id="inspection-overall-progress" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Progress: 0 / 0 Poin</div>
+                        </div>
                         <div style="display: flex; gap: 8px;">
                             <button onclick="generateInspectionPDF()" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
                                 <span>📄</span> Download PDF
@@ -1832,8 +2528,49 @@
                 </div>
             </div>
 
+            <!-- Chapter 11: Well Lifecycle -->
+            <div id="rig-chapter-lifecycle" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #3b82f6;">
+                    <h3>🔄 Siklus Hidup Sumur Migas</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Memahami tahapan sumur dari pencarian awal hingga penutupan permanen.</p>
+                    <div id="rig-lifecycle-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 12: Rig Operational Sequence -->
+            <div id="rig-chapter-sequence" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #f59e0b;">
+                    <h3>⚙️ Urutan Operasional Rig</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Alur kerja logistik dan mekanikal dari persiapan hingga pembongkaran rig.</p>
+                    <div id="rig-sequence-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 13: Critical Well Parameters -->
+            <div id="rig-chapter-parameters" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #10b981;">
+                    <h3>📊 Parameter Kritis Sumur</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Data teknis dan kondisi bawah tanah yang wajib dipantau selama pengeboran.</p>
+                    <div id="rig-parameters-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 14: HSSE Supervisor Oversight -->
+            <div id="rig-chapter-oversight" class="rig-chapter hidden">
+                <div class="card mt-md" style="border-left: 4px solid #e5e7eb;">
+                    <h3>🛡️ HSSE Supervisor Oversight</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">Tanggung jawab kepemimpinan keselamatan dan pengawasan area drill floor.</p>
+                    <div id="rig-oversight-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    </div>
+                </div>
+            </div>
+
             <!-- Chapter 10: PJSM Generator -->
             <div id="rig-chapter-pjsm" class="rig-chapter hidden">
+
                 <div class="card mt-md" style="border-left: 4px solid #e53e3e;">
                     <h3>📢 AI PJSM Generator</h3>
                     <p class="text-muted" style="font-size: 0.9rem;">Masukkan daftar pekerjaan hari ini, dan AI akan menyusun naskah <b>Pre-Job Safety Meeting (PJSM) / Toolbox Talk</b> gaya lisan lapangan, lengkap dengan bahaya, CLSR, mitigasi, dan yel-yel!</p>
@@ -1860,10 +2597,11 @@
                             <button id="copy-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Naskah</button>
                             <button id="speak-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">🔊 Baca (TTS)</button>
                             <button id="stop-speak-pjsm-btn" class="btn btn-secondary hidden" style="flex: 1; font-size: 0.85rem; padding: 8px; background: #e53e3e; color: white;">⏹️ Stop</button>
-                            <button id="export-pjsm-pdf-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📄 Export PDF</button>
+                            <button id="export-pjsm-pdf-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📄 PDF</button>
+                            <button id="save-pjsm-btn" class="btn btn-ai" style="flex: 1; font-size: 0.85rem; padding: 8px; background: var(--secondary);">💾 Simpan</button>
                         </div>
-                        <div id="pjsm-content"
-                            style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; overflow-x: auto;">
+                        <div id="pjsm-content" class="pjsm-generated-content"
+                            style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.7; white-space: normal; overflow-x: auto;">
                         </div>
                     </div>
                 </div>
@@ -1872,13 +2610,207 @@
             <!-- JSA Builder removed - now accessed via Learning Hub > AI JSA & PTW -->
 
         </section>
+
+        <!-- EPLS System Screen (MUST be sibling of other screens, NOT nested) -->
+        <section id="epls-screen" class="screen">
+            <div class="header-back">
+                <button class="back-btn" onclick="handleBackButton()">
+                    <span class="back-icon">←</span> Kembali ke Learning Hub
+                </button>
+            </div>
+            
+            <div class="card mt-md">
+                <h2>📈 EPLS Dashboard</h2>
+                <p class="text-muted">Pantau progres dan konsistensi belajar Anda setiap hari.</p>
+            </div>
+            
+            <!-- Daily Habit Tracker -->
+            <div class="card mt-md">
+                <h3>🔥 Daily Learning Habit</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 10px;">Pertahankan konsistensi belajar harian Anda (Streak).</p>
+                <div class="habit-tracker" id="epls-habit-tracker">
+                    <!-- JS injected days -->
+                </div>
+                <button class="btn btn-primary mt-sm" id="epls-checkin-btn" style="width: 100%; border-radius: 20px;">✓ Validasi Belajar Hari Ini</button>
+            </div>
+
+            <!-- Learning Path A1-C1 -->
+            <div class="card mt-md">
+                <h3>📚 CEFR Learning Path</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Selesaikan struktur materi langkah demi langkah.</p>
+                
+                <div class="epls-level-card" onclick="openEplsLevel('A1')">
+                    <div class="level-header">
+                        <span class="level-badge bg-beginner">A1</span>
+                        <span class="level-title">Elementary Foundation</span>
+                    </div>
+                    <p class="level-desc">Fundamental grammar dan kosa kata sehari-hari.</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-A1" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-A1">0%</span> Selesai</div>
+                </div>
+
+                <div class="epls-level-card" onclick="openEplsLevel('A2')">
+                    <div class="level-header">
+                        <span class="level-badge bg-beginner">A2</span>
+                        <span class="level-title">Pre-Intermediate</span>
+                    </div>
+                    <p class="level-desc">Membangun kalimat kompleks & percakapan dasar.</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-A2" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-A2">0%</span> Selesai</div>
+                </div>
+                
+                <div class="epls-level-card" onclick="openEplsLevel('B1')">
+                    <div class="level-header">
+                        <span class="level-badge bg-intermediate">B1</span>
+                        <span class="level-title">Intermediate Mastery</span>
+                    </div>
+                    <p class="level-desc">Ekspresi opini, narasi, dan pemahaman teks umum.</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-B1" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-B1">0%</span> Selesai</div>
+                </div>
+
+                <div class="epls-level-card" onclick="openEplsLevel('B2')">
+                    <div class="level-header">
+                        <span class="level-badge bg-intermediate">B2</span>
+                        <span class="level-title">Upper-Intermediate</span>
+                    </div>
+                    <p class="level-desc">Kosakata profesional, artikel jurnal, dan debat.</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-B2" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-B2">0%</span> Selesai</div>
+                </div>
+
+                <div class="epls-level-card" onclick="openEplsLevel('C1')">
+                    <div class="level-header">
+                        <span class="level-badge bg-expert">C1</span>
+                        <span class="level-title">Advanced Proficiency</span>
+                    </div>
+                    <p class="level-desc">Penguasaan bahasa setara Penutur Asli (Native).</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="epls-prog-C1" style="width: 0%;"></div></div>
+                    <div class="progress-text"><span id="epls-pct-C1">0%</span> Selesai</div>
+                </div>
+            </div>
+            
+            <!-- Exam Prep Section -->
+            <div class="card mt-md">
+                <h3>🏆 Exam Preparation</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Target IELTS, TOEFL, atau TOEIC.</p>
+                <div class="hub-grid">
+                    <button class="hub-btn" onclick="openEplsExam('IELTS')" style="padding: 15px 10px; align-items: center; text-align: center;">
+                        <div class="hub-icon" style="background: #ebf8ff; color: #3182ce; margin-bottom: 5px;">🌍</div>
+                        <span class="hub-label" style="font-size: 0.9rem;">IELTS Prep</span>
+                    </button>
+                    <button class="hub-btn" onclick="openEplsExam('TOEFL')" style="padding: 15px 10px; align-items: center; text-align: center;">
+                        <div class="hub-icon" style="background: #faf5ff; color: #805ad5; margin-bottom: 5px;">🗽</div>
+                        <span class="hub-label" style="font-size: 0.9rem;">TOEFL Prep</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Physics Mastery Screen -->
+        <section id="physics-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>🔬 Fisika Mastery</h2><p class="text-muted">Kuasai Fisika dari Mekanika sampai Fisika Modern.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Fisika</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Selesaikan setiap level secara berurutan.</p>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">1</span><span class="level-title">Mekanika & Kinematika</span></div><p class="level-desc">Gerak, gaya Newton, usaha, energi, momentum.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#06b6d4;">2</span><span class="level-title">Fluida & Termodinamika</span></div><p class="level-desc">Tekanan, Bernoulli, kalor, gas ideal, Carnot.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#8b5cf6;">3</span><span class="level-title">Gelombang, Bunyi & Cahaya</span></div><p class="level-desc">Interferensi, Doppler, cermin, lensa, difraksi.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#f59e0b;">4</span><span class="level-title">Listrik & Magnet</span></div><p class="level-desc">Coulomb, Ohm, Kirchhoff, Faraday, AC.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPhysicsLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#ef4444;">5</span><span class="level-title">Fisika Modern & Nuklir</span></div><p class="level-desc">Foton, relativitas, atom Bohr, radioaktivitas, fisi & fusi.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="physics-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="physics-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- HSSE Mastery Screen -->
+        <section id="hsse-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>🛡️ HSSE Mastery</h2><p class="text-muted">Kuasai K3 dari dasar sampai Leadership & Audit.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path HSSE</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Selesaikan setiap level untuk naik tingkat.</p>
+                <div class="epls-level-card" onclick="openHsseLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#22c55e;">1</span><span class="level-title">Dasar K3 & Identifikasi Bahaya</span></div><p class="level-desc">APD, HIRA, JSA, PTW, Toolbox Talk, Housekeeping.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openHsseLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">2</span><span class="level-title">Process Safety & High Risk Work</span></div><p class="level-desc">LOTO, Confined Space, Hot Work, WAH, Lifting.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openHsseLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#ef4444;">3</span><span class="level-title">Emergency Response & Fire Safety</span></div><p class="level-desc">Pemadam api, ERP, P3K, Spill Response, H2S.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openHsseLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#10b981;">4</span><span class="level-title">Environmental Management</span></div><p class="level-desc">AMDAL, Limbah B3, ISO 14001, ISO 45001.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openHsseLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#8b5cf6;">5</span><span class="level-title">HSE Leadership & Audit</span></div><p class="level-desc">Investigasi, BBS, Safety Culture, AK3 Umum.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="hsse-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="hsse-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- Automotive Mastery Screen -->
+        <section id="automotive-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>🚗 Mesin Kendaraan Mastery</h2><p class="text-muted">Kuasai mesin dari dasar sampai alat berat.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Otomotif</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Belajar dari fondasi mesin sampai heavy equipment.</p>
+                <div class="epls-level-card" onclick="openAutoLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#f59e0b;">1</span><span class="level-title">Dasar Mesin & Komponen Utama</span></div><p class="level-desc">Motor bakar, pelumasan, pendinginan, bahan bakar.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openAutoLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#8b5cf6;">2</span><span class="level-title">Transmisi & Drivetrain</span></div><p class="level-desc">Kopling, transmisi M/T & A/T, differential, ban.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openAutoLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">3</span><span class="level-title">Kelistrikan & Elektronik</span></div><p class="level-desc">Aki, starter, alternator, ignition, sensor, ECU.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openAutoLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#ef4444;">4</span><span class="level-title">Rem, Suspensi & Safety</span></div><p class="level-desc">Rem hidrolik, ABS, shock absorber, airbag, ADAS.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openAutoLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#059669;">5</span><span class="level-title">Diesel Engine & Heavy Equipment</span></div><p class="level-desc">Diesel CRDi, hidrolik alat berat, overhaul.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="auto-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="auto-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- Psychology Mastery Screen -->
+        <section id="psychology-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>🧠 Psikologi & EQ Mastery</h2><p class="text-muted">Kuasai kecerdasan emosional dan ilmu perilaku.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Psikologi</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Pahami diri dan orang lain melalui 5 level intensif.</p>
+                <div class="epls-level-card" onclick="openPsyLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#d946ef;">1</span><span class="level-title">Dasar Psikologi & Perilaku</span></div><p class="level-desc">Sejarah, sistem saraf, sensasi, persepsi, kepribadian.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPsyLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#a855f7;">2</span><span class="level-title">Kecerdasan Emosional (EQ)</span></div><p class="level-desc">5 pilar EQ, manajemen diri, empati, motivasi.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPsyLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#8b5cf6;">3</span><span class="level-title">Komunikasi & Hubungan</span></div><p class="level-desc">Active listening, asertif, bahasa tubuh, resolusi konflik.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPsyLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#6366f1;">4</span><span class="level-title">Mental Health & Resilience</span></div><p class="level-desc">Manajemen stres, mindfulness, ketangguhan mental, mindset.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPsyLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">5</span><span class="level-title">Leadership & Coaching</span></div><p class="level-desc">Gaya kepemimpinan, coaching, feedback, persuasi.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="psy-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="psy-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- Investment Mastery Screen -->
+        <section id="investment-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>📈 Saham & Ekonomi Syariah</h2><p class="text-muted">Bangun kekayaan dengan prinsip syariah yang kuat.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Investasi</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Selesaikan level untuk mencapai Financial Independence.</p>
+                <div class="epls-level-card" onclick="openInvLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#059669;">1</span><span class="level-title">Dasar Keuangan & Syariah</span></div><p class="level-desc">Time value of money & prinsip riba, gharar, maysir.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openInvLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#10b981;">2</span><span class="level-title">Produk Investasi Syariah</span></div><p class="level-desc">Reksa dana, sukuk, dan saham syariah (ISSI/JII).</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openInvLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#34d399;">3</span><span class="level-title">Analisis Fundamental & Teknikal</span></div><p class="level-desc">Membaca laporan keuangan & grafik harga saham.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openInvLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#6ee7b7;">4</span><span class="level-title">Manajemen Risiko & Portofolio</span></div><p class="level-desc">Diversifikasi asset & strategi money management.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openInvLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#a7f3d0;">5</span><span class="level-title">Financial Independence Road</span></div><p class="level-desc">Strategi pasif income & kebebasan energi finansial.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="inv-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="inv-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- Coding Mastery Screen -->
+        <section id="coding-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>💻 Coding & AI Mastery</h2><p class="text-muted">Kuasai teknologi masa depan dari nol.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Programmer</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Bangun skill development dan implementasi AI.</p>
+                <div class="epls-level-card" onclick="openCodeLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#475569;">1</span><span class="level-title">Logika & Dasar Programming</span></div><p class="level-desc">Algoritma, variabel, looping (Python/JS).</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openCodeLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#334155;">2</span><span class="level-title">Web Development (Frontend)</span></div><p class="level-desc">HTML, CSS, modern JavaScript, & UI Design.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openCodeLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#1e293b;">3</span><span class="level-title">Backend & Database</span></div><p class="level-desc">API development, SQL, & Server-side logic.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openCodeLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#3b82f6;">4</span><span class="level-title">AI & Machine Learning Dasar</span></div><p class="level-desc">Prompt engineering, data science, & model AI.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openCodeLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#2563eb;">5</span><span class="level-title">Software Architecture & Cloud</span></div><p class="level-desc">System design, DevOps, & scaleable application.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="code-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="code-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
+        <!-- Pertamina Mastery Screen -->
+        <section id="pertamina-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali ke Learning Hub</button></div>
+            <div class="card mt-md"><h2>⛽ Pertamina Mastery</h2><p class="text-muted">Kuasai budaya dan bisnis di Pertamina Grup.</p></div>
+            <div class="card mt-md"><h3>📚 Learning Path Pertamina</h3><p class="text-muted" style="font-size:0.85rem;margin-bottom:15px;">Menjadi insan Pertamina yang unggul dan AKHLAK.</p>
+                <div class="epls-level-card" onclick="openPtmLevel('L1')"><div class="level-header"><span class="level-badge" style="background:#1e3a8a;">1</span><span class="level-title">Visi & Budaya AKHLAK</span></div><p class="level-desc">Amanah, Kompeten, Harmonis, Loyal, Adaptif, Kolaboratif.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L1" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L1">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPtmLevel('L2')"><div class="level-header"><span class="level-badge" style="background:#1e40af;">2</span><span class="level-title">Rantai Bisnis Migas (Up-Down)</span></div><p class="level-desc">Eksplorasi, produksi, kilang, hingga pemasaran.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L2" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L2">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPtmLevel('L3')"><div class="level-header"><span class="level-badge" style="background:#ef4444;">3</span><span class="level-title">Standar Safety (CLSR & SUPREME)</span></div><p class="level-desc">Aturan keselamatan kerja & standar manajemen HSE.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L3" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L3">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPtmLevel('L4')"><div class="level-header"><span class="level-badge" style="background:#dc2626;">4</span><span class="level-title">Operational Excellence & ESG</span></div><p class="level-desc">Efisiensi operasi dan keberlanjutan lingkungan.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L4" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L4">0%</span> Selesai</div></div>
+                <div class="epls-level-card" onclick="openPtmLevel('L5')"><div class="level-header"><span class="level-badge" style="background:#b91c1c;">5</span><span class="level-title">Energy Transition & Future</span></div><p class="level-desc">Energi baru terbarukan & masa depan net zero emission.</p><div class="progress-bar-bg"><div class="progress-bar-fill" id="ptm-prog-L5" style="width:0%;"></div></div><div class="progress-text"><span id="ptm-pct-L5">0%</span> Selesai</div></div>
+            </div>
+        </section>
+
     </div>
 
     <!-- Scripts (modular) -->
+    <!-- Libraries -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
     <!-- Core / Data Layer -->
+    <script src="js/storage-idb.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/cloud-sync.js"></script>
     <script src="js/ai.js"></script>
+    <script src="js/ai-assistant.js"></script>
+    <script src="js/ai-commands.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/encryption.js"></script>
     <script src="js/auth.js"></script>
@@ -1890,19 +2822,25 @@
     <script src="js/planner-ui.js"></script>
     <script src="js/finance-ui.js"></script>
     <script src="js/habits-goals-ui.js"></script>
+    <script src="js/library-ui.js"></script>
     <script src="js/navigation-settings.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/wallet-budget-ui.js"></script>
 
     <!-- Feature Modules -->
+    <script src="js/jarvis-voice.js"></script>
     <script src="js/features.js"></script>
     <script src="js/extras.js"></script>
     <script src="js/edit-modal.js"></script>
     <script src="js/onboarding.js"></script>
     <script src="js/insight.js"></script>
+    <script src="js/life-balance.js"></script>
     <script src="js/gamification.js"></script>
     <script src="js/hadith.js"></script>
     <script src="js/brain-boost.js"></script>
+
+
+
     <script src="js/journal-templates.js"></script>
     <script src="js/motivation.js"></script>
     <script src="js/islam-tracker.js"></script>
@@ -1911,8 +2849,32 @@
     <script src="js/english-hse.js"></script>
     <script src="js/english-fluency.js"></script>
     <script src="js/hse-rig.js"></script>
+    <script src="js/jmp-generator.js"></script>
+    <script src="js/epls.js"></script>
+    <script src="js/lesson-tools.js"></script>
+    <script src="js/workout-tracker.js"></script>
+    <script src="js/learn-shared.js"></script>
+    <script src="js/mastery-dashboard.js"></script>
+    <script src="js/learn-physics.js"></script>
+    <script src="js/learn-hsse.js"></script>
+    <script src="js/learn-automotive.js"></script>
+    <script src="js/learn-psychology.js"></script>
+    <script src="js/learn-investment.js"></script>
+    <script src="js/learn-coding.js"></script>
+    <script src="js/learn-pertamina.js"></script>
+    <script src="js/nutrition-tracker.js"></script>
+    <script src="js/oxford-3000.js"></script>
+
+    <!-- HSE Rig Photo Full Viewer Modal -->
+    <div id="rig-photo-modal" class="modal hidden" style="z-index: 99999; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+        <span id="close-rig-photo-modal" style="position: absolute; top: 20px; right: 30px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer;">&times;</span>
+        <img class="modal-content" id="rig-photo-full" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px;">
+    </div>
 
     <!-- App Initialization (must be last) -->
+    <script src="js/rig-3d-viewer.js"></script>
+    <script src="js/dashboard-widgets.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/app-init.js"></script>
 
     <!-- Register Service Worker -->
@@ -1929,6 +2891,9 @@
             });
         }
     </script>
+    <!-- Global Jarvis FAB -->
+    <button id="jarvis-global-fab" title="Hold Jarvis anytime">✨</button>
+
 </body>
 
 </html>

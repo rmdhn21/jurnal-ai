@@ -1,4 +1,4 @@
-﻿// ===== HSE RIG LEARNING MODULES =====
+// ===== HSE RIG LEARNING MODULES =====
 
 const hseRigData = {
     introduction: [
@@ -28,12 +28,45 @@ const hseRigData = {
         },
         {
             title: "5. Power System (Sistem Tenaga)",
-            desc: "<b>Fungsi utama:</b> Sumber kehidupan listrik mandiri di tengah antah berantah untuk menggerakkan seluruh mesin rig di atas.<br><br><b>📌 Komponen Pada Gambar:</b><br>• <b>Gensets (Generator Sets / Mesin Diesel):</b> Generator diesel raksasa (biasanya ada 3-4 unit bekerja paralel) berbentuk blok kontainer tangguh penghasil listrik tegangan besar setingkat megawatt.<br>• <b>SCR / VFD Room (Control House):</b> Ruang kontrol kelistrikan (biasanya kontainer putih ber-AC) pusat konversi dan distribusi listrik ke motor-motor alat rig.<br>• <b>Main Power Cables:</b> Kabel transmisi listrik tebal layaknya ular yang menyalurkan listrik dari Genset ke SCR, dan dari SCR ke Drawworks/Mud Pump.<br>• <b>Exhaust / Muffler:</b> Knalpot pembuangan asap panas dan peredam suara pada atas unit Gensets.<br><br><span style='color: #e53e3e;'><b>⚠️ Bahaya utama:</b> Tingkat kebisingan ekstrem (tuli jika menolak pakai pelindung telinga), risiko tinggi tersengat listrik (wajib ketat aturan LOTO), dan bahaya ledakan bahan bakar tangki diesel/solar.</span>",
+            desc: "<b>Fungsi utama:</b> Sumber kehidupan listrik mandiri di tengah antah berantah untuk menggerakkan seluruh mesin rig di atas.<br><br><b>📌 Komponen Pada Gambar:</b><br>• <b>Gensets:</b> Generator diesel raksasa penghasil listrik megawatt.<br>• <b>SCR / VFD Room:</b> Pusat distribusi listrik ke motor-motor alat rig.<br>• <b>Main Power Cables:</b> Kabel transmisi listrik tebal.<br><br><span style='color: #e53e3e;'><b>⚠️ Potensi Bahaya:</b> Kebisingan ekstrem, sengatan listrik tegangan tinggi (LOTO wajib), dan risiko ledakan bahan bakar diesel.</span>",
             icon: "⚡",
             image: "img/hse-rig/sys_power.png"
         }
     ],
+    wellLifecycle: [
+        {
+            title: "Siklus Hidup Sumur Migas",
+            desc: "Memahami perjalanan sebuah sumur dari awal hingga akhir:<br><br>1. <b>Eksplorasi:</b> Pencarian cadangan minyak baru melalui survei seismik dan pengeboran sumur liar (Wildcat).<br>2. <b>Penilaian (Appraisal):</b> Mengukur potensi cadangan dan nilai komersial melalui Well Testing.<br>3. <b>Pengembangan:</b> Pengeboran sumur produksi secara massal dan pemasangan fasilitas permukaan.<br>4. <b>Komplesi:</b> Mempersiapkan sumur agar siap mengalirkan minyak/gas secara aman.<br>5. <b>Produksi:</b> Tahap mengalirkan fluida bumi ke tangki pengumpul.<br>6. <b>Intervensi:</b> Perbaikan atau optimalisasi sumur (Well Workover/Snobbing).<br>7. <b>Penutupan (P&A):</b> Permanently Plug and Abandon (P&A) sumur yang sudah tidak ekonomis agar aman bagi lingkungan.",
+            icon: "🔄",
+            image: "img/hse-rig/well_lifecycle.png"
+        }
+    ],
+    rigSequence: [
+        {
+            title: "Alur Operasional Rig",
+            desc: "Urutan kerja mekanis dan logistik rig:<br><br>• <b>Mobilisasi:</b> Perpindahan peralatan rig dari gudang ke lokasi sumur menggunakan truk berat.<br>• <b>Rig Up:</b> Proses pendirian menara (mast) dan perakitan seluruh 5 sistem utama rig.<br>• <b>Drilling Ops:</b> Proses pengeboran lubang sumur secara aktif.<br>• <b>Well Completion:</b> Pemasangan pipa produksi (tubing) dan Wellhead.<br>• <b>Rig Down:</b> Pembongkaran menara dan mesin setelah pekerjaan selesai.<br>• <b>Demobilisasi:</b> Pemindahan rig keluar dari lokasi sumur.",
+            icon: "⚙️",
+            image: "img/hse-rig/rig_sequence.png"
+        }
+    ],
+    criticalParameters: [
+        {
+            title: "Parameter Kritis Sumur",
+            desc: "Data teknis yang wajib dipantau HSE dan Driller:<br><br>• <b>Trajektori:</b> Arah lubang sumur (Vertikal, Berarah, atau Horizontal).<br>• <b>Mud Weight (MW):</b> Berat jenis lumpur penyeimbang tekanan formasi (Prime barrier).<br>• <b>Litologi:</b> Jenis batuan yang ditembus (Shale, Sandstone) - waspada zona rekah.<br>• <b>Casing Shoe:</b> Kedalaman kritis ujung pipa pelindung terakhir.<br>• <b>BHT (Bottom Hole Temperature):</b> Suhu dasar sumur yang mempengaruhi alat bor.<br>• <b>Well History:</b> Riwayat sumur sekitar (Offset Wells) untuk antisipasi bahaya serupa.<br>• <b>SIMOPS:</b> Pengawasan pekerjaan yang berlangsung bersamaan (Simultaneous Operations).",
+            icon: "📊",
+            image: "img/hse-rig/well_parameters.png"
+        }
+    ],
+    hsseOversight: [
+        {
+            title: "Tanggung Jawab Pengawasan HSSE",
+            desc: "Fokus utama Supervisor HSE di lapangan Rig:<br><br>• <b>Lantai Bor (Drill Floor):</b> Mengawasi area paling berbahaya (Red Zone/Pinch Point).<br>• <b>JSA / PTW:</b> Memastikan izin kerja selaras dengan identitas bahaya aktual.<br>• <b>Chemical & Waste:</b> Pengawasan penanganan bahan kimia berbahaya dan limbah lumpur.<br>• <b>Well Control:</b> Memonitor indikasi dini semburan liar (Kick) dan memandu tanggap darurat.<br>• <b>Emergency Response:</b> Memastikan seluruh kru paham tugas dalam Muster Point dan pemakaian peralatan darurat.",
+            icon: "🛡️",
+            image: "img/hse-rig/hsse_oversight_rig.png"
+        }
+    ],
     hazards: [
+
         {
             title: "1. Gerakan (Motion)",
             desc: "Bahaya dari suatu benda atau alat yang bergerak (berputar, mengayun, meluncur) yang dapat menabrak atau membentur pekerja.",
@@ -473,7 +506,12 @@ function initHseRig() {
     renderInteractiveFlashcards('rig-clsr-modules', hseRigData.clsr);
     renderInteractiveFlashcards('rig-perilaku-modules', hseRigData.perilaku);
     renderRigModules('rig-gas-modules', hseRigData.gasFire, true);
+    renderRigModules('rig-lifecycle-modules', hseRigData.wellLifecycle);
+    renderRigModules('rig-sequence-modules', hseRigData.rigSequence);
+    renderRigModules('rig-parameters-modules', hseRigData.criticalParameters);
+    renderRigModules('rig-oversight-modules', hseRigData.hsseOversight);
     if (typeof renderInspectionChecklist === 'function' && hseRigData.inspection) {
+
         renderInspectionChecklist('rig-inspection-modules', hseRigData.inspection);
     }
 }
@@ -516,10 +554,39 @@ function renderInspectionChecklist(containerId, dataArray) {
                 ${cat.items.map((item, itemIndex) => {
                     const cbId = `chk-${catIndex}-${itemIndex}`;
                     return `
-                    <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; cursor: pointer; line-height: 1.4; font-size: 0.9rem; padding: 6px; border-radius: 6px; transition: background 0.2s;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" id="${cbId}" class="inspection-checkbox" style="margin-top: 3px; min-width: 18px; min-height: 18px; accent-color: #38b2ac; cursor: pointer;" onchange="saveInspectionState()">
-                        <span style="color: var(--text-color);">${item}</span>
-                    </label>
+                    <div class="inspection-item-wrapper" style="margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+                            <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; line-height: 1.4; font-size: 0.9rem; flex: 1;">
+                                <input type="checkbox" id="${cbId}" class="inspection-checkbox" style="margin-top: 3px; min-width: 18px; min-height: 18px; accent-color: #38b2ac; cursor: pointer;" onchange="saveInspectionState()">
+                                <span style="color: var(--text-color);">${item}</span>
+                            </label>
+                            <button class="inspection-memo-btn" id="btn-memo-${cbId}" onclick="toggleRigMemo('${cbId}')">
+                                📝 Memo
+                            </button>
+                        </div>
+                        
+                        <!-- Memo Container (Hidden by default) -->
+                        <div id="memo-container-${cbId}" class="inspection-memo-container hidden">
+                            <textarea id="memo-text-${cbId}" class="inspection-memo-textarea" 
+                                placeholder="Tambahkan pengertian atau catatan pribadi agar cepat hafal..."
+                                oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'"></textarea>
+                            
+                            <div id="memo-photo-area-${cbId}">
+                                <div id="memo-photo-grid-${cbId}" class="inspection-photo-grid">
+                                    <!-- Photos will be injected here -->
+                                </div>
+                                <div class="inspection-memo-actions" style="margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <label class="btn btn-secondary btn-small" style="cursor:pointer; font-size: 0.75rem; flex: 1; min-width: 120px; text-align: center;">
+                                        📷 Tambah Foto
+                                        <input type="file" accept="image/*" multiple style="display:none;" onchange="handleRigPhotos(event, '${cbId}')">
+                                    </label>
+                                    <button class="btn btn-primary btn-small" onclick="saveRigMemo('${cbId}')" style="font-size: 0.75rem; flex: 1; min-width: 80px;">💾 Simpan</button>
+                                    <button class="btn btn-danger btn-small" onclick="clearRigMemo('${cbId}')" style="font-size: 0.75rem; padding: 5px 10px;">🗑️</button>
+                                </div>
+                            </div>
+                            <div id="memo-status-${cbId}" class="memo-saved-indicator hidden">✅ Tersimpan</div>
+                        </div>
+                    </div>
                     `;
                 }).join('')}
             </div>
@@ -530,26 +597,286 @@ function renderInspectionChecklist(containerId, dataArray) {
     loadInspectionState();
 }
 
-function saveInspectionState() {
+async function saveInspectionState() {
     const checkboxes = document.querySelectorAll('.inspection-checkbox');
-    const state = {};
+    const items = [];
     checkboxes.forEach(cb => {
-        if(cb.checked) state[cb.id] = true;
+        if(cb.checked) items.push({ id: cb.id });
     });
-    localStorage.setItem('rigInspectionState', JSON.stringify(state));
+    
+    try {
+        // Clear old state and put new state
+        await db.rig_inspection_state.clear();
+        if (items.length > 0) {
+            await idbBulkSave('rig_inspection_state', items);
+        }
+    } catch(e) {
+        console.error("Error saving inspection state:", e);
+    }
+    
+    updateInspectionProgress();
 }
 
-function loadInspectionState() {
-    const saved = localStorage.getItem('rigInspectionState');
-    if (saved) {
+function updateInspectionProgress() {
+    const total = document.querySelectorAll('.inspection-checkbox').length;
+    const checked = document.querySelectorAll('.inspection-checkbox:checked').length;
+    const progressEl = document.getElementById('inspection-overall-progress');
+    if (progressEl) {
+        progressEl.textContent = `Progress: ${checked} / ${total} Poin Centang (${Math.round(checked/total*100)}%)`;
+    }
+}
+
+async function migrateRigToIDB() {
+    const MIGRATED_KEY = 'rig_data_migrated_v3';
+    if (localStorage.getItem(MIGRATED_KEY)) return;
+
+    console.log("🚚 Migrating Rig Inspection data to IndexedDB...");
+
+    // 1. Migrate Checkbox States
+    const savedState = localStorage.getItem('rigInspectionState');
+    if (savedState) {
         try {
-            const state = JSON.parse(saved);
-            Object.keys(state).forEach(id => {
-                const cb = document.getElementById(id);
-                if (cb) cb.checked = state[id];
-            });
+            const stateObj = JSON.parse(savedState);
+            const items = Object.keys(stateObj).filter(id => stateObj[id]).map(id => ({ id }));
+            if (items.length > 0) {
+                await idbBulkSave('rig_inspection_state', items);
+            }
         } catch(e) {}
     }
+
+    // 2. Migrate Memos
+    const savedMemos = localStorage.getItem('rigInspectionMemos');
+    if (savedMemos) {
+        try {
+            const memos = JSON.parse(savedMemos);
+            const memoEntries = Object.keys(memos).map(id => ({
+                id,
+                ...memos[id]
+            }));
+            if (memoEntries.length > 0) {
+                await idbBulkSave('rig_memos', memoEntries);
+            }
+        } catch(e) {}
+    }
+
+    localStorage.setItem(MIGRATED_KEY, 'true');
+    console.log("✅ Rig Inspection data migration complete.");
+}
+
+async function loadInspectionState() {
+    // Run migration if needed
+    await migrateRigToIDB();
+
+    // Load Checkboxes
+    try {
+        const stateItems = await idbGetAll('rig_inspection_state');
+        stateItems.forEach(item => {
+            const cb = document.getElementById(item.id);
+            if (cb) cb.checked = true;
+        });
+        updateInspectionProgress();
+    } catch(e) { console.error("Error loading inspection state:", e); }
+    
+    // Load Memos
+    try {
+        const memos = await idbGetAll('rig_memos');
+        memos.forEach(memo => {
+            const id = memo.id;
+            const textEl = document.getElementById(`memo-text-${id}`);
+            const btnMemo = document.getElementById(`btn-memo-${id}`);
+            
+            if (textEl && memo.note) {
+                textEl.value = memo.note;
+                if (btnMemo) btnMemo.classList.add('has-content');
+                // Resize textarea
+                const doResize = () => {
+                    textEl.style.height = 'auto';
+                    textEl.style.height = textEl.scrollHeight + 'px';
+                };
+                setTimeout(doResize, 100);
+                setTimeout(doResize, 500);
+            }
+            
+            if (memo.photos || memo.photo) {
+                const photos = memo.photos || (memo.photo ? [memo.photo] : []);
+                renderRigPhotoGrid(id, photos);
+                if (photos.length > 0 && btnMemo) btnMemo.classList.add('has-content');
+            }
+        });
+    } catch(e) { console.error("Error loading memos:", e); }
+}
+
+function renderRigPhotoGrid(cbId, photos) {
+    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+    if (!grid) return;
+    
+    grid.innerHTML = photos.map((src, index) => `
+        <div class="inspection-photo-item" id="photo-${cbId}-${index}">
+            <img src="${src}" alt="Photo ${index + 1}" onclick="viewRigPhotoFull('${src}')" style="cursor: zoom-in;">
+            <button class="delete-photo" onclick="removeRigPhoto('${cbId}', ${index})" title="Hapus Foto">✕</button>
+        </div>
+    `).join('');
+    
+    // Store temporarily in a data attribute if needed, but we usually just read from grid or store separately
+    grid.dataset.photos = JSON.stringify(photos);
+}
+
+function viewRigPhotoFull(src) {
+    const modal = document.getElementById('rig-photo-modal');
+    const img = document.getElementById('rig-photo-full'); // match index.html
+    const closeBtn = document.getElementById('close-rig-photo-modal');
+    
+    if (modal && img) {
+        img.src = src;
+        modal.classList.remove('hidden');
+        
+        // Close on X
+        if (closeBtn) {
+            closeBtn.onclick = () => modal.classList.add('hidden');
+        }
+        
+        // Close on background click
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        };
+    }
+}
+
+function removeRigPhoto(cbId, index) {
+    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+    if (!grid || !grid.dataset.photos) return;
+    
+    let photos = JSON.parse(grid.dataset.photos);
+    photos.splice(index, 1);
+    renderRigPhotoGrid(cbId, photos);
+}
+
+// ===== MEMO MANAGEMENT =====
+
+function toggleRigMemo(cbId) {
+    const container = document.getElementById(`memo-container-${cbId}`);
+    if (container) {
+        container.classList.toggle('hidden');
+        if (!container.classList.contains('hidden')) {
+            // Resize textarea when it becomes visible
+            const textEl = document.getElementById(`memo-text-${cbId}`);
+            if (textEl) {
+                textEl.style.height = 'auto'; // Reset height
+                textEl.style.height = textEl.scrollHeight + 'px';
+            }
+        }
+    }
+}
+
+// Helper function to compress and resize images to save localStorage space
+async function compressRigImage(base64Str, maxWidth = 800) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = base64Str;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+                height = (maxWidth / width) * height;
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress to JPEG 70%
+        };
+    });
+}
+
+async function handleRigPhotos(event, cbId) {
+    const files = Array.from(event.target.files);
+    if (!files || files.length === 0) return;
+
+    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+    const existingPhotos = grid && grid.dataset.photos ? JSON.parse(grid.dataset.photos) : [];
+    
+    const newPhotos = [];
+    
+    for (const file of files) {
+        const photoData = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+        
+        // Compress image before adding to the list
+        const compressedData = await compressRigImage(photoData);
+        newPhotos.push(compressedData);
+    }
+    
+    const allPhotos = [...existingPhotos, ...newPhotos];
+    renderRigPhotoGrid(cbId, allPhotos);
+    
+    // Reset input value so the same file can be uploaded again if needed
+    event.target.value = '';
+}
+
+async function saveRigMemo(cbId) {
+    try {
+        const note = document.getElementById(`memo-text-${cbId}`).value;
+        const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+        const photos = grid && grid.dataset.photos ? JSON.parse(grid.dataset.photos) : [];
+        
+        await idbSave('rig_memos', {
+            id: cbId,
+            note: note,
+            photos: photos,
+            updatedAt: new Date().toISOString()
+        });
+        
+        // UI Feedback
+        const status = document.getElementById(`memo-status-${cbId}`);
+        const btnMemo = document.getElementById(`btn-memo-${cbId}`);
+        
+        if (status) {
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 2000);
+        }
+        
+        if (btnMemo) {
+            if (note || (photos && photos.length > 0)) {
+                btnMemo.classList.add('has-content');
+            } else {
+                btnMemo.classList.remove('has-content');
+            }
+        }
+    } catch (e) {
+        console.error("Storage Error:", e);
+        alert("Gagal menyimpan! Masalah pada database browser.");
+    }
+}
+
+async function clearRigMemo(cbId) {
+    if (!confirm('Hapus memo dan semua foto untuk item ini?')) return;
+    
+    const textEl = document.getElementById(`memo-text-${cbId}`);
+    const grid = document.getElementById(`memo-photo-grid-${cbId}`);
+    const btnMemo = document.getElementById(`btn-memo-${cbId}`);
+    
+    if (textEl) {
+        textEl.value = '';
+        textEl.style.height = 'auto';
+    }
+    if (grid) {
+        grid.innerHTML = '';
+        grid.dataset.photos = '[]';
+    }
+    if (btnMemo) btnMemo.classList.remove('has-content');
+    
+    try {
+        await idbDelete('rig_memos', cbId);
+    } catch(e) { console.error("Error clearing memo:", e); }
+    
+    toggleRigMemo(cbId);
 }
 
 async function generateInspectionPDF() {
@@ -559,8 +886,14 @@ async function generateInspectionPDF() {
     if (!rigName) return;
 
     // Load state
-    const saved = localStorage.getItem('rigInspectionState');
-    const state = saved ? JSON.parse(saved) : {};
+    const stateItems = await idbGetAll('rig_inspection_state');
+    const state = {};
+    stateItems.forEach(item => state[item.id] = true);
+    
+    // Load Memos
+    const memoItems = await idbGetAll('rig_memos');
+    const memos = {};
+    memoItems.forEach(item => memos[item.id] = item);
 
     // Generate HTML for PDF
     const printDiv = document.createElement('div');
@@ -611,10 +944,30 @@ async function generateInspectionPDF() {
                 itemText = match[2].trim();
             }
 
+            const memo = memos[cbId];
+            let memoHtml = '';
+            if (memo) {
+                if (memo.note) {
+                    memoHtml += `<div style="margin-top: 4px; color: #555; background: #fdf2f2; padding: 4px; border-radius: 4px; border-left: 2px solid #e53e3e; font-style: italic;">Memo: ${memo.note}</div>`;
+                }
+                
+                const photos = memo.photos || (memo.photo ? [memo.photo] : []);
+                if (photos && photos.length > 0) {
+                    memoHtml += `<div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">`;
+                    photos.forEach(src => {
+                        memoHtml += `<img src="${src}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">`;
+                    });
+                    memoHtml += `</div>`;
+                }
+            }
+
             html += `
                 <tr>
                     <td style="border: 1px solid #cbd5e0; padding: 6px; text-align: center; vertical-align: top;">${number}</td>
-                    <td style="border: 1px solid #cbd5e0; padding: 6px; vertical-align: top; line-height: 1.4;">${itemText}</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 6px; vertical-align: top; line-height: 1.4;">
+                        ${itemText}
+                        ${memoHtml}
+                    </td>
                     <td style="border: 1px solid #cbd5e0; padding: 6px; text-align: center; vertical-align: middle;">${statusHtml}</td>
                 </tr>
             `;
@@ -743,63 +1096,77 @@ function renderInteractiveFlashcards(containerId, dataArray) {
 
 // ===== PJSM (PRE-JOB SAFETY MEETING) GENERATOR =====
 
-const PJSM_SYSTEM_PROMPT = `Kamu adalah Senior HSSE Officer di Rig Pengeboran Pertamina yang tegas, asik, dan berpengalaman lapangan. Tugasmu adalah merespons setiap "Daftar Pekerjaan Hari Ini" yang diberikan dengan menyusun naskah lisan Pre-Job Safety Meeting (PJSM) atau Toolbox Talk.
+const PJSM_SYSTEM_PROMPT = `Kamu adalah Senior HSSE Officer di Rig Pengeboran Pertamina yang sangat dihormati dan berpengalaman. Tugasmu adalah menyusun naskah lisan Pre-Job Safety Meeting (PJSM) atau Toolbox Talk untuk dibacakan di depan pekerja lapangan, termasuk kru yang lebih senior (orang tua).
 
-GAYA BAHASA WAJIB:
-Gunakan bahasa lisan lapangan yang natural, santai tapi berwibawa, dan tidak kaku. Ikuti persis gaya bincang-bincang lisan (oral) seperti contoh naskah yang diberikan. Fokus pada kejelasan informasi tanpa perlu bertele-tele.
+PENTING: Gunakan bahasa yang SOPAN, FORMAL, dan BERWIBAWA. JANGAN gunakan bahasa yang "sok asik" atau bahasa gaul anak muda. JANGAN melakukan improvisasi pada bagian yang sudah ditentukan templatenya.
 
-===== DATABASE KESELAMATAN PERTAMINA (WAJIB DIJADIKAN REFERENSI UTAMA) =====
-
-[10 POTENSI BAHAYA] - Identifikasi SEMUA yang relevan dari daftar pekerjaan:
-1. GERAKAN - Tergelincir, tersandung, terjatuh (Slips/Trips/Falls).
-2. ELEKTRIKAL - Sengatan/tegangan listrik.
-3. BIOLOGI - Paparan organisme berbahaya.
-4. RADIASI - Paparan radiasi ionisasi/non-ionisasi.
-5. SUARA (KEBISINGAN) - Paparan bising >85 dB.
-6. TEMPERATUR - Panas/dingin ekstrem.
-7. ZAT KIMIA - Paparan bahan kimia berbahaya.
-8. MEKANIKAL - Terjepit, terpukul, tergilas mesin bergerak.
-9. TEKANAN - Hubungan dengan sistem bertekanan tinggi.
-10. GAYA BERAT (GRAVITY) - Benda jatuh dari ketinggian atau pekerja jatuh.
-
-[10 ELEMEN CLSR] - Referensi: Buku Saku CLSR Pertamina.
-01. TOOLS & EQUIPMENT, 02. LINE OF FIRE, 03. HOT WORK, 04. CONFINED SPACE, 05. POWERED SYSTEM / LOTO, 06. LIFTING OPERATION, 07. WORKING AT HEIGHT, 08. GROUND-DISTURBANCE WORK, 09. WATER-BASED WORK, 10. LAND TRANSPORTATION.
-
-[9 PERILAKU WAJIB]:
-1. Terapkan HSSE Golden Rules, 2. Kompeten, 3. Kondisi sehat Fit to Work (MCU/DCU), 4. Gunakan APD sesuai, 5. Identifikasi bahaya via LMRA, 6. Laporkan kondisi abnormal, 7. Pastikan Permit to Work (PTW/SIKA) tersedia, 8. Jaga kebersihan lokasi (Housekeeping), 9. Laksanakan perilaku kunci 10 CLSR.
+===== DATABASE KESELAMATAN (REFERENSI UTAMA) =====
+10 POTENSI BAHAYA: 1. GERAKAN, 2. ELEKTRIKAL, 3. BIOLOGI, 4. RADIASI, 5. SUARA, 6. TEMPERATUR, 7. ZAT KIMIA, 8. MEKANIKAL, 9. TEKANAN, 10. GAYA BERAT.
+10 ELEMEN CLSR: 01. Tools, 02. Line of Fire, 03. Hot Work, 04. Confined Space, 05. Powered System/LOTO, 06. Lifting, 07. Working at Height, 08. Ground Disturbance, 09. Water-Based, 10. Land Transport.
+9 PERILAKU WAJIB: 1. PIP, 2. Kompeten, 3. Fit to Work, 4. APD Sesuai, 5. LMRA, 6. Lapor Anomali, 7. Permit SIKA, 8. Housekeeping, 9. Patuh CLSR.
 
 STRUKTUR NASKAH WAJIB (IKUTI TEMPLATE INI):
+1. PEMBUKAAN (Wajib Seperti Ini):
+"Assalamualaikum wr wb, dan Selamat pagi rekan rekan sekalian, Gimana kabarnya pagi ini? apakah sudah dilakukan DCUnya? Jika rekan rekan ada yang merasa kurang fit atau ada keluhan bisa langsung konfirmasi ke medis yang bertugas."
 
-assalamualaikum warahmatullahi wabarakatuh dan selamat pagi rekan rekan semua Izin menyita waktunya sebentar sebelum kita mulai pekerjaan. Seperti biasa, saya mau pastikan semua yang ada di sini sudah lolos DCU. rekan rekan, kalau pagi ini ada yang badannya kurang fit, atau merasa kurang sehat, tolong lapor ke medis.
+2. FOKUS PEKERJAAN (Wajib Seperti Ini):
+"Sebelumnya saya izin meminta waktunya sebentar. pekerjaan kita hari ini adalah [SEBUTKAN DAFTAR PEKERJAAN]."
 
-Fokus perkerjaan kita hari ini yaitu [sebutkan daftar pekerjaan dengan lisan yang mengalir]
+3. BAHAYA & CLSR:
+"ada [JUMLAH] bahaya utama pada pekerjaan kita hari ini:"
+- Gunakan format: * Bahaya Nomor X: [NAMA BAHAYA]! [EMOJI]
+- Pastikan nama bahaya SESUAI dengan 10 POTENSI BAHAYA di atas.
+- Jelaskan hubungan bahaya tsb dengan elemen CLSR yang relevan secara singkat dan teknis.
+- Gunakan instruksi tegas (Visualisasi): **STOP!**, **CEK!**, **PASTIKAN!**, **JAUHI!**.
 
-bahaya utama kita hari ini berdasarkan 10 bahaya di area kerja yaitu pertama [bahaya 1], kedua [bahaya 2], dst. dan ini bersinggungan dengan 10 pedoman clsr nomor [nomor clsr] yaitu [nama clsr], nomor [nomor clsr] yaitu [nama clsr], dst. [Jelaskan kaitannya secara singkat].
+4. MNEMONIK (Wajib Seperti Ini):
+"selalu Ingat 3T kita: Tahu Pekerjaan, Tahu Bahaya, dan Tahu Mitigasinya! serta 3M."
 
-Zero Tolerance hari ini, Pak: Mohon pengertiannya, jika [tentukan 1 hal kritis yang tidak ditoleransi hari ini terkait pekerjaan tersebut]
+5. ZERO TOLERANCE:
+"4. ZERO TOLERANCE 🚫🛑
+'Untuk pekerjaan [PEKERJAAN] ini, ada satu hal yang harus diperhatikan yaitu [SEBUTKAN HAL PALING KRITIS].'"
 
-dan jangan lupa terapkan 3T (Tahu Pekerjaan, Bahaya, Mitigasi) dan 3M (Mulai dari diri sendiri, hal kecil, saat ini). Serta satu hal yang mau saya garis bawahi dari 9 Perilaku Wajib adalah [pilih 1 poin dari 9 Perilaku Wajib yang paling relevan dan jelaskan singkat].
+6. 9 PERILAKU WAJIB (Fokus Hari Ini):
+"5. 9 PERILAKU WAJIB (Fokus Hari Ini) 🦺🧤
+adapun dari 9 Perilaku Wajib yang ingin saya garis bawahi yaitu [PILIH SALAH SATU DARI 9 POIN].
+- Tambahkan instruksi APD spesifik untuk pekerjaan tersebut menggunakan kata aksi **PASTIKAN!** dan **CEK!**."
 
-mungkin itu saja dari saya, waktu dan tempat saya kembalikan kepada mandor.
-
-baiklah rekan rekan sekalian sebelum kita memulai pekerjaan hari ini ada baiknya kita berdoa menurut agama dan kepercayaan masing masing, berdoa dipersilahkan.
+7. PENUTUP & DOA (Wajib Seperti Ini):
+"6. PENUTUP & DOA 🙏✨
+'Baik, mungkin itu saja dari saya, waktu dan tempat saya kembalikan kepada bapak mandor'"
 
 ATURAN OUTPUT:
-- Berikan naskah LANGSUNG dalam format teks mengalir (plain text).
-- JANGAN gunakan numbering 1-6 atau formatting markdown seperti bold/italic/heading.
-- Pastikan naskah terasa seperti naskah lisan yang siap dibacakan tanpa terpotong.
-- Isi bagian [ ] dengan analisis yang cerdas berdasarkan database keselamatan di atas.`;
+- Gunakan Bold (**) untuk istilah teknis, bahaya, dan perintah kritis.
+- Gunakan bullet points (-) untuk list bahaya.
+- JANGAN gunakan heading (#).
+- Naskah harus terasa wajar jika dibacakan secara lisan.`;
+
+function formatPJSMContent(text) {
+    if (!text) return '';
+    
+    // 1. Basic Markdown Bold: **text** -> <strong>text</strong>
+    // We add a specific color to make it pop but still readable
+    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #e53e3e;">$1</strong>');
+    
+    // 2. Preserve newlines by turning them into <br> 
+    // This allows us to use innerHTML while keeping the "oral script" spacing
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    return formatted;
+}
+
 
 let pjsmSpeechUtterance = null;
 
-async function generatePJSM() {
+async function generatePJSM(workDescOverride = null) {
+    if (workDescOverride instanceof Event) workDescOverride = null;
     const input = document.getElementById('pjsm-work-input');
     const loading = document.getElementById('pjsm-loading');
     const resultArea = document.getElementById('pjsm-result-area');
     const content = document.getElementById('pjsm-content');
     const btn = document.getElementById('generate-pjsm-btn');
 
-    const workList = input?.value?.trim();
+    const workList = workDescOverride || input?.value?.trim();
     if (!workList) {
         alert('Masukkan daftar pekerjaan hari ini terlebih dahulu!');
         return;
@@ -858,7 +1225,7 @@ async function generatePJSM() {
         text = text.replace(/```[a-z]*\n/g, '').replace(/```/g, '');
 
         console.log('PJSM Result length:', text.length);
-        content.textContent = text;
+        content.innerHTML = formatPJSMContent(text);
         // Ensure scroll to bottom with some padding
         content.style.paddingBottom = "100px";
         resultArea.classList.remove('hidden');
@@ -875,9 +1242,9 @@ async function generatePJSM() {
 
 function copyPJSM() {
     const content = document.getElementById('pjsm-content');
-    if (!content || !content.textContent) return;
+    if (!content || !content.innerText) return;
 
-    navigator.clipboard.writeText(content.textContent).then(() => {
+    navigator.clipboard.writeText(content.innerText).then(() => {
         const btn = document.getElementById('copy-pjsm-btn');
         const original = btn.textContent;
         btn.textContent = '✅ Tersalin!';
@@ -885,7 +1252,7 @@ function copyPJSM() {
     }).catch(() => {
         // Fallback for older browsers
         const textarea = document.createElement('textarea');
-        textarea.value = content.textContent;
+        textarea.value = content.innerText;
         document.body.appendChild(textarea);
         textarea.select();
         document.execCommand('copy');
@@ -896,14 +1263,14 @@ function copyPJSM() {
 
 function speakPJSM() {
     const content = document.getElementById('pjsm-content');
-    if (!content || !content.textContent) return;
+    if (!content || !content.innerText) return;
 
     // Stop any ongoing speech
     if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
     }
 
-    pjsmSpeechUtterance = new SpeechSynthesisUtterance(content.textContent);
+    pjsmSpeechUtterance = new SpeechSynthesisUtterance(content.innerText);
     pjsmSpeechUtterance.lang = 'id-ID';
     pjsmSpeechUtterance.rate = 0.95;
     pjsmSpeechUtterance.pitch = 1.0;
@@ -954,11 +1321,12 @@ function exportPJSMToPDF() {
     
     // Add Company Logo / Header
     const header = document.createElement('div');
-    header.style.borderBottom = '3px solid #e53e3e';
+    header.style.borderBottom = '3px solid #3182ce';
     header.style.marginBottom = '20px';
     header.style.paddingBottom = '10px';
+    header.style.textAlign = 'center';
     header.innerHTML = `
-        <h2 style="margin: 0; color: #e53e3e; font-size: 24px;">HSE DEPARTMENT</h2>
+        <h2 style="margin: 0; color: #3182ce; font-size: 24px;">HSE DEPARTMENT</h2>
         <h3 style="margin: 5px 0 0 0; color: #4a5568; font-size: 16px;">Pre-Job Safety Meeting (PJSM) / Toolbox Talk Document</h3>
     `;
     wrapper.appendChild(header);
@@ -987,24 +1355,31 @@ function exportPJSMToPDF() {
     `;
     wrapper.appendChild(dateSection);
 
-    // Add Content Box (Removed background and border to prevent rendering bugs across pages)
+    // Add Content Box
     const bodyContainer = document.createElement('div');
     
-    // Split the text into paragraphs to allow html2pdf to page-break safely BETWEEN paragraphs
-    const paragraphs = content.textContent.split('\n');
-    paragraphs.forEach(text => {
-        if (text.trim() === '') {
-            // Add a small spacer for empty lines
+    // Use innerHTML and handle the bolding properly for the PDF
+    // We split by line breaks to maintain page break logic
+    const lines = content.innerHTML.split(/<br\s*\/?>/i);
+    lines.forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine === '') {
             const spacer = document.createElement('div');
-            spacer.style.height = '10px';
+            spacer.style.height = '8px';
             bodyContainer.appendChild(spacer);
         } else {
             const p = document.createElement('p');
-            p.style.whiteSpace = 'pre-wrap';
-            p.style.fontSize = '14px';
-            p.style.margin = '0 0 10px 0';
-            p.style.pageBreakInside = 'avoid'; // Crucial for preventing text cut-offs
-            p.textContent = text;
+            p.style.fontSize = '12pt';
+            p.style.margin = '0 0 6pt 0';
+            p.style.pageBreakInside = 'avoid';
+            
+            // Re-apply the innerHTML to keep bolding
+            p.innerHTML = line; 
+            
+            // Adjust the bold color for PDF printing clarity (using a professional dark blue/black)
+            const strongs = p.querySelectorAll('strong');
+            strongs.forEach(s => s.style.setProperty('color', '#2c5282', 'important'));
+            
             bodyContainer.appendChild(p);
         }
     });
@@ -1061,6 +1436,53 @@ function exportPJSMToPDF() {
     });
 }
 
+async function savePJSMToLibrary() {
+    const content = document.getElementById('pjsm-content');
+    const input = document.getElementById('pjsm-work-input');
+    const workList = input?.value?.trim() || 'Daily Operation';
+
+    if (!content || !content.innerText || content.innerText.length < 10) {
+        alert('Tidak ada naskah yang bisa disimpan.');
+        return;
+    }
+
+    const firstLine = workList.split('\n')[0].substring(0, 30);
+    const title = `PJSM: ${firstLine}${workList.length > 30 ? '...' : ''}`;
+    
+    const item = {
+        title: title,
+        content: content.innerHTML,
+        category: 'HSE',
+        type: 'pjsm',
+        timestamp: new Date().toISOString()
+    };
+
+    if (typeof saveGeneration === 'function') {
+        const btn = document.getElementById('save-pjsm-btn');
+        const original = btn.innerHTML;
+        
+        try {
+            await saveGeneration(item);
+            btn.innerHTML = '✅ Disimpan';
+            btn.style.background = 'var(--success)';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.style.background = 'var(--secondary)';
+                btn.disabled = false;
+            }, 3000);
+            
+            // Trigger refresh in library if the module exists
+            if (window.refreshLibraryUI) window.refreshLibraryUI();
+        } catch (error) {
+            alert('Gagal menyimpan ke perpustakaan: ' + error.message);
+        }
+    } else {
+        alert('Fungsi simpan belum tersedia.');
+    }
+}
+
 // Initialize PJSM event listeners
 document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generate-pjsm-btn');
@@ -1068,12 +1490,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const speakBtn = document.getElementById('speak-pjsm-btn');
     const stopBtn = document.getElementById('stop-speak-pjsm-btn');
     const exportPdfBtn = document.getElementById('export-pjsm-pdf-btn');
+    const saveBtn = document.getElementById('save-pjsm-btn');
 
     if (generateBtn) generateBtn.addEventListener('click', generatePJSM);
     if (copyBtn) copyBtn.addEventListener('click', copyPJSM);
     if (speakBtn) speakBtn.addEventListener('click', speakPJSM);
     if (stopBtn) stopBtn.addEventListener('click', stopSpeakPJSM);
     if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportPJSMToPDF);
+    if (saveBtn) saveBtn.addEventListener('click', savePJSMToLibrary);
 
     // Preload voices for TTS
     if (window.speechSynthesis) {

@@ -1,101 +1,110 @@
 // ===== VOICE INPUT MODULE =====
 let recognition;
 let isRecording = false;
+let speechMode = 'journal'; // 'journal' or 'jarvis' (universal)
 
 function initVoiceInput() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        console.warn('Voice input not supported in this browser.');
-        const micBtn = document.getElementById('mic-btn');
-        if (micBtn) micBtn.style.display = 'none';
-        return;
-    }
+    const journalMicBtn = document.getElementById('mic-btn');
+    const jarvisQuickMicBtn = document.querySelector('.jarvis-quick-actions .qa-btn:first-child'); 
+    const jarvisGlobalFab = document.getElementById('jarvis-global-fab');
+    const jarvisInputMic = document.getElementById('jarvis-input-mic');
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'id-ID';
+    const setupPTT = (btn, mode) => {
+        if (!btn) return;
+        let pressTimer;
+        let isHolding = false;
 
-    recognition.onstart = function () {
-        isRecording = true;
-        updateMicUI(true);
-    };
-
-    recognition.onend = function () {
-        isRecording = false;
-        updateMicUI(false);
-    };
-
-    recognition.onresult = function (event) {
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript;
+        const startHold = (e) => {
+            // Only handle primary touch/mouse
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            
+            // For Global FAB: Switch screen before recording starts or immediately
+            if (btn.id === 'jarvis-global-fab') {
+                if (typeof navigateToScreen === 'function') navigateToScreen('jarvis');
             }
-        }
+            
+            // Warm up voice for Safari on immediate touch
+            if (window.jarvisVoice) window.jarvisVoice.prepare();
+            
+            isHolding = false;
+            pressTimer = setTimeout(() => {
+                isHolding = true;
+                if (window.jarvisVoice && !window.jarvisVoice.isRecording) {
+                    // Small vibration feedback
+                    if ("vibrate" in navigator) navigator.vibrate(25);
+                    window.jarvisVoice.toggle(mode);
+                }
+            }, 350); // Threshold for hold
+        };
 
-        const journalInput = document.getElementById('journal-input');
-        if (journalInput && finalTranscript) {
-            const currentText = journalInput.value;
-            const separator = currentText.length > 0 && !currentText.endsWith(' ') ? ' ' : '';
-            journalInput.value = currentText + separator + finalTranscript;
-            journalInput.dispatchEvent(new Event('input'));
-        }
+        const endHold = (e) => {
+            clearTimeout(pressTimer);
+            if (isHolding) {
+                if (window.jarvisVoice && window.jarvisVoice.isRecording) {
+                    window.jarvisVoice.forceStop();
+                }
+                isHolding = false;
+                if (e.cancelable) e.preventDefault(); // Prevent accidental clicks/scrolling after hold
+            }
+        };
+
+        // Switch to Pointer Events for iOS/Safari cross-compatibility
+        btn.addEventListener('pointerdown', startHold);
+        btn.addEventListener('pointerup', endHold);
+        btn.addEventListener('pointerleave', endHold);
+        btn.addEventListener('pointercancel', endHold);
+
+        // Click handles standard toggle (short tap)
+        btn.addEventListener('click', (e) => {
+            if (isHolding) {
+                e.preventDefault();
+                return;
+            }
+            if (btn.id === 'jarvis-global-fab') {
+                if (typeof navigateToScreen === 'function') navigateToScreen('jarvis');
+            }
+            if (window.jarvisVoice) {
+                window.jarvisVoice.toggle(mode);
+            } else {
+                alert('Voice system slow to load. Please wait.');
+            }
+        });
     };
 
-    recognition.onerror = function (event) {
-        console.error('Speech recognition error', event.error);
-        stopRecording();
-        if (event.error === 'not-allowed') {
-            alert('Akses mikrofon ditolak. Izinkan akses untuk menggunakan fitur ini.');
-        }
-    };
-
-    const micBtn = document.getElementById('mic-btn');
-    if (micBtn) {
-        micBtn.addEventListener('click', toggleRecording);
-    }
+    setupPTT(journalMicBtn, 'journal');
+    setupPTT(jarvisQuickMicBtn, 'command');
+    setupPTT(jarvisGlobalFab, 'command');
+    setupPTT(jarvisInputMic, 'command');
 }
 
-function toggleRecording() {
-    if (isRecording) {
-        stopRecording();
+function startJarvisVoice() {
+    // Navigate to Jarvis screen if not already there
+    if (typeof navigateToScreen === 'function') {
+        navigateToScreen('jarvis');
+    }
+
+    if (window.jarvisVoice) {
+        window.jarvisVoice.toggle('command');
+        if (typeof renderAssistantMessage === 'function') {
+            renderAssistantMessage('Silakan sebutkan perintah Anda ke Jarvis...', 'bot');
+        }
     } else {
-        startRecording();
+        alert('Voice system slow to load. Please wait.');
     }
 }
 
-function startRecording() {
-    try { recognition.start(); } catch (e) { console.error('Failed to start recording:', e); }
-}
-
-function stopRecording() {
-    try { recognition.stop(); } catch (e) { console.error('Failed to stop recording:', e); }
-}
+// These are now handled by jarvis-voice.js
+function toggleRecording() { if (window.jarvisVoice) window.jarvisVoice.toggle(speechMode); }
+function startRecording() { if (window.jarvisVoice && window.jarvisVoice.recognition) window.jarvisVoice.recognition.start(); }
+function stopRecording() { if (window.jarvisVoice && window.jarvisVoice.recognition) window.jarvisVoice.recognition.stop(); }
 
 function updateMicUI(recording) {
+    // This is now partially handled by jarvis-voice.js onstart/onend, 
+    // but we can keep it for manual UI updates if needed.
     const micBtn = document.getElementById('mic-btn');
-    const statusText = document.getElementById('recording-status');
-
     if (micBtn) {
-        if (recording) {
-            micBtn.classList.add('mic-active');
-            micBtn.innerHTML = '⏹️';
-            micBtn.title = 'Stop Rekam';
-        } else {
-            micBtn.classList.remove('mic-active');
-            micBtn.innerHTML = '🎤';
-            micBtn.title = 'Rekam Suara';
-        }
-    }
-
-    if (statusText) {
-        if (recording) {
-            statusText.classList.remove('hidden');
-        } else {
-            statusText.classList.add('hidden');
-        }
+        micBtn.innerHTML = recording ? '⏹️' : '🎤';
+        micBtn.classList.toggle('mic-active', recording);
     }
 }
 

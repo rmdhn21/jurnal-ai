@@ -1,5 +1,5 @@
 // ===== PLANNER UI =====
-function initPlannerUI() {
+async function initPlannerUI() {
     const addTodoBtn = document.getElementById('add-todo-btn');
     const addScheduleBtn = document.getElementById('add-schedule-btn');
 
@@ -10,13 +10,13 @@ function initPlannerUI() {
 
     addScheduleBtn.addEventListener('click', handleAddSchedule);
 
-    renderKanbanBoard();
+    await renderKanbanBoard();
     initKanbanDragDrop();
-    renderScheduleList();
-    renderCalendar(); // Initialize Calendar
+    await renderScheduleList();
+    await renderCalendar(); // Initialize Calendar
 }
 
-function handleAddTodo() {
+async function handleAddTodo() {
     const input = document.getElementById('new-todo-input');
     const text = input.value.trim();
 
@@ -30,12 +30,12 @@ function handleAddTodo() {
         createdFrom: null
     };
 
-    saveTask(task);
+    await saveTask(task);
     input.value = '';
-    renderKanbanBoard();
+    await renderKanbanBoard();
 }
 
-function handleAddSchedule() {
+async function handleAddSchedule() {
     const titleInput = document.getElementById('new-schedule-title');
     const datetimeInput = document.getElementById('new-schedule-datetime');
 
@@ -57,13 +57,13 @@ function handleAddSchedule() {
         createdFrom: null
     };
 
-    saveSchedule(schedule);
+    await saveSchedule(schedule);
     titleInput.value = '';
     datetimeInput.value = '';
-    renderScheduleList();
+    await renderScheduleList();
 }
 
-function addTodoFromSuggestion(text) {
+async function addTodoFromSuggestion(text) {
     const task = {
         id: generateId(),
         title: text,
@@ -72,11 +72,11 @@ function addTodoFromSuggestion(text) {
         createdFrom: 'ai_suggestion'
     };
 
-    saveTask(task);
-    renderKanbanBoard();
+    await saveTask(task);
+    await renderKanbanBoard();
 }
 
-function addScheduleFromSuggestion(text) {
+async function addScheduleFromSuggestion(text) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(9, 0, 0, 0);
@@ -89,16 +89,16 @@ function addScheduleFromSuggestion(text) {
         createdFrom: 'ai_suggestion'
     };
 
-    saveSchedule(schedule);
-    renderScheduleList();
+    await saveSchedule(schedule);
+    await renderScheduleList();
 }
 
 
-function renderKanbanBoard() {
+async function renderKanbanBoard() {
     const container = document.getElementById('kanban-board');
     if (!container) return;
 
-    const tasks = getTasks();
+    const tasks = await getTasks();
     const columns = {
         todo: [],
         doing: [],
@@ -109,18 +109,18 @@ function renderKanbanBoard() {
     const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
     // Migration & Sorting
-    tasks.forEach(task => {
+    for (let task of tasks) {
         if (!task.status) {
             task.status = task.done ? 'done' : 'todo';
-            saveTask(task); // Persist migration
+            await saveTask(task); // Persist migration
         }
 
         // Auto-delete done tasks after 24 hours
         if (task.status === 'done') {
             const doneTime = task.updatedAt ? new Date(task.updatedAt) : new Date(task.createdAt);
             if (now - doneTime > ONE_DAY_MS) {
-                deleteTask(task.id);
-                return; // Skip adding to columns, it's deleted
+                await deleteTask(task.id);
+                continue; // Skip adding to columns, it's deleted
             }
         }
 
@@ -130,7 +130,7 @@ function renderKanbanBoard() {
             // Fallback for unknown status
             columns.todo.push(task);
         }
-    });
+    }
 
     // Render Columns
     ['todo', 'doing', 'done'].forEach(status => {
@@ -159,10 +159,10 @@ function renderKanbanBoard() {
             if (typeof showEditModal === 'function') showEditModal('todo', card.dataset.id);
         });
 
-        card.querySelector('.delete-btn').addEventListener('click', () => {
+        card.querySelector('.delete-btn').addEventListener('click', async () => {
             if (confirm('Hapus task ini?')) {
-                deleteTask(card.dataset.id);
-                renderKanbanBoard();
+                await deleteTask(card.dataset.id);
+                await renderKanbanBoard();
             }
         });
     });
@@ -233,8 +233,8 @@ function initKanbanDragDrop() {
     });
 }
 
-function updateTaskStatus(taskId, newStatus) {
-    let tasks = getTasks();
+async function updateTaskStatus(taskId, newStatus) {
+    let tasks = await getTasks();
     // Use String comparison to be safe
     const taskIndex = tasks.findIndex(t => String(t.id) === String(taskId));
 
@@ -245,17 +245,14 @@ function updateTaskStatus(taskId, newStatus) {
         tasks[taskIndex].status = newStatus;
         tasks[taskIndex].done = (newStatus === 'done'); // Sync legacy field
 
-        saveTasks(tasks);
+        await saveTask(tasks[taskIndex]);
 
         // Reward XP if moved to Done
         if (newStatus === 'done' && oldStatus !== 'done') {
             if (typeof addXP === 'function') addXP(10, 'Task Selesai');
-            if (typeof showGamificationModal === 'function') {
-                // Optional: visual feedback
-            }
         }
 
-        renderKanbanBoard();
+        await renderKanbanBoard();
     }
 }
 
@@ -269,9 +266,9 @@ function showMoveMenu(btnElement, taskId, currentStatus) {
 }
 
 
-function renderScheduleList() {
+async function renderScheduleList() {
     const listEl = document.getElementById('schedule-list');
-    let schedules = getSchedules();
+    let schedules = await getSchedules();
 
     // STRICT CLEANUP: Remove ANY prayer times from the main list
     // We filter out anything that looks like a prayer (by ID, isPrayer flag, or title keywords)
@@ -376,10 +373,10 @@ function renderScheduleList() {
 
         const deleteBtn = item.querySelector('.delete-btn');
         if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => {
+            deleteBtn.addEventListener('click', async () => {
                 if (confirm('Hapus jadwal ini?')) {
-                    deleteSchedule(item.dataset.id);
-                    renderScheduleList();
+                    await deleteSchedule(item.dataset.id);
+                    await renderScheduleList();
                 }
             });
         }
@@ -393,7 +390,7 @@ function renderScheduleList() {
 let currentCalendarDate = new Date();
 let selectedDate = null;
 
-function renderCalendar() {
+async function renderCalendar() {
     const calendarTargets = [
         {
             gridId: 'calendar-grid',
@@ -409,12 +406,12 @@ function renderCalendar() {
         }
     ];
 
-    calendarTargets.forEach(target => {
+    for (const target of calendarTargets) {
         const grid = document.getElementById(target.gridId);
         const monthYearLabel = document.getElementById(target.monthYearId);
 
         // Safety check for elements
-        if (!grid || !monthYearLabel) return; // Skip if not on this screen
+        if (!grid || !monthYearLabel) continue;
 
         try {
             grid.innerHTML = '';
@@ -450,7 +447,6 @@ function renderCalendar() {
             // Days
             for (let i = 1; i <= daysInMonth; i++) {
                 const date = new Date(year, month, i);
-                // Fix: Use local date string construction to avoid UTC shift
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
 
                 const el = document.createElement('div');
@@ -469,7 +465,7 @@ function renderCalendar() {
                 }
 
                 // Add Event Indicators
-                const events = getEventsForDate(dateStr);
+                const events = await getEventsForDate(dateStr);
                 // FILTER: Don't show dots for prayer times (too cluttered)
                 const visibleEvents = events.filter(e => !e.isPrayer);
 
@@ -487,37 +483,36 @@ function renderCalendar() {
                 }
 
                 // Interaction
-                el.addEventListener('click', () => {
+                el.addEventListener('click', async () => {
                     selectedDate = dateStr;
-                    renderCalendar(); // Re-render to update highlights
-                    showSelectedDateEvents(dateStr);
+                    await renderCalendar(); // Re-render to update highlights
+                    await showSelectedDateEvents(dateStr);
                 });
 
                 grid.appendChild(el);
             }
 
-            // Navigation Listeners (Attached once or re-attached safely)
+            // Navigation Listeners
             const prevBtn = document.getElementById(target.prevBtnId);
             const nextBtn = document.getElementById(target.nextBtnId);
 
-            // Remove old listeners to prevent clones (simple approach: clone node replacement or just overwrite onclick)
-            if (prevBtn) prevBtn.onclick = () => {
+            if (prevBtn) prevBtn.onclick = async () => {
                 currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
-                renderCalendar();
+                await renderCalendar();
             };
-            if (nextBtn) nextBtn.onclick = () => {
+            if (nextBtn) nextBtn.onclick = async () => {
                 currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
-                renderCalendar();
+                await renderCalendar();
             };
         } catch (e) {
-            console.error('Error rendering calendar for ' + target.gridId + ':', e);
+            console.error('Error rendering calendar:', e);
             grid.innerHTML = '<p class="error-text">Gagal memuat kalender</p>';
         }
-    });
+    }
 }
 
-function getEventsForDate(dateStr) {
-    let schedules = getSchedules();
+async function getEventsForDate(dateStr) {
+    let schedules = await getSchedules();
 
     // CLEANUP: Remove any persisted prayer times
     schedules = schedules.filter(s => {
@@ -564,21 +559,13 @@ function getEventsForDate(dateStr) {
     return events;
 }
 
-function showSelectedDateEvents(dateStr) {
+async function showSelectedDateEvents(dateStr) {
     const eventTargets = [
-        {
-            containerId: 'selected-date-events',
-            listId: 'selected-date-list',
-            labelId: 'selected-date-label'
-        },
-        {
-            containerId: 'dashboard-selected-date-events',
-            listId: 'dashboard-selected-date-list',
-            labelId: 'dashboard-selected-date-label'
-        }
+        { containerId: 'selected-date-events', listId: 'selected-date-list', labelId: 'selected-date-label' },
+        { containerId: 'dashboard-selected-date-events', listId: 'dashboard-selected-date-list', labelId: 'dashboard-selected-date-label' }
     ];
 
-    const events = getEventsForDate(dateStr);
+    const events = await getEventsForDate(dateStr);
 
     eventTargets.forEach(target => {
         const container = document.getElementById(target.containerId);

@@ -18,7 +18,8 @@ Format Output JSON:
 Gunakan bahasa Indonesia yang santai tapi profesional. Jangan berhalusinasi data.`;
 
 function initInsightUI() {
-    // Inject button if not exists
+    // Disabled: User prefers the new Dashboard Weekly Report
+    /*
     const header = document.querySelector('.header');
     if (header && !document.getElementById('insight-btn')) {
         const btn = document.createElement('button');
@@ -29,7 +30,6 @@ function initInsightUI() {
         btn.style.marginLeft = 'auto'; // Push to right
         btn.style.marginRight = '10px';
 
-        // Insert before the existing right elements if possible, or append
         const themeToggle = document.getElementById('theme-toggle');
         if (themeToggle) {
             header.insertBefore(btn, themeToggle);
@@ -39,7 +39,9 @@ function initInsightUI() {
 
         btn.addEventListener('click', showInsightModal);
     }
+    */
 }
+
 
 async function showInsightModal() {
     // Create Modal Elements dynamically
@@ -183,6 +185,7 @@ async function getInsightFromAI(userData) {
         })
     });
 
+    if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
     if (!response.ok) throw new Error("Gagal menghubungkan ke Gemini AI");
 
     const data = await response.json();

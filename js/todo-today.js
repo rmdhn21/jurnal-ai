@@ -93,7 +93,12 @@ function renderDailyTodos() {
     // Sort: P1 -> P2 -> P3 -> P4, then incomplete first
     const sortedTodos = [...dailyTodos].sort((a, b) => {
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        if (a.priority !== b.priority) return a.priority.localeCompare(b.priority);
+        
+        // Defensive check for priority to prevent localeCompare error
+        const prioA = a.priority || 'p4';
+        const prioB = b.priority || 'p4';
+        
+        if (prioA !== prioB) return prioA.localeCompare(prioB);
         return 0;
     });
 

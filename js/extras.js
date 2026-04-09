@@ -1,8 +1,8 @@
 // ===== MOOD CALENDAR MODULE =====
 let currentMoodDate = new Date();
 
-function initMoodCalendar() {
-    renderMoodCalendar(currentMoodDate);
+async function initMoodCalendar() {
+    await renderMoodCalendar(currentMoodDate);
 
     const prevBtn = document.getElementById('prev-month-btn');
     const nextBtn = document.getElementById('next-month-btn');
@@ -13,12 +13,12 @@ function initMoodCalendar() {
     initYearInPixels();
 }
 
-function changeMonth(offset) {
+async function changeMonth(offset) {
     currentMoodDate.setMonth(currentMoodDate.getMonth() + offset);
-    renderMoodCalendar(currentMoodDate);
+    await renderMoodCalendar(currentMoodDate);
 }
 
-function renderMoodCalendar(date) {
+async function renderMoodCalendar(date) {
     const monthYear = document.getElementById('calendar-month-year');
     const calendarGrid = document.getElementById('mood-calendar-grid');
 
@@ -39,7 +39,7 @@ function renderMoodCalendar(date) {
     const startDay = firstDay === 0 ? 6 : firstDay - 1;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    const journals = getJournals();
+    const journals = await getJournals();
     const moodMap = new Map();
 
     journals.forEach(j => {
@@ -78,7 +78,7 @@ function renderMoodCalendar(date) {
 }
 
 // ===== FINANCE UPGRADES MODULE =====
-function initFinanceUpgrades() {
+async function initFinanceUpgrades() {
     const globalBudgetInput = document.getElementById('global-daily-budget-input');
     const saveGlobalBudgetBtn = document.getElementById('save-global-budget-btn');
 
@@ -126,11 +126,11 @@ function initFinanceUpgrades() {
         });
     }
 
-    checkRecurringTransactions();
-    updateGlobalBudgetUI();
+    await checkRecurringTransactions();
+    await updateGlobalBudgetUI();
 }
 
-function updateGlobalBudgetUI() {
+async function updateGlobalBudgetUI() {
     const budgetCard = document.getElementById('global-budget-card');
     const budgetText = document.getElementById('global-budget-text');
     const budgetProgress = document.getElementById('global-budget-progress');
@@ -147,7 +147,7 @@ function updateGlobalBudgetUI() {
 
     budgetCard.classList.remove('hidden');
 
-    const transactions = getTransactions();
+    const transactions = await getTransactions();
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -173,7 +173,7 @@ function updateGlobalBudgetUI() {
     }
 }
 
-function checkRecurringTransactions() {
+async function checkRecurringTransactions() {
     const recurringData = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECURRING) || '[]');
     const today = new Date();
     const currentDay = today.getDate();
@@ -183,32 +183,31 @@ function checkRecurringTransactions() {
     let hasUpdates = false;
     let newTransactionsCount = 0;
 
-    recurringData.forEach(item => {
+    for (const item of recurringData) {
         if (currentDay >= item.day && item.lastRunMonth !== currentMonth) {
             const newTx = {
-                id: Date.now() + Math.random(),
+                id: generateId(),
                 date: todayStr,
                 type: item.type,
                 amount: item.amount,
                 category: item.category,
                 description: `[Rutin] ${item.name}`,
-                walletId: item.walletId || 'main'
+                walletId: item.walletId || 'main',
+                createdAt: new Date().toISOString()
             };
 
-            const transactions = getTransactions();
-            transactions.push(newTx);
-            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+            await saveTransaction(newTx);
 
             item.lastRunMonth = currentMonth;
             hasUpdates = true;
             newTransactionsCount++;
         }
-    });
+    }
 
     if (hasUpdates) {
         localStorage.setItem(STORAGE_KEYS.RECURRING, JSON.stringify(recurringData));
         alert(`${newTransactionsCount} Transaksi Rutin berhasil dicatat otomatis! 🔄`);
-        if (typeof updateGlobalBudgetUI === 'function') updateGlobalBudgetUI();
+        if (typeof updateGlobalBudgetUI === 'function') await updateGlobalBudgetUI();
     }
 }
 
@@ -397,8 +396,8 @@ function initYearInPixels() {
     const nextYearBtn = document.getElementById('next-year-btn');
 
     if (btn) {
-        btn.addEventListener('click', () => {
-            renderYearInPixels(currentPixelsYear);
+        btn.addEventListener('click', async () => {
+            await renderYearInPixels(currentPixelsYear);
             modal.classList.remove('hidden');
         });
     }
@@ -410,16 +409,16 @@ function initYearInPixels() {
     }
 
     if (prevYearBtn) {
-        prevYearBtn.addEventListener('click', () => {
+        prevYearBtn.addEventListener('click', async () => {
             currentPixelsYear--;
-            renderYearInPixels(currentPixelsYear);
+            await renderYearInPixels(currentPixelsYear);
         });
     }
 
     if (nextYearBtn) {
-        nextYearBtn.addEventListener('click', () => {
+        nextYearBtn.addEventListener('click', async () => {
             currentPixelsYear++;
-            renderYearInPixels(currentPixelsYear);
+            await renderYearInPixels(currentPixelsYear);
         });
     }
 
@@ -431,7 +430,7 @@ function initYearInPixels() {
     }
 }
 
-function renderYearInPixels(year) {
+async function renderYearInPixels(year) {
     const grid = document.getElementById('year-pixels-matrix');
     const title = document.getElementById('year-pixels-title');
 
@@ -440,7 +439,7 @@ function renderYearInPixels(year) {
     title.textContent = year;
     grid.innerHTML = '';
 
-    const journals = getJournals();
+    const journals = await getJournals();
     const moodMap = new Map();
 
     journals.forEach(j => {

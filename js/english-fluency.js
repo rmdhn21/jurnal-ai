@@ -60,12 +60,13 @@ async function generateFluencyDaily() {
             body: JSON.stringify({ 
                 contents: [{ role: "user", parts: [{ text: prompt }] }], 
                 generationConfig: { 
-                    temperature: 1.0, // High temperature for maximum variety
+                    temperature: 1.0,
                     responseMimeType: "application/json" 
                 } 
             })
         });
 
+        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
         if (!response.ok) {
             const errData = await response.json();
             throw new Error(errData.error?.message || 'API Error');

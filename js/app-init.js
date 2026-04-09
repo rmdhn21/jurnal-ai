@@ -6,36 +6,58 @@ function showLoginScreen() {
     document.getElementById('main-app').classList.add('hidden');
 }
 
-function showMainApp() {
+async function showMainApp() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
+
+    // Initialize Database and Migration with timeout
+    try {
+        if (typeof initDB === 'function') {
+            const dbReady = await Promise.race([
+                initDB(),
+                new Promise(resolve => setTimeout(() => resolve(false), 5000))
+            ]);
+            if (dbReady && typeof migrateFromLocalStorageToIDB === 'function') {
+                await migrateFromLocalStorageToIDB();
+            }
+        }
+    } catch (e) {
+        console.error('Core init failed:', e);
+    }
 
     // Initialize all modules
     initNavigation();
     initSettings();
-    initDashboard();
-    initJournalUI();
-    initPlannerUI();
-    initGoalsUI();
-
+    
+    // Critical: Dashboard must load
     try {
-        if (typeof initPrayerTimes === 'function') {
-            initPrayerTimes();
-        }
-    } catch (e) {
-        console.error('Failed to init Prayer Times:', e);
-    }
+        if (typeof initDashboardWidgets === 'function') await initDashboardWidgets();
+    } catch (e) { console.error('Dashboard init failed:', e); }
 
-    initFinanceUI();
-    initHabitsUI();
+    // Other non-critical modules
+    const safelyInit = async (fnName, ...args) => {
+        try {
+            if (typeof window[fnName] === 'function') await window[fnName](...args);
+        } catch (e) { console.error(`Failed to init ${fnName}:`, e); }
+    };
+
+    await safelyInit('initJournalUI');
+    await safelyInit('initPlannerUI');
+    await safelyInit('initGoalsUI');
+    await safelyInit('initPrayerTimes');
+    await safelyInit('initFinanceUI');
+    await safelyInit('initHabitsUI');
+    
     initGlobalSearch();
     initAIAnalysis();
     initReminder();
-    if (typeof initBrainBoost === 'function') initBrainBoost();
-    if (typeof initHadithCard === 'function') initHadithCard();
-    if (typeof initGamification === 'function') initGamification();
-    if (typeof initMotivation === 'function') initMotivation();
-    if (typeof initIslamTrackerUI === 'function') initIslamTrackerUI();
+    
+    safelyInit('initBrainBoost');
+    safelyInit('initHadithCard');
+    safelyInit('initGamification');
+    safelyInit('initMotivation');
+    await safelyInit('initIslamTrackerUI');
+    await safelyInit('initAIAssistant');
 
     // Check if Onboarding is needed
     if (typeof initOnboarding === 'function') initOnboarding();
@@ -58,6 +80,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (theme === 'dark') {
         document.body.classList.add('dark-mode');
     }
+
+    // Apply UI Scale ASAP
+    const savedScale = localStorage.getItem('app-ui-scale');
+    if (savedScale) {
+        document.documentElement.style.setProperty('--app-scale', savedScale);
+    }
+
 
     // Initialize Auth UI
     if (typeof initLoginUI === 'function') initLoginUI();
@@ -102,18 +131,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Delayed init for secondary features
-    setTimeout(() => {
+    setTimeout(async () => {
         if (typeof initBackupRestore === 'function') initBackupRestore();
+        
+        // Force Update Listener for the Refresh Button
+        const reloadBtn = document.getElementById('reload-app-btn');
+        if (reloadBtn) {
+            reloadBtn.addEventListener('click', async () => {
+                console.log('🔄 Performing Force Update...');
+                
+                // 1. Unregister Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                        console.log('SW Unregistered');
+                    }
+                }
+
+                // 2. Clear Caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const name of cacheNames) {
+                        await caches.delete(name);
+                        console.log('Cache Deleted:', name);
+                    }
+                }
+
+                // 3. Force Reload with Cache-Busting Timestamp
+                const url = new URL(window.location.href);
+                url.searchParams.set('v', Date.now());
+                window.location.href = url.toString();
+            });
+        }
+
         if (typeof initTheme === 'function') initTheme();
-        if (typeof initVoiceInput === 'function') initVoiceInput();
+        if (typeof initVoiceInput === 'function') {
+            console.log('🎙️ Initializing Voice Input...');
+            initVoiceInput();
+        }
         if (typeof initSecurity === 'function') initSecurity();
         if (typeof initExportCSV === 'function') initExportCSV();
-        if (typeof renderCalendar === 'function') renderCalendar();
-        if (typeof initFinanceUpgrades === 'function') initFinanceUpgrades();
-        if (typeof initWalletUI === 'function') initWalletUI();
-        if (typeof initBudgetUI === 'function') initBudgetUI();
-        if (typeof initGlobalBudgetUI === 'function') initGlobalBudgetUI();
-        if (typeof initInsightUI === 'function') initInsightUI();
+        if (typeof renderCalendar === 'function') await renderCalendar();
+        if (typeof initFinanceUpgrades === 'function') await initFinanceUpgrades();
+        if (typeof initWalletUI === 'function') await initWalletUI();
+        if (typeof initBudgetUI === 'function') await initBudgetUI();
+        if (typeof initGlobalBudgetUI === 'function') await initGlobalBudgetUI();
+        if (typeof initInsightUI === 'function') await initInsightUI();
 
     }, 1000);
 });
+

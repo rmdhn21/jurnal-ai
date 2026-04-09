@@ -1,7 +1,7 @@
 // ===== ISLAMIC TRACKER MODULE =====
 let currentIslamMonthView = new Date();
 
-function initIslamTrackerUI() {
+async function initIslamTrackerUI() {
     const todayStr = getTodayString();
 
     // Set date display
@@ -11,10 +11,10 @@ function initIslamTrackerUI() {
     }
 
     // Load today's data
-    const trackData = getIslamicTrackByDate(todayStr);
+    const trackData = await getIslamicTrackByDate(todayStr);
 
     // Update Chart & Motivation On Load
-    renderIslamChart();
+    await renderIslamChart();
     updateIslamMotivation(trackData);
 
     // Prayers
@@ -49,8 +49,8 @@ function initIslamTrackerUI() {
     }
 
     // ----- EVENT LISTENERS -----
-    const saveState = () => {
-        const newData = getIslamicTrackByDate(todayStr);
+    const saveState = async () => {
+        const newData = await getIslamicTrackByDate(todayStr);
 
         const isChecked = (id) => {
             const el = document.getElementById(id);
@@ -75,10 +75,10 @@ function initIslamTrackerUI() {
             newData.dhikrCount = parseInt(dhikrCountEl.textContent) || 0;
         }
 
-        saveIslamicTrack(todayStr, newData);
+        await saveIslamicTrack(todayStr, newData);
 
         // Re-render chart and text live
-        renderIslamChart();
+        await renderIslamChart();
         updateIslamMotivation(newData);
     };
 
@@ -149,25 +149,25 @@ function initIslamTrackerUI() {
     const nextBtn = document.getElementById('islam-next-month');
 
     if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
+        prevBtn.addEventListener('click', async () => {
             currentIslamMonthView.setMonth(currentIslamMonthView.getMonth() - 1);
-            renderIslamChart();
+            await renderIslamChart();
         });
     }
 
     if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
+        nextBtn.addEventListener('click', async () => {
             const today = new Date();
             // Optional: Limit next button so user can't navigate to future months if desired.
             // But allowing it is also fine (they will just see empty grid).
             currentIslamMonthView.setMonth(currentIslamMonthView.getMonth() + 1);
-            renderIslamChart();
+            await renderIslamChart();
         });
     }
 }
 
 // ===== CHART & MOTIVATION FUNCTION =====
-function renderIslamChart() {
+async function renderIslamChart() {
     const gridContainer = document.getElementById('islam-yearly-grid');
     const monthLabelEl = document.getElementById('islam-current-month-label');
     if (!gridContainer) return;
@@ -177,7 +177,7 @@ function renderIslamChart() {
     const viewYear = currentIslamMonthView.getFullYear();
     const viewMonth = currentIslamMonthView.getMonth(); // 0-11
 
-    const trackRepo = getIslamicTracks();
+    const trackRepo = await getIslamicTracks();
     const today = new Date();
     today.setHours(23, 59, 59, 999);
 
@@ -300,7 +300,6 @@ function updateIslamMotivation(todayData) {
     textEl.innerHTML = `<strong>Status Hari Ini:</strong> ${message}`;
 }
 
-// ===== AI ANALYSIS FUNCTION (GEMINI) =====
 async function analyzeIslamicTracking() {
     const resultDiv = document.getElementById('islam-ai-result');
     if (!resultDiv) return;
@@ -321,7 +320,7 @@ async function analyzeIslamicTracking() {
     `;
 
     // Collect last 7 days of data
-    const allTracks = getIslamicTracks();
+    const allTracks = await getIslamicTracks();
     const today = new Date();
     let weekSummary = [];
 

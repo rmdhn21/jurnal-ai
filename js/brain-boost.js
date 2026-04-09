@@ -469,7 +469,8 @@ async function switchTab(tab) {
         const item = currentBrainState.activeMathQuestion;
 
         contentDiv.innerHTML = `
-            <div class="brain-item fade-in">
+            <div class="brain-item fade-in" style="position:relative;">
+                <button class="btn-icon-only" style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:1.2rem;" onclick="window.saveBrainBoostToLibrary('Math Challenge', '.brain-question', 'Brain Boost')">💾</button>
                 <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
                 <div class="brain-question">${item.q}</div>
                 <div class="input-group mt-sm">
@@ -518,7 +519,8 @@ async function switchTab(tab) {
             }
 
             contentDiv.innerHTML = `
-                <div class="brain-item fade-in">
+                <div class="brain-item fade-in" style="position:relative;">
+                    <button class="btn-icon-only" style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:1.2rem;" onclick="window.saveBrainBoostToLibrary('Fact', '.brain-text', 'Brain Boost')">💾</button>
                     <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
                     <div class="brain-icon">💡</div>
                     <p class="brain-text" style="font-size: 1rem; line-height: 1.5;">"${factText}"</p>
@@ -571,7 +573,8 @@ async function switchTab(tab) {
             }
 
             contentDiv.innerHTML = `
-                <div class="brain-item fade-in">
+                <div class="brain-item fade-in" style="position:relative;">
+                    <button class="btn-icon-only" style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:1.2rem;" onclick="window.saveBrainBoostToLibrary('Vocab: ${vWord}', '.vocab-meaning', 'Brain Boost')">💾</button>
                     <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
                     <div class="brain-header">
                         <span class="vocab-word" style="text-transform: capitalize;">${vWord}</span>
@@ -586,7 +589,8 @@ async function switchTab(tab) {
             `;
         } else if (tab === 'logic') {
             contentDiv.innerHTML = `
-                <div class="brain-item fade-in">
+                <div class="brain-item fade-in" style="position:relative;">
+                    <button class="btn-icon-only" style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:1.2rem;" onclick="window.saveBrainBoostToLibrary('Logic Riddle', '.brain-text', 'Brain Boost')">💾</button>
                     <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
                     <p class="brain-text small">${item.q}</p>
                     <div class="input-group mt-sm">
@@ -599,7 +603,8 @@ async function switchTab(tab) {
             `;
         } else if (tab === 'myth') {
             contentDiv.innerHTML = `
-                <div class="brain-item fade-in text-center" style="border-left: 3px solid var(--secondary);">
+                <div class="brain-item fade-in text-center" style="border-left: 3px solid var(--secondary); position:relative;">
+                    <button class="btn-icon-only" style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:1.2rem;" onclick="window.saveBrainBoostToLibrary('Myth vs Fact', '.brain-text', 'Brain Boost')">💾</button>
                     <div class="mb-sm"><span class="badge-ai">${progressText}</span></div>
                     <div class="brain-icon" style="font-size: 2.5rem; margin-bottom: 10px;">🕵️</div>
                     <p class="brain-text" style="font-weight: bold; color: var(--danger); margin-bottom: 15px;">Mitos: "${item.myth}"</p>
@@ -671,3 +676,15 @@ function shakeElement(el) {
     el.classList.add('shake');
     setTimeout(() => el.classList.remove('shake'), 400);
 }
+
+// Global Helper for Brain Boost Saving
+window.saveBrainBoostToLibrary = function(title, selector, category) {
+    if (typeof saveCurrentViewToLibrary === 'function') {
+        saveCurrentViewToLibrary(title, selector, category);
+        const btn = event.currentTarget;
+        if (btn) {
+            btn.innerHTML = '✅';
+            btn.disabled = true;
+        }
+    }
+};

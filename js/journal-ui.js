@@ -5,7 +5,7 @@ let currentMood = null;
 let journalPage = 1;
 const JOURNALS_PER_PAGE = 10;
 
-function initJournalUI() {
+async function initJournalUI() {
     const journalInput = document.getElementById('journal-input');
     const charCount = document.getElementById('char-count');
     const askAIBtn = document.getElementById('ask-ai-btn');
@@ -34,8 +34,8 @@ function initJournalUI() {
     });
 
     saveJournalBtn.addEventListener('click', handleSaveJournal);
-    initTagInput();
-    renderJournalHistory();
+    await initTagInput();
+    await renderJournalHistory();
     renderTemplates();
 
     // Trigger On This Day if online
@@ -278,14 +278,14 @@ function renderAIResponse(response) {
     document.getElementById('ai-closing').textContent = response.closing_question || '';
 }
 
-function handleSaveJournal() {
+async function handleSaveJournal() {
     if (!currentJournal) {
         alert('Tidak ada jurnal untuk disimpan');
         return;
     }
 
     currentJournal.tags = [...currentTags];
-    saveJournal(currentJournal);
+    await saveJournal(currentJournal);
 
     document.getElementById('journal-input').value = '';
     document.getElementById('char-count').textContent = '0 karakter';
@@ -311,9 +311,9 @@ function handleSaveJournal() {
     if (typeof addXP === 'function') addXP(10, 'Jurnal Harian');
 }
 
-function renderJournalHistory() {
+async function renderJournalHistory() {
     const historyEl = document.getElementById('journal-history');
-    let journals = getJournals();
+    let journals = await getJournals();
 
     if (activeMoodFilter !== 'all') {
         journals = journals.filter(j => j.mood === activeMoodFilter);
@@ -376,11 +376,11 @@ function renderJournalHistory() {
     });
 
     historyEl.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             if (confirm('Hapus jurnal ini?')) {
-                deleteJournal(btn.dataset.id);
-                renderJournalHistory();
+                await deleteJournal(btn.dataset.id);
+                await renderJournalHistory();
             }
         });
     });
