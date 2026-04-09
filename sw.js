@@ -1,5 +1,5 @@
 // Service Worker for Jurnal AI PWA
-const CACHE_NAME = 'jurnal-ai-v16';
+const CACHE_NAME = 'jurnal-ai-v17';
 const urlsToCache = [
     './',
     './index.html',

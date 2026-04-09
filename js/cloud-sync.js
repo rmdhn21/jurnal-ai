@@ -15,6 +15,21 @@ window.addEventListener('offline', () => {
 });
 
 let supabaseClient = null;
+let supabaseRealtimeChannel = null;
+
+function refreshAllUIs() {
+    console.log('🖼️ Refreshing all UI components...');
+    if (typeof initJournalUI === 'function') initJournalUI();
+    if (typeof initPlannerUI === 'function') initPlannerUI();
+    if (typeof initFinanceUI === 'function') initFinanceUI();
+    if (typeof initHabitsUI === 'function') initHabitsUI();
+    if (typeof initGoalsUI === 'function') initGoalsUI();
+    if (typeof initDashboard === 'function') initDashboard();
+    if (typeof initIslamTrackerUI === 'function') initIslamTrackerUI();
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof initWalletUI === 'function') initWalletUI();
+    if (typeof initBudgetUI === 'function') initBudgetUI();
+}
 
 function initSupabase() {
     if (supabaseClient) return true;
@@ -31,6 +46,11 @@ function initSupabase() {
         try {
             supabaseClient = window.supabase.createClient(url, key);
             console.log('Supabase initialized with:', customUrl ? 'Custom Config' : 'Default Config');
+            
+            // Auto-subscribe if cloud sync is enabled
+            if (isCloudSyncEnabled()) {
+                initRealtimeSubscription();
+            }
             return true;
         } catch (e) {
             console.error('Supabase init failed:', e);
@@ -414,9 +434,68 @@ function saveCloudConfig() {
     if (url) localStorage.setItem('supabase_url', url);
     if (key) localStorage.setItem('supabase_key', key);
 
+    if (supabaseRealtimeChannel) {
+        supabaseRealtimeChannel.unsubscribe();
+        supabaseRealtimeChannel = null;
+    }
+
     supabaseClient = null;
     initSupabase();
     alert('Cloud config saved!');
+}
+
+async function initRealtimeSubscription() {
+    if (!supabaseClient || !isCloudSyncEnabled()) return;
+
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return;
+
+        const userId = session.user.id;
+        
+        // Prevent duplicate subscriptions
+        if (supabaseRealtimeChannel) {
+            console.log('📡 Realtime subscription already exists, skipping duplicate.');
+            return;
+        }
+
+        console.log('📡 Initializing Realtime subscription for user:', userId);
+
+        supabaseRealtimeChannel = supabaseClient
+            .channel(`public:user_data:${userId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'user_data',
+                    filter: `user_id=eq.${userId}`
+                },
+                async (payload) => {
+                    console.log('✨ [Realtime] Remote update detected in cloud data');
+                    
+                    // Small delay to ensure DB is consistent and avoid high frequency updates
+                    setTimeout(async () => {
+                        const success = await syncFromCloud();
+                        if (success) {
+                            console.log('✅ [Realtime] Sync completed, updating UI');
+                            refreshAllUIs();
+                        }
+                    }, 500);
+                }
+            )
+            .subscribe((status) => {
+                console.log(`📡 [Realtime] Channel status for user ${userId}:`, status);
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ [Realtime] WebSocket connected and listening for changes');
+                } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                    supabaseRealtimeChannel = null; // Reset for potential retry
+                }
+            });
+
+    } catch (e) {
+        console.error('❌ [Realtime] Subscription init failed:', e);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

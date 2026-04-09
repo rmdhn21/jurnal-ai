@@ -154,6 +154,10 @@ function handleLogout() {
         disableCloudSync();
 
         if (supabaseClient) {
+            if (typeof supabaseRealtimeChannel !== 'undefined' && supabaseRealtimeChannel) {
+                supabaseRealtimeChannel.unsubscribe();
+                supabaseRealtimeChannel = null;
+            }
             supabaseClient.auth.signOut();
         }
 
@@ -189,6 +193,7 @@ async function handleCloudSignIn() {
 
         enableCloudSync();
         await syncFromCloudReplace();
+        initRealtimeSubscription(); // Start listening for changes
 
         saveSession(email);
 
@@ -232,6 +237,7 @@ async function handleCloudSignUp() {
         enableCloudSync();
         saveSession(email);
         await syncToCloud();
+        initRealtimeSubscription(); // Start listening for changes
 
         alert('✅ Akun cloud berhasil dibuat! Cek email untuk verifikasi (opsional).');
         showMainApp();
