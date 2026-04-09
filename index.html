@@ -255,6 +255,7 @@
             padding-top: 8px;
             display: block;
         }
+        .hidden { display: none !important; }
     </style>
 </head>
 
@@ -338,6 +339,26 @@
                 <button id="theme-toggle-btn" class="icon-btn" title="Ganti Tema">🌙</button>
                 <button id="logout-btn" class="icon-btn" title="Logout">🚪</button>
                 <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+            </div>
+
+            <!-- Sync Dropdown Menu -->
+            <div id="sync-dropdown-menu" class="hidden" style="position: absolute; top: 65px; left: 50%; transform: translateX(-50%); width: 250px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 1000; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                    <h4 style="margin: 0; font-size: 0.9rem; color: var(--text);">☁️ Status Cloud Sync</h4>
+                    <span id="dropdown-sync-text" style="font-size: 0.75rem; color: var(--text-muted);">Offline</span>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Progress</span>
+                        <span id="dropdown-sync-percentage" style="font-size: 0.75rem; font-weight: bold; color: var(--primary);">0%</span>
+                    </div>
+                    <div class="progress-bar-bg" style="height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; position: relative;">
+                        <div id="dropdown-sync-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), #fbbf24); transition: width 0.3s ease; box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);"></div>
+                    </div>
+                </div>
+
+                <button id="dropdown-sync-now-btn" class="btn btn-primary" style="padding: 10px; font-size: 0.8rem; border-radius: 8px; margin-top: 5px;">🔄 Mulai Sinkronisasi</button>
             </div>
 
         </header>

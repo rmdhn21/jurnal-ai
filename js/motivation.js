@@ -88,10 +88,9 @@ async function initMotivation() {
 
     try {
         const apiUrl = 'https://dummyjson.com/quotes/random';
-        const proxyUrl = 'https://api.allorigins.win/raw?url=';
         
-        // Coba ambil data, tapi jangan tunggu lama jika diblokir browser/CORS
-        const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), { 
+        // dummyjson.com natively supports CORS, so do not use allorigins.win proxy
+        const response = await fetch(apiUrl, { 
             signal: controller.signal,
             mode: 'cors'
         });

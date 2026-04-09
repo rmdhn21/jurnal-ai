@@ -319,6 +319,30 @@ function updateSyncStatus(status, percentage = null) {
             icon.textContent = '⚫';
             text.textContent = 'Offline';
     }
+    // Dropdown Sync Status Logic
+    const dropText = document.getElementById('dropdown-sync-text');
+    const dropPercentage = document.getElementById('dropdown-sync-percentage');
+    const dropProgressFill = document.getElementById('dropdown-sync-progress-fill');
+    const dropSyncBtn = document.getElementById('dropdown-sync-now-btn');
+
+    if (dropText) dropText.textContent = status;
+    if (percentage !== null) {
+        if (dropPercentage) dropPercentage.textContent = `${percentage}%`;
+        if (dropProgressFill) dropProgressFill.style.width = `${percentage}%`;
+    }
+
+    if (dropSyncBtn) {
+        const s = status.toLowerCase();
+        if (s === 'synced') {
+            dropSyncBtn.textContent = '✅ Berhasil'; dropSyncBtn.disabled = false;
+        } else if (s === 'syncing') {
+            dropSyncBtn.textContent = '🔄 Sinkronisasi...'; dropSyncBtn.disabled = true;
+        } else if (s === 'error') {
+            dropSyncBtn.textContent = '⚠️ Coba Lagi'; dropSyncBtn.disabled = false;
+        } else {
+            dropSyncBtn.textContent = '🔄 Mulai Sinkronisasi'; dropSyncBtn.disabled = false;
+        }
+    }
 }
 
 function triggerCloudSync() {
@@ -343,12 +367,40 @@ function saveCloudConfig() {
 document.addEventListener('DOMContentLoaded', () => {
     const syncIndicator = document.getElementById('sync-status-indicator');
     if (syncIndicator) {
-        syncIndicator.addEventListener('click', () => {
-            if (!isCloudSyncEnabled() || !navigator.onLine) {
-                alert('Cloud Sync belum aktif atau Anda sedang offline. Silakan login ke cloud-sync terlebih dahulu.');
-                return;
+        syncIndicator.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+
+
+            const syncDropdown = document.getElementById('sync-dropdown-menu');
+            const syncNowBtn = document.getElementById('dropdown-sync-now-btn');
+            
+            if (syncDropdown) {
+                syncDropdown.classList.toggle('hidden');
+                
+                // Close dropdown when clicking outside
+                if (!window._syncDropdownInited) {
+                    window._syncDropdownInited = true;
+                    document.addEventListener('click', (ev) => {
+                        if (!syncIndicator.contains(ev.target) && !syncDropdown.contains(ev.target)) {
+                            syncDropdown.classList.add('hidden');
+                        }
+                    });
+                    
+                    // Prevent dropdown from closing when clicking inside it
+                    syncDropdown.addEventListener('click', ev => ev.stopPropagation());
+                    
+                    if (syncNowBtn) {
+                        syncNowBtn.addEventListener('click', (ev) => {
+                            if (!isCloudSyncEnabled() || !navigator.onLine) {
+                                alert('Cloud Sync belum aktif atau Anda sedang offline. Silakan login ke cloud-sync terlebih dahulu.');
+                                return;
+                            }
+                            triggerCloudSync();
+                        });
+                    }
+                }
             }
-            triggerCloudSync();
         });
     }
 });
