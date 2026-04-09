@@ -70,25 +70,44 @@ async function syncToCloud() {
     }
 
     const userId = session.user.id;
-    updateSyncStatus('Syncing');
+    updateSyncStatus('Syncing', 10);
 
     try {
         console.log('🔄 Pre-sync: Pulling latest data from cloud...');
         await syncFromCloud(); // Merge remote data first
+        updateSyncStatus('Syncing', 30);
 
         // Gather all data from IDB
+        const journals = await getJournals(true);
+        updateSyncStatus('Syncing', 40);
+        const tasks = await getTasks(true);
+        updateSyncStatus('Syncing', 45);
+        const schedules = await getSchedules(true);
+        updateSyncStatus('Syncing', 50);
+        const transactions = await getTransactions(true);
+        updateSyncStatus('Syncing', 55);
+        const habits = await getHabits(true);
+        updateSyncStatus('Syncing', 60);
+        const goals = await getGoals(true);
+        updateSyncStatus('Syncing', 65);
+        const wallets = await getWallets(true);
+        updateSyncStatus('Syncing', 70);
+        const budgets = await getBudgets(true);
+        const islamicTracks = await getIslamicTracks();
+        updateSyncStatus('Syncing', 80);
+
         const data = {
-            journals: await getJournals(true),
-            tasks: await getTasks(true),
-            schedules: await getSchedules(true),
-            transactions: await getTransactions(true),
-            habits: await getHabits(true),
-            goals: await getGoals(true),
+            journals,
+            tasks,
+            schedules,
+            transactions,
+            habits,
+            goals,
             reminderSettings: getReminderSettings(),
             pushSubscription: localStorage.getItem('jurnal_ai_push_subscription'),
-            wallets: await getWallets(true),
-            budgets: await getBudgets(true),
-            islamicTracks: await getIslamicTracks(),
+            wallets,
+            budgets,
+            islamicTracks,
             updatedAt: new Date().toISOString(),
             version: '2.0-idb'
         };
@@ -103,7 +122,8 @@ async function syncToCloud() {
             updateSyncStatus('Error');
         } else {
             console.log('✅ Synced to cloud successfully (IDB)');
-            updateSyncStatus('Synced');
+            updateSyncStatus('Synced', 100);
+            setTimeout(() => updateSyncStatus('Synced'), 2000); // Hide percentage after a short delay
         }
     } catch (err) {
         console.error('Sync FAILED (Exception):', err);
@@ -252,16 +272,26 @@ async function syncFromCloudReplace() {
     }
 }
 
-function updateSyncStatus(status) {
+function updateSyncStatus(status, percentage = null) {
     console.log('Sync Status:', status);
 
     const indicator = document.getElementById('sync-status-indicator');
     const icon = document.getElementById('sync-icon');
     const text = document.getElementById('sync-text');
+    const percentageEl = document.getElementById('sync-percentage');
 
     if (!indicator || !icon || !text) return;
 
     indicator.classList.remove('synced', 'syncing', 'offline', 'error');
+
+    if (percentageEl) {
+        if (percentage !== null) {
+            percentageEl.textContent = `${percentage}%`;
+            percentageEl.classList.remove('hidden');
+        } else {
+            percentageEl.classList.add('hidden');
+        }
+    }
 
     switch (status) {
         case 'Synced': case 'synced':
@@ -309,3 +339,16 @@ function saveCloudConfig() {
     initSupabase();
     alert('Cloud config saved!');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const syncIndicator = document.getElementById('sync-status-indicator');
+    if (syncIndicator) {
+        syncIndicator.addEventListener('click', () => {
+            if (!isCloudSyncEnabled() || !navigator.onLine) {
+                alert('Cloud Sync belum aktif atau Anda sedang offline. Silakan login ke cloud-sync terlebih dahulu.');
+                return;
+            }
+            triggerCloudSync();
+        });
+    }
+});
