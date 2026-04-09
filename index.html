@@ -1586,9 +1586,25 @@
 
                 <!-- Notifications Section -->
                 <div class="form-group">
-                    <label>🔔 Notifikasi Interaktif</label>
-                    <small class="settings-hint">Coba notifikasi premium yang muncul di layar kunci.</small>
-                    <button id="test-notif-btn" class="btn btn-secondary btn-full">🚀 Tes Notifikasi Layar Kunci</button>
+                    <label>🔔 Notifikasi Interaktif & Lockscreen</label>
+                    <small class="settings-hint">Atur jam kapan ringkasan harianmu dikirim otomatis.</small>
+                    <div class="reminder-settings" style="margin-top: 10px; margin-bottom: 10px;">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="widget-time-toggle" checked>
+                            <span>Kirim Otomatis (Setiap Hari)</span>
+                        </label>
+                        <div id="widget-time-setting" class="sub-setting">
+                            <label>Pilih Jam:</label>
+                            <input type="time" id="widget-reminder-time" class="input" value="06:00">
+                        </div>
+                        <div class="sub-setting mt-sm">
+                            <label>Link Server Cloud (Anti-Kill API):</label>
+                            <input type="url" id="cloud-api-url" class="input" placeholder="http://localhost:3000" style="margin-bottom: 8px;">
+                            <small class="settings-hint">Kosongkan jika menggunakan server lokal PC.</small>
+                        </div>
+                    </div>
+                    <button id="test-notif-btn" class="btn btn-secondary btn-full">🚀 Tes Notifikasi Saat Ini</button>
+                    <!-- <button id="subscribe-push-btn" class="btn btn-primary btn-full mt-sm">📡 Tautkan ke Cloud Push Server</button> -->
                 </div>
 
                 <!-- App Lock Section -->

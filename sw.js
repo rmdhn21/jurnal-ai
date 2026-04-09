@@ -164,3 +164,33 @@ self.addEventListener('notificationclick', function(event) {
         })
     );
 });
+
+// Handling Cloud Web Push (Anti-Kill Notification)
+self.addEventListener('push', function(event) {
+    console.log('[Service Worker] Push Received.');
+    console.log(`[Service Worker] Push had this data: "${event.data.text()}"`);
+
+    let payloadData = {};
+    try {
+        payloadData = event.data.json();
+    } catch (e) {
+        payloadData = { title: 'Notifikasi Cloud', body: event.data.text(), tag: 'cloud-push' };
+    }
+
+    const title = payloadData.title || 'Jurnal AI';
+    const options = {
+        body: payloadData.body || 'Silakan cek aplikasi untuk info terbaru.',
+        icon: './icons/icon-512.png',
+        badge: './icons/icon.svg',
+        vibrate: [200, 100, 200],
+        requireInteraction: true,
+        tag: payloadData.tag || 'jurnal-ai-push',
+        actions: [
+            { action: 'open', title: '🚀 Buka Jurnal AI' },
+            { action: 'close', title: 'Tutup' }
+        ]
+    };
+
+    // This runs even when the app is completely killed!
+    event.waitUntil(self.registration.showNotification(title, options));
+});

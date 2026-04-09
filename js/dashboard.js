@@ -563,21 +563,18 @@ function checkAndTriggerReminders() {
             const undone = habits.filter(h => !h.completedDates?.includes(today));
 
             if (undone.length > 0) {
-                showNotification('🔔 Reminder Habits', `Kamu punya ${undone.length} habits yang belum selesai hari ini!`);
+                if (typeof sendPremiumNotification === 'function') {
+                    sendPremiumNotification('🔔 Reminder Habits', {
+                        body: `Kamu punya ${undone.length} habits yang belum selesai hari ini!`,
+                        tag: 'habit-reminder'
+                    });
+                } else {
+                    showNotification('🔔 Reminder Habits', `Kamu punya ${undone.length} habits yang belum selesai hari ini!`);
+                }
             }
         }
 
-        if (settings.scheduleEnabled) {
-            const schedules = await getSchedules();
-            const in15Min = new Date(now.getTime() + 15 * 60000);
-
-            schedules.forEach(s => {
-                const scheduleTime = new Date(s.datetime);
-                if (Math.abs(scheduleTime - in15Min) < 60000) {
-                    showNotification('📅 Jadwal Mendatang', `${s.title} dalam 15 menit!`);
-                }
-            });
-        }
+        // Note: Schedule and Prayer reminders are now managed by checkScheduledWidget in js/notifications.js
     }, 60000);
 }
 

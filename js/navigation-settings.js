@@ -222,6 +222,27 @@ function initSettings() {
         const apiKey = apiKeyInput.value.trim();
         const dailyBudget = parseInt(document.getElementById('global-daily-budget-input').value);
 
+        const widgetTimeToggle = document.getElementById('widget-time-toggle');
+        const widgetReminderTime = document.getElementById('widget-reminder-time');
+        const cloudApiInput = document.getElementById('cloud-api-url');
+        
+        if (widgetTimeToggle && widgetReminderTime) {
+            localStorage.setItem('jurnal_ai_widget_enabled', widgetTimeToggle.checked);
+            localStorage.setItem('jurnal_ai_widget_time', widgetReminderTime.value);
+            if (cloudApiInput && cloudApiInput.value) {
+                // Hapus trailing slash jika ada
+                let finalUrl = cloudApiInput.value.trim().replace(/\/$/, '');
+                localStorage.setItem('jurnal_ai_cloud_api_url', finalUrl);
+            } else {
+                localStorage.removeItem('jurnal_ai_cloud_api_url');
+            }
+
+            if (widgetTimeToggle.checked) {
+                if (typeof requestNotificationPermission === 'function') requestNotificationPermission();
+                if (typeof subscribeToWebPush === 'function') subscribeToWebPush();
+            }
+        }
+
         if (apiKey) {
             saveApiKey(apiKey);
         }
@@ -239,6 +260,27 @@ function initSettings() {
         alert('Pengaturan berhasil disimpan!');
         hideSettings();
     });
+
+    // Load widget settings
+    const widgetTimeToggle = document.getElementById('widget-time-toggle');
+    const widgetReminderTime = document.getElementById('widget-reminder-time');
+    const widgetTimeSetting = document.getElementById('widget-time-setting');
+    const cloudApiInput = document.getElementById('cloud-api-url');
+
+    if (widgetTimeToggle && widgetReminderTime) {
+        const enabled = localStorage.getItem('jurnal_ai_widget_enabled') !== 'false'; // Default true
+        const timeVal = localStorage.getItem('jurnal_ai_widget_time') || '06:00';
+        const apiVal = localStorage.getItem('jurnal_ai_cloud_api_url') || '';
+        
+        widgetTimeToggle.checked = enabled;
+        widgetReminderTime.value = timeVal;
+        if (cloudApiInput) cloudApiInput.value = apiVal;
+        if (!enabled && widgetTimeSetting) widgetTimeSetting.classList.add('hidden');
+
+        widgetTimeToggle.addEventListener('change', (e) => {
+            if (widgetTimeSetting) widgetTimeSetting.classList.toggle('hidden', !e.target.checked);
+        });
+    }
 
     // Save Cloud Config
     const saveCloudBtn = document.getElementById('save-cloud-config-btn');
@@ -281,7 +323,9 @@ function initSettings() {
     const testNotifBtn = document.getElementById('test-notif-btn');
     if (testNotifBtn) {
         testNotifBtn.addEventListener('click', () => {
-            if (typeof sendPremiumNotification === 'function') {
+            if (typeof generateDailyLockscreenWidget === 'function') {
+                generateDailyLockscreenWidget();
+            } else if (typeof sendPremiumNotification === 'function') {
                 sendPremiumNotification('🚀 Jurnal AI: Fokus & Produktif!', {
                     body: 'Notifikasi interaktif Anda sudah aktif. Gunakan aplikasi untuk memaksimalkan hari Anda.'
                 });
