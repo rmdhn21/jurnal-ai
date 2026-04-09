@@ -133,7 +133,7 @@ async function syncToCloud() {
         console.log('📤 Pushing merged data to cloud...');
         const { error } = await supabaseClient
             .from('user_data')
-            .upsert({ user_id: userId, data: data, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+            .upsert({ user_id: userId, data: data }, { onConflict: 'user_id' });
 
         if (error) {
             console.error('Sync ERROR:', error);
