@@ -65,7 +65,7 @@ async function syncToCloud() {
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError || !session) {
         console.warn('Sync aborted: No active session');
-        updateSyncStatus('Offline');
+        updateSyncStatus('Unauthorized');
         return;
     }
 
@@ -77,24 +77,26 @@ async function syncToCloud() {
         await syncFromCloud(); // Merge remote data first
         updateSyncStatus('Syncing', 30);
 
+
         // Gather all data from IDB
         const journals = await getJournals(true);
         updateSyncStatus('Syncing', 40);
         const tasks = await getTasks(true);
-        updateSyncStatus('Syncing', 45);
         const schedules = await getSchedules(true);
-        updateSyncStatus('Syncing', 50);
         const transactions = await getTransactions(true);
-        updateSyncStatus('Syncing', 55);
+        updateSyncStatus('Syncing', 50);
         const habits = await getHabits(true);
-        updateSyncStatus('Syncing', 60);
         const goals = await getGoals(true);
-        updateSyncStatus('Syncing', 65);
         const wallets = await getWallets(true);
-        updateSyncStatus('Syncing', 70);
         const budgets = await getBudgets(true);
         const islamicTracks = await getIslamicTracks();
-        updateSyncStatus('Syncing', 80);
+        
+        // Progress Data (Lightweight)
+        const rigInspectionState = typeof idbGetAll === 'function' ? await idbGetAll('rig_inspection_state') : [];
+        const hseVocabBank = typeof getVocabBank === 'function' ? await getVocabBank(true) : [];
+        const savedGenerations = typeof getSavedGenerations === 'function' ? await getSavedGenerations(true) : [];
+        
+        updateSyncStatus('Syncing', 75);
 
         const data = {
             journals,
@@ -108,10 +110,26 @@ async function syncToCloud() {
             wallets,
             budgets,
             islamicTracks,
+            rigInspectionState,
+            hseVocabBank,
+            savedGenerations,
             updatedAt: new Date().toISOString(),
             version: '2.0-idb'
         };
 
+        // Size calculation
+        try {
+            const sizeInBytes = new Blob([JSON.stringify(data)]).size;
+            const sizeInKB = (sizeInBytes / 1024).toFixed(1);
+            console.log(`📦 Sync Payload Size: ${sizeInKB} KB`);
+            const sizeBadge = document.getElementById('sync-payload-size');
+            if (sizeBadge) {
+                sizeBadge.textContent = `${sizeInKB} KB`;
+                sizeBadge.classList.remove('hidden');
+            }
+        } catch (e) {
+            console.warn('Size calculation failed:', e);
+        }
         console.log('📤 Pushing merged data to cloud...');
         const { error } = await supabaseClient
             .from('user_data')
@@ -119,7 +137,7 @@ async function syncToCloud() {
 
         if (error) {
             console.error('Sync ERROR:', error);
-            updateSyncStatus('Error');
+            updateSyncStatus('Error', null, error);
         } else {
             console.log('✅ Synced to cloud successfully (IDB)');
             updateSyncStatus('Synced', 100);
@@ -127,7 +145,7 @@ async function syncToCloud() {
         }
     } catch (err) {
         console.error('Sync FAILED (Exception):', err);
-        updateSyncStatus('Error');
+        updateSyncStatus('Error', null, err.message || err);
     }
 }
 
@@ -184,6 +202,7 @@ async function syncFromCloud() {
             }
         };
 
+
         // Merge all tables
         if (cloudData.journals) await mergeAndSave('journals', await getJournals(true), cloudData.journals);
         if (cloudData.tasks) await mergeAndSave('tasks', await getTasks(true), cloudData.tasks);
@@ -193,7 +212,20 @@ async function syncFromCloud() {
         if (cloudData.goals) await mergeAndSave('goals', await getGoals(true), cloudData.goals);
         if (cloudData.wallets) await mergeAndSave('wallets', await getWallets(true), cloudData.wallets);
         if (cloudData.budgets) await mergeAndSave('budgets', await getBudgets(true), cloudData.budgets);
-
+        
+        // Progress & missing tables
+        if (cloudData.hseVocabBank) await mergeAndSave('hse_vocab_bank', await getVocabBank(true), cloudData.hseVocabBank);
+        if (cloudData.savedGenerations) await mergeAndSave('saved_generations', await getSavedGenerations(true), cloudData.savedGenerations);
+        
+        if (cloudData.rigInspectionState) {
+            const localState = await idbGetAll('rig_inspection_state');
+            const localIds = new Set(localState.map(i => i.id));
+            const cloudIds = new Set(cloudData.rigInspectionState.map(i => i.id));
+            
+            const mergedIds = new Set([...localIds, ...cloudIds]);
+            const mergedState = Array.from(mergedIds).map(id => ({ id }));
+            await idbBulkSave('rig_inspection_state', mergedState);
+        }
         if (cloudData.islamicTracks) {
             const localTracks = await getIslamicTracks();
             const mergedTracks = { ...localTracks, ...cloudData.islamicTracks };
@@ -272,7 +304,9 @@ async function syncFromCloudReplace() {
     }
 }
 
-function updateSyncStatus(status, percentage = null) {
+let lastSyncErrorString = '';
+
+function updateSyncStatus(status, percentage = null, details = null) {
     console.log('Sync Status:', status);
 
     const indicator = document.getElementById('sync-status-indicator');
@@ -281,8 +315,22 @@ function updateSyncStatus(status, percentage = null) {
     const percentageEl = document.getElementById('sync-percentage');
 
     if (!indicator || !icon || !text) return;
+    const errorContainer = document.getElementById('sync-error-container');
+    const errorMsg = document.getElementById('sync-error-msg');
+    const sizeBadge = document.getElementById('sync-payload-size');
 
-    indicator.classList.remove('synced', 'syncing', 'offline', 'error');
+    if (status === 'Error' || status === 'error') {
+        if (details) {
+            lastSyncErrorString = typeof details === 'object' ? JSON.stringify(details) : String(details);
+            if (errorMsg) errorMsg.textContent = lastSyncErrorString;
+            if (errorContainer) errorContainer.classList.remove('hidden');
+        }
+    } else if (status === 'Syncing' || status === 'syncing' || status === 'Synced') {
+        if (errorContainer) errorContainer.classList.add('hidden');
+    }
+
+
+    indicator.classList.remove('synced', 'syncing', 'offline', 'error', 'unauthorized');
 
     if (percentageEl) {
         if (percentage !== null) {
@@ -314,6 +362,11 @@ function updateSyncStatus(status, percentage = null) {
             icon.textContent = '🔴';
             text.textContent = 'Error';
             break;
+        case 'Unauthorized': case 'unauthorized':
+            indicator.classList.add('unauthorized');
+            icon.textContent = '🟡';
+            text.textContent = 'Login Cloud';
+            break;
         default:
             indicator.classList.add('offline');
             icon.textContent = '⚫';
@@ -339,6 +392,8 @@ function updateSyncStatus(status, percentage = null) {
             dropSyncBtn.textContent = '🔄 Sinkronisasi...'; dropSyncBtn.disabled = true;
         } else if (s === 'error') {
             dropSyncBtn.textContent = '⚠️ Coba Lagi'; dropSyncBtn.disabled = false;
+        } else if (s === 'unauthorized') {
+            dropSyncBtn.textContent = '🔐 Login ke Cloud'; dropSyncBtn.disabled = false;
         } else {
             dropSyncBtn.textContent = '🔄 Mulai Sinkronisasi'; dropSyncBtn.disabled = false;
         }
@@ -392,6 +447,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     if (syncNowBtn) {
                         syncNowBtn.addEventListener('click', (ev) => {
+                            const status = document.getElementById('dropdown-sync-text')?.textContent?.toLowerCase();
+                            
+                            if (status === 'unauthorized' || status === 'login cloud') {
+                                if (typeof showLoginScreen === 'function') {
+                                    showLoginScreen();
+                                    const cloudBtn = document.getElementById('cloud-login-btn');
+                                    if (cloudBtn) cloudBtn.click();
+                                    return;
+                                }
+                            }
+
                             if (!isCloudSyncEnabled() || !navigator.onLine) {
                                 alert('Cloud Sync belum aktif atau Anda sedang offline. Silakan login ke cloud-sync terlebih dahulu.');
                                 return;
@@ -404,3 +470,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+function copySyncError() {
+    const msg = document.getElementById('sync-error-msg')?.textContent;
+    if (msg) {
+        navigator.clipboard.writeText(msg).then(() => {
+            alert('Pesan error berhasil disalin!');
+        });
+    }
+}

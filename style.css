@@ -341,6 +341,49 @@ body::before {
     color: #ef4444;
 }
 
+.sync-indicator.unauthorized {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.sync-error-container {
+    margin-top: 10px;
+    padding: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+.sync-error-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #ef4444;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.sync-error-details {
+    color: #f87171;
+    font-family: monospace;
+    max-height: 80px;
+    overflow-y: auto;
+    word-break: break-all;
+    font-style: italic;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.sync-size-badge {
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    background: var(--surface-hover);
+    border-radius: 4px;
+    color: var(--text-muted);
+}
+
 @keyframes pulse {
 
     0%,
@@ -1835,6 +1878,10 @@ body::before {
 
 .sync-status.syncing {
     color: var(--info);
+}
+
+.sync-status.unauthorized {
+    color: var(--warning);
 }
 
 /* ===== Dashboard ===== */
