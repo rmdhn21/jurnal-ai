@@ -19,6 +19,7 @@ async function showMainApp() {
             ]);
             if (dbReady && typeof migrateFromLocalStorageToIDB === 'function') {
                 await migrateFromLocalStorageToIDB();
+                if (typeof migrateDefaultRoutines === 'function') await migrateDefaultRoutines();
             }
         }
     } catch (e) {
@@ -58,6 +59,9 @@ async function showMainApp() {
     safelyInit('initMotivation');
     await safelyInit('initIslamTrackerUI');
     await safelyInit('initAIAssistant');
+    await safelyInit('initReportCollage');
+    await safelyInit('initProCollage');
+    await safelyInit('initHSEDailyReport');
 
     // Check if Onboarding is needed
     if (typeof initOnboarding === 'function') initOnboarding();
@@ -182,3 +186,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 1000);
 });
 
+/**
+ * Utility to copy caption text to clipboard
+ */
+function copyCollageCaption(elementId) {
+    const text = document.getElementById(elementId).innerText;
+    if (!text) return;
+    
+    // Support older browsers if necessary, but navigator.clipboard is standard
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            if (typeof showNotification === 'function') {
+                showNotification('📋 Caption berhasil disalin!', 'success');
+            } else {
+                alert('📋 Caption berhasil disalin!');
+            }
+        });
+    }
+}

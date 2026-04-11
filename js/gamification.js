@@ -23,49 +23,46 @@ const BADGES_CONFIG = [
 
 // --- SHOP ITEMS CONFIG ---
 const SHOP_ITEMS = [
-    // Avatars (Digantikan oleh fitur AI Dynamic Avatar DiceBear)
-    // { id: 'avatar_cat', type: 'avatar', name: 'Kucing Oren', price: 200, value: '🐱', desc: 'Si raja jalanan.' },
-    // { id: 'avatar_robot', type: 'avatar', name: 'Mecha Bot', price: 300, value: '🤖', desc: 'Teknologi masa depan.' },
-    // { id: 'avatar_dragon', type: 'avatar', name: 'Naga Api', price: 500, value: '🐲', desc: 'Simbol kekuatan.' },
-    // { id: 'avatar_wizard', type: 'avatar', name: 'Penyihir', price: 400, value: '🧙‍♂️', desc: 'Penuh misteri.' },
-
-    // Themes
     { id: 'theme_midnight', type: 'theme', name: 'Midnight Gold', price: 800, value: 'midnight', desc: 'Tema gelap dengan aksen emas mewah.' },
     { id: 'theme_sakura', type: 'theme', name: 'Sakura Pink', price: 600, value: 'sakura', desc: 'Nuansa pink lembut menenangkan.' },
     { id: 'theme_ocean', type: 'theme', name: 'Ocean Blue', price: 500, value: 'ocean', desc: 'Segar seperti lautan dalam.' },
     { id: 'theme_forest', type: 'theme', name: 'Forest Green', price: 500, value: 'forest', desc: 'Hijau alam yang menyegarkan.' }
 ];
 
-function initGamification() {
-    // Initialize if empty
-    if (!localStorage.getItem(GAMIFICATION_KEYS.XP)) {
-        localStorage.setItem(GAMIFICATION_KEYS.XP, '0');
-        localStorage.setItem(GAMIFICATION_KEYS.LEVEL, '1');
-        localStorage.setItem(GAMIFICATION_KEYS.BADGES, '[]');
-        localStorage.setItem(GAMIFICATION_KEYS.INVENTORY, '[]');
-        localStorage.setItem(GAMIFICATION_KEYS.EQUIPPED, JSON.stringify({ avatar: '🌱', theme: 'default' }));
+async function initGamification() {
+    // Check if initialization is needed
+    const xp = await getGamificationValue(GAMIFICATION_KEYS.XP);
+    if (xp === null) {
+        await saveGamificationValue(GAMIFICATION_KEYS.XP, '0');
+        await saveGamificationValue(GAMIFICATION_KEYS.LEVEL, '1');
+        await saveGamificationValue(GAMIFICATION_KEYS.BADGES, '[]');
+        await saveGamificationValue(GAMIFICATION_KEYS.INVENTORY, '[]');
+        await saveGamificationValue(GAMIFICATION_KEYS.EQUIPPED, JSON.stringify({ avatar: '🌱', theme: 'default' }));
     }
-    renderProfileCard();
+    
+    await renderProfileCard();
 
     // Check if a theme is equipped and ensure it's applied on load
-    const equipped = JSON.parse(localStorage.getItem(GAMIFICATION_KEYS.EQUIPPED) || '{}');
+    const equippedRaw = await getGamificationValue(GAMIFICATION_KEYS.EQUIPPED);
+    const equipped = JSON.parse(equippedRaw || '{}');
     if (equipped.theme && equipped.theme !== 'default' && window.applyTheme) {
         window.applyTheme(equipped.theme);
     }
 }
 
-function getGamificationStats() {
+async function getGamificationStats() {
     return {
-        xp: parseInt(localStorage.getItem(GAMIFICATION_KEYS.XP) || '0'),
-        level: parseInt(localStorage.getItem(GAMIFICATION_KEYS.LEVEL) || '1'),
-        badges: JSON.parse(localStorage.getItem(GAMIFICATION_KEYS.BADGES) || '[]'),
-        inventory: JSON.parse(localStorage.getItem(GAMIFICATION_KEYS.INVENTORY) || '[]'),
-        equipped: JSON.parse(localStorage.getItem(GAMIFICATION_KEYS.EQUIPPED) || '{"avatar": "🌱", "theme": "default"}')
+        xp: parseInt(await getGamificationValue(GAMIFICATION_KEYS.XP, '0')),
+        level: parseInt(await getGamificationValue(GAMIFICATION_KEYS.LEVEL, '1')),
+        badges: JSON.parse(await getGamificationValue(GAMIFICATION_KEYS.BADGES, '[]')),
+        inventory: JSON.parse(await getGamificationValue(GAMIFICATION_KEYS.INVENTORY, '[]')),
+        equipped: JSON.parse(await getGamificationValue(GAMIFICATION_KEYS.EQUIPPED, '{"avatar": "🌱", "theme": "default"}'))
     };
 }
 
-function addXP(amount, reason) {
-    let { xp, level, badges } = getGamificationStats();
+async function addXP(amount, reason) {
+    let stats = await getGamificationStats();
+    let { xp, level, badges } = stats;
     const oldLevel = level;
 
     xp += amount;
@@ -81,29 +78,35 @@ function addXP(amount, reason) {
     }
 
     // Save
-    localStorage.setItem(GAMIFICATION_KEYS.XP, xp.toString());
+    await saveGamificationValue(GAMIFICATION_KEYS.XP, xp.toString());
 
     // Notification
-    showNotification(`+${amount} XP`, reason || 'Aktivitas Selesai');
+    if (typeof sendPremiumNotification === 'function') {
+        sendPremiumNotification(`+${amount} XP`, { body: reason || 'Aktivitas Selesai' });
+    } else if (typeof showNotification === 'function') {
+        showNotification(`+${amount} XP`, reason || 'Aktivitas Selesai');
+    }
 
     if (newLevel > oldLevel) {
         level = newLevel;
-        localStorage.setItem(GAMIFICATION_KEYS.LEVEL, level.toString());
+        await saveGamificationValue(GAMIFICATION_KEYS.LEVEL, level.toString());
         showLevelUpModal(level);
     }
 
     // Check Badges
-    checkBadges(badges);
+    await checkBadges(badges);
 
     // Update UI
-    renderProfileCard();
+    await renderProfileCard();
 }
 
-function checkBadges(currentBadges) {
+async function checkBadges(currentBadges) {
     const unlocked = [];
-    const journals = JSON.parse(localStorage.getItem('jurnal_ai_journals') || '[]');
-    const tasks = JSON.parse(localStorage.getItem('jurnal_ai_tasks') || '[]');
-    const habits = JSON.parse(localStorage.getItem('jurnal_ai_habits') || '[]');
+    
+    // Get related data from storage.js (async)
+    const journals = await getJournals();
+    const tasks = await getTasks();
+    const habits = await getHabits();
 
     // Helper to check and add
     const unlock = (id) => {
@@ -116,10 +119,12 @@ function checkBadges(currentBadges) {
     if (journals.length > 0 || tasks.some(t => t.done)) unlock('first_step');
     if (journals.length >= 10) unlock('journal_master');
     if (tasks.filter(t => t.done).length >= 20) unlock('task_slayer');
-    if (habits.some(h => h.streak >= 7)) unlock('habit_hero');
+    
+    // Streak check (assuming habits have a 'streak' property)
+    if (habits.some(h => (h.streak || 0) >= 7)) unlock('habit_hero');
 
     if (unlocked.length > 0) {
-        localStorage.setItem(GAMIFICATION_KEYS.BADGES, JSON.stringify(currentBadges));
+        await saveGamificationValue(GAMIFICATION_KEYS.BADGES, JSON.stringify(currentBadges));
         unlocked.forEach(badge => {
             showBadgeUnlockModal(badge);
         });
@@ -127,11 +132,11 @@ function checkBadges(currentBadges) {
 }
 
 // --- SHOP LOGIC ---
-function buyItem(itemId) {
+async function buyItem(itemId) {
     const item = SHOP_ITEMS.find(i => i.id === itemId);
     if (!item) return { success: false, message: 'Barang tidak ditemukan' };
 
-    let { xp, inventory } = getGamificationStats();
+    let { xp, inventory } = await getGamificationStats();
 
     if (inventory.includes(itemId)) return { success: false, message: 'Barang sudah dimiliki' };
     if (xp < item.price) return { success: false, message: 'XP tidak cukup' };
@@ -140,16 +145,16 @@ function buyItem(itemId) {
     xp -= item.price;
     inventory.push(itemId);
 
-    localStorage.setItem(GAMIFICATION_KEYS.XP, xp.toString());
-    localStorage.setItem(GAMIFICATION_KEYS.INVENTORY, JSON.stringify(inventory));
+    await saveGamificationValue(GAMIFICATION_KEYS.XP, xp.toString());
+    await saveGamificationValue(GAMIFICATION_KEYS.INVENTORY, JSON.stringify(inventory));
 
-    renderProfileCard(); // Update XP display
+    await renderProfileCard(); // Update XP display
     return { success: true, message: `Berhasil membeli ${item.name}!` };
 }
 
-function equipItem(itemId) {
+async function equipItem(itemId) {
     const item = SHOP_ITEMS.find(i => i.id === itemId);
-    let { inventory, equipped } = getGamificationStats();
+    let { inventory, equipped } = await getGamificationStats();
 
     // Special case for default
     if (itemId === 'default_avatar') {
@@ -169,33 +174,34 @@ function equipItem(itemId) {
         }
     }
 
-    localStorage.setItem(GAMIFICATION_KEYS.EQUIPPED, JSON.stringify(equipped));
-    renderProfileCard();
+    await saveGamificationValue(GAMIFICATION_KEYS.EQUIPPED, JSON.stringify(equipped));
+    await renderProfileCard();
     return { success: true, message: `Item digunakan!` };
 }
 
 
 // --- DYNAMIC AVATAR LOGIC ---
 function getDynamicAvatarUrl(level) {
-    // Generate an evolving bot avatar based on the user's level.
-    // Level changes the seed, which completely changes the Bot's visual parts!
     const seed = `Jurnal_AI_Pioneer_Lv${level}`;
     return `https://api.dicebear.com/9.x/bottts/svg?seed=${seed}&backgroundColor=transparent`;
 }
 
 // --- UI FUNCTIONS ---
-function renderProfileCard() {
+async function renderProfileCard() {
     const card = document.getElementById('user-profile-card');
     if (!card) return;
 
-    const { xp, level, equipped } = getGamificationStats();
+    const stats = await getGamificationStats();
+    const { xp, level } = stats;
 
-    // Use dynamic AI Avatar URL instead of static emoji
     const avatarUrl = getDynamicAvatarUrl(level);
 
     const nextLevelXP = LEVEL_THRESHOLDS[level] || 99999;
     const prevLevelXP = LEVEL_THRESHOLDS[level - 1] || 0;
     const progress = Math.min(100, Math.max(0, ((xp - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100));
+
+    // Get journal count for display
+    const journals = await getJournals();
 
     card.innerHTML = `
         <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">👤</div>
@@ -223,7 +229,7 @@ function renderProfileCard() {
 
         <div class="profile-stats" style="position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div class="p-stat" style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--border); text-align: center;" onclick="showProfileModal()">
-                <div class="p-val" style="font-size: 1.2rem; font-weight: bold; color: var(--text-primary);">${JSON.parse(localStorage.getItem('jurnal_ai_journals') || '[]').length}</div>
+                <div class="p-val" style="font-size: 1.2rem; font-weight: bold; color: var(--text-primary);">${journals.length}</div>
                 <div class="p-lbl" style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Journals</div>
             </div>
             <div class="p-stat" style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--border); text-align: center;" onclick="showShopModal()">
@@ -266,7 +272,7 @@ function showBadgeUnlockModal(badge) {
 }
 
 // --- SHOP UI MODAL ---
-function showShopModal() {
+async function showShopModal() {
     let modal = document.getElementById('shop-modal');
     if (!modal) {
         modal = document.createElement('div');
@@ -275,7 +281,7 @@ function showShopModal() {
         document.body.appendChild(modal);
     }
 
-    const { xp, inventory, equipped } = getGamificationStats();
+    const { xp, inventory, equipped } = await getGamificationStats();
 
     let itemsHTML = '';
     SHOP_ITEMS.forEach(item => {
@@ -339,22 +345,26 @@ function showShopModal() {
     modal.classList.remove('hidden');
 }
 
-function handleBuyItem(id) {
-    const result = buyItem(id);
+async function handleBuyItem(id) {
+    const result = await buyItem(id);
     if (result.success) {
-        showNotification('🛒 Pembelian Berhasil', result.message);
-        showShopModal(); // Refresh UI
+        if (typeof showNotification === 'function') {
+            showNotification('🛒 Pembelian Berhasil', result.message);
+        }
+        await showShopModal(); // Refresh UI
     } else {
         alert(result.message);
     }
 }
 
-function handleEquipItem(id) {
-    const result = equipItem(id);
+async function handleEquipItem(id) {
+    const result = await equipItem(id);
     if (result.success) {
-        showNotification('✅ Berhasil', result.message);
-        showShopModal(); // Refresh UI to update buttons
-        renderProfileCard(); // Update avatar on dashboard
+        if (typeof showNotification === 'function') {
+            showNotification('✅ Berhasil', result.message);
+        }
+        await showShopModal(); // Refresh UI to update buttons
+        await renderProfileCard(); // Update avatar on dashboard
     }
 }
 
@@ -366,8 +376,8 @@ window.handleBuyItem = handleBuyItem;
 window.handleEquipItem = handleEquipItem;
 window.showProfileModal = showProfileModal;
 
-function showProfileModal() {
-    const { xp, level, badges } = getGamificationStats();
+async function showProfileModal() {
+    const { xp, level, badges } = await getGamificationStats();
 
     let modal = document.getElementById('profile-modal');
     if (!modal) {
@@ -378,7 +388,7 @@ function showProfileModal() {
     const badgeListHTML = BADGES_CONFIG.map(b => {
         const unlocked = badges.includes(b.id);
         return `
-            <div class="badge-item ${unlocked ? 'unlocked' : 'locked'}" style="opacity: ${unlocked ? 1 : 0.5}; display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 5px;">
+            <div class="badge-item ${unlocked ? 'unlocked' : 'locked'}" style="opacity: ${unlocked ? 1 : 0.5}; display: center; align-items: center; gap: 10px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 5px;">
                 <div class="badge-icon" style="font-size: 1.5rem;">${b.icon}</div>
                 <div>
                     <div class="badge-name" style="font-weight: bold;">${b.name}</div>
@@ -391,6 +401,7 @@ function showProfileModal() {
 
     const statsContainer = document.getElementById('profile-stats-content');
     if (statsContainer) {
+        const journals = await getJournals();
         statsContainer.innerHTML = `
             <div class="stat-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                 <span>Level</span>
@@ -399,6 +410,10 @@ function showProfileModal() {
             <div class="stat-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                 <span>Total XP</span>
                 <strong>${xp}</strong>
+            </div>
+            <div class="stat-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>Total Journals</span>
+                <strong>${journals.length}</strong>
             </div>
         `;
     }

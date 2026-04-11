@@ -7,7 +7,7 @@ const TODO_TODAY_KEYS = {
 
 let dailyTodos = [];
 
-function initTodoToday() {
+async function initTodoToday() {
     // Check Date and Reset if new day
     const savedDate = localStorage.getItem(TODO_TODAY_KEYS.DATE);
     const today = new Date().toISOString().split('T')[0];
@@ -16,11 +16,15 @@ function initTodoToday() {
         // Auto Clear for a new day
         dailyTodos = [];
         localStorage.setItem(TODO_TODAY_KEYS.DATE, today);
-        saveTodos();
+        
+        // Save empty list to IDB and Sync
+        if (typeof idbBulkSave === 'function') {
+            await idbBulkSave('todo_today', []); 
+            triggerCloudSync();
+        }
     } else {
-        const savedData = localStorage.getItem(TODO_TODAY_KEYS.DATA);
-        if (savedData) {
-            dailyTodos = JSON.parse(savedData);
+        if (typeof getDailyTodos === 'function') {
+            dailyTodos = await getDailyTodos();
         }
     }
 
@@ -31,22 +35,17 @@ function initTodoToday() {
     const input = document.getElementById('new-daily-todo-input');
 
     if (addBtn) {
-        addBtn.addEventListener('click', addDailyTodo);
+        addBtn.onclick = addDailyTodo;
     }
 
     if (input) {
-        input.addEventListener('keypress', (e) => {
+        input.onkeypress = (e) => {
             if (e.key === 'Enter') addDailyTodo();
-        });
+        };
     }
 }
 
-function saveTodos() {
-    localStorage.setItem(TODO_TODAY_KEYS.DATA, JSON.stringify(dailyTodos));
-    renderDailyTodos();
-}
-
-function addDailyTodo() {
+async function addDailyTodo() {
     const input = document.getElementById('new-daily-todo-input');
     const prioritySelect = document.getElementById('daily-todo-priority');
 
@@ -57,26 +56,54 @@ function addDailyTodo() {
         id: Date.now().toString(),
         text: text,
         priority: prioritySelect.value,
-        completed: false
+        completed: false,
+        date: new Date().toISOString().split('T')[0]
     };
 
-    dailyTodos.push(newTodo);
-    saveTodos();
+    if (typeof saveDailyTodo === 'function') {
+        await saveDailyTodo(newTodo);
+        dailyTodos = await getDailyTodos();
+        renderDailyTodos();
+    }
 
     input.value = '';
 }
 
-function toggleDailyTodo(id) {
+async function toggleDailyTodo(id) {
     const todo = dailyTodos.find(t => t.id === id);
     if (todo) {
         todo.completed = !todo.completed;
-        saveTodos();
+        if (typeof saveDailyTodo === 'function') {
+            await saveDailyTodo(todo);
+            renderDailyTodos();
+        }
     }
 }
 
-function deleteDailyTodo(id) {
-    dailyTodos = dailyTodos.filter(t => t.id !== id);
-    saveTodos();
+async function deleteDailyTodo(id) {
+    if (confirm('Hapus tugas ini?')) {
+        if (typeof deleteDailyTodoStorage === 'function') {
+            await deleteDailyTodoStorage(id);
+        } else if (typeof window.deleteDailyTodo === 'function') {
+            // Fallback call if we use the storage.js name
+            // But we actually named it in storage.js
+            await (window.deleteDailyTodoStorage || window.deleteDailyTodo)(id);
+        }
+        
+        if (typeof getDailyTodos === 'function') {
+            dailyTodos = await getDailyTodos();
+            renderDailyTodos();
+        }
+    }
+}
+
+// Map the storage abstraction to avoid naming conflict
+async function deleteDailyTodoStorage(id) {
+    // In storage.js we have: async function deleteDailyTodo(id)
+    // We can call it via window or just directly if available
+    if (typeof window.deleteDailyTodo === 'function') {
+        await window.deleteDailyTodo(id);
+    }
 }
 
 function renderDailyTodos() {
@@ -150,3 +177,7 @@ if (document.readyState === 'loading') {
 } else {
     initTodoToday();
 }
+
+window.initTodoToday = initTodoToday;
+window.toggleDailyTodo = toggleDailyTodo;
+window.deleteDailyTodo = deleteDailyTodo;

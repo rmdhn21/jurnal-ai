@@ -19,6 +19,19 @@ const MOOD_EMOJIS = {
     'terrible': '😢'
 };
 
+// Safety Helper for Date strings (YYYY-MM-DD)
+function parseLocalDate(dateStr) {
+    if (!dateStr) return new Date();
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d || 1);
+}
+
+function getLocalDateString(date) {
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+}
+
 async function initMoodChart() {
     const ctx = document.getElementById('mood-chart');
     if (!ctx) return;
@@ -84,12 +97,13 @@ function getWeeklyMoodData(journals) {
 
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
+        d.setHours(0,0,0,0);
         d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = getLocalDateString(d);
         labels.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
 
         const dayJournal = journals.find(j => {
-            const journalDate = new Date(j.createdAt).toISOString().split('T')[0];
+            const journalDate = getLocalDateString(new Date(j.createdAt));
             return journalDate === dateStr;
         });
 
@@ -142,6 +156,11 @@ async function initFinanceChart(period) {
     const transactions = await getTransactions();
     const chartData = getFinanceDataByPeriod(transactions, currentChartPeriod);
 
+    // Also update category chart if it's currently showing
+    if (categoryChart && document.getElementById('finance-pie-chart-container') && !document.getElementById('finance-pie-chart-container').classList.contains('hidden')) {
+         await initCategoryChart(currentChartPeriod);
+    }
+
     if (financeChart) { financeChart.destroy(); }
 
     financeChart = new Chart(ctx, {
@@ -186,8 +205,9 @@ function getFinanceDataByPeriod(transactions, period) {
         const expenseData = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date(now);
+            d.setHours(0,0,0,0);
             d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
+            const dateStr = getLocalDateString(d);
             labels.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
             const dayTx = transactions.filter(t => t.date === dateStr);
             incomeData.push(dayTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
@@ -208,7 +228,7 @@ function getFinanceDataByPeriod(transactions, period) {
             const qLabel = `Q${Math.floor(qStart.getMonth() / 3) + 1} ${qStart.getFullYear()}`;
             labels.push(qLabel);
             const qTx = transactions.filter(t => {
-                const td = new Date(t.date);
+                const td = parseLocalDate(t.date);
                 return td >= qStart && td <= qEnd;
             });
             incomeData.push(qTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
@@ -225,7 +245,7 @@ function getFinanceDataByPeriod(transactions, period) {
         for (let i = 2; i >= 0; i--) {
             const year = now.getFullYear() - i;
             labels.push(String(year));
-            const yearTx = transactions.filter(t => new Date(t.date).getFullYear() === year);
+            const yearTx = transactions.filter(t => parseLocalDate(t.date).getFullYear() === year);
             incomeData.push(yearTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
             expenseData.push(yearTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
         }
@@ -247,8 +267,8 @@ function getMonthlyFinanceData(transactions) {
     }
 
     transactions.forEach(t => {
-        const date = new Date(t.date);
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        // Use string substring for robust month extraction
+        const key = t.date ? t.date.substring(0, 7) : '';
         if (months[key]) {
             if (t.type === 'income') { months[key].income += t.amount; }
             else { months[key].expense += t.amount; }
@@ -306,8 +326,9 @@ function getWeeklyHabitData(habits) {
 
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
+        d.setHours(0,0,0,0);
         d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = getLocalDateString(d);
         labels.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
 
         let count = 0;
@@ -321,12 +342,36 @@ function getWeeklyHabitData(habits) {
 }
 let categoryChart = null;
 
-async function initCategoryChart() {
+async function initCategoryChart(period) {
+    if (period) currentChartPeriod = period;
     const ctx = document.getElementById('category-chart');
     if (!ctx) return;
 
     const transactions = await getTransactions();
-    const expenseData = transactions.filter(t => t.type === 'expense');
+    
+    // Use the same helper to get filtered data
+    const chartData = getFinanceDataByPeriod(transactions, currentChartPeriod);
+    
+    // We only need expenses for the category chart
+    const filteredTransactions = transactions.filter(t => {
+         // This is a bit redundant but ensures we get the exact same filter
+         // Actually, let's just filter transactions directly to match the currentChartPeriod logic
+         if (currentChartPeriod === 'week') {
+              const now = new Date();
+              const weekAgo = new Date(now);
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              return parseLocalDate(t.date) >= weekAgo;
+         } else if (currentChartPeriod === 'month') {
+              const now = new Date();
+              const startOfMonth = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+              return parseLocalDate(t.date) >= startOfMonth;
+         } else if (currentChartPeriod === 'year') {
+              return parseLocalDate(t.date).getFullYear() >= (new Date().getFullYear() - 2);
+         }
+         return true; // Default or 'quarter' (simplified)
+    });
+
+    const expenseData = filteredTransactions.filter(t => t.type === 'expense');
     
     // Group by category
     const categoryTotals = {};
@@ -401,3 +446,12 @@ function setupChartToggle() {
         await initCategoryChart();
     });
 }
+
+// Expose to window
+window.initFinanceChart = initFinanceChart;
+window.initCategoryChart = initCategoryChart;
+window.initMoodChart = initMoodChart;
+window.initHabitsChart = initHabitsChart;
+window.setupChartToggle = setupChartToggle;
+window.parseLocalDate = parseLocalDate;
+window.initCategoryChart = initCategoryChart;

@@ -8,6 +8,8 @@ async function processAICommand(transcript) {
         return;
     }
 
+    if (typeof setJarvisNeuralStatus === 'function') setJarvisNeuralStatus('📦 Mengumpulkan Konteks Data...', true);
+
     // Get context for AI
     const wallets = await getWallets();
     const walletContext = wallets.map(w => `- ${w.name} (ID: ${w.id})`).join('\n');
@@ -19,6 +21,8 @@ async function processAICommand(transcript) {
     if (typeof aggregateUserContext === 'function') {
         userContext = await aggregateUserContext();
     }
+
+    if (typeof setJarvisNeuralStatus === 'function') setJarvisNeuralStatus('🧠 Menganalisis Korelasi & Pola...', true);
 
     // --- OMNIPOTENT CONTROLLER CONTEXT ---
     const todayTodos = Array.isArray(dailyTodos) ? dailyTodos.filter(t => !t.completed) : [];
@@ -41,6 +45,12 @@ async function processAICommand(transcript) {
 - Isya: ${todayTrack.prayers?.isya ? 'Sudah' : 'Belum'}
 - Qobliyah/Badiyah: ${todayTrack.qobliyah ? 'Sudah' : 'Belum'}
 - Sedekah: ${todayTrack.sedekah ? 'Sudah' : 'Belum'}`;
+    }
+
+    let routineContext = 'Tidak ada rutinitas';
+    if (typeof getRoutines === 'function') {
+        const allRoutines = await getRoutines();
+        routineContext = allRoutines.map(r => `- ID: ${r.id} | ${r.time}: ${r.title}`).join('\n') || 'Belum ada rutinitas';
     }
 
     // --- NEW EXTENDED CONTEXT ---
@@ -73,72 +83,58 @@ ${islamTrackText}
 - Habit Hari Ini (Pilih ID di sini):
 ${habitContext}
 
+- Rutinitas Harian (Pilih ID di sini):
+${routineContext}
+
 - Workout & Nutrisi:
 ${workoutContext}
 ${nutritionContext}
 
-PERAN TAMBAHAN 1: Kamu adalah HSE SAFETY MENTOR. 
-- Kuasai UU No 1 Tahun 1970 (Keselamatan Kerja), PTK 005 SKK Migas, Corporate Life Saving Rules (CLSR), dan standar internasional (OSHA/NEBOSH).
-- Berikan saran teknis yang akurat jika ditanya tentang prosedur keselamatan (misal: jarak aman hot work, prosedur confined space, dll).
+PERAN UTAMA: Kamu adalah "Jarvis" (ala Iron Man). Nada bicaramu asertif, cerdas, efisien, dan sedikit humoris (dry wit). Panggil pengguna dengan "Sir" atau "Boss".
+
+PERAN TAMBAHAN 1: Kamu adalah HSE SAFETY MENTOR & TECHNICAL AUDITOR. 
+- Kuasai UU No 1 Tahun 1970, PTK 005 SKK Migas, CLSR, OSHA, API, ASME, ISO.
+- Berikan saran teknis yang sangat AKURAT. Gunakan [REF: Standar] dan [DISCLAIMER].
 
 PERAN TAMBAHAN 2: Kamu adalah FINANCIAL ADVISOR & WEALTH PLANNER.
 - Analisis data pengeluaran vs pemasukan pengguna dengan kritis.
-- Jika pengguna bertanya tentang keuangan, berikan insight berbasis data (misal: "Pengeluaran makanmu naik 20% minggu ini").
-- Berikan saran penghematan yang spesifik dan realistis.
-- Bantu planning cicilan, tabungan (misal: Tabungan Nikah), dan manajemen arus kas.
-- Gunakan nada yang asertif namun suportif (ala penasihat profesional).
+- Spotting trends (misal: "Boss, belanja kopi Sir naik 30% bulan ini").
+- Bantu planning tabungan (misal: Tabungan Haji/Nikah).
 
-PERAN TAMBAHAN 3: Kamu adalah TECHNICAL STANDARD AUDITOR (HSE & RIG).
-- Kamu memiliki akses ke pengetahuan standar industri internasional (OSHA, API, ASME, ISO, IADC, Kemenaker).
-- Jika ditanya tentang standar teknis (misal: tekanan pipa, jarak scaffolding, prosedur kerja), berikan jawaban yang sangat AKURAT.
-- FORMAT WAJIB:
-  1. Mulai dengan penjelasan teknis yang jelas.
-  2. Gunakan tag [REF: Nama Standar] untuk rujukan (misal: [REF: ASME B31.3] atau [REF: OSHA 1926.451]).
-  3. Di akhir jawaban, WAJIB tambahkan tag [DISCLAIMER] untuk mengingatkan verifikasi manual.
-- Jika standar yang ditanya tidak ada di basis pengetahuanmu, katakan secara jujur dan asertif bahwa kamu tidak punya data pastinya.
+PERAN TAMBAHAN 3: Kamu adalah ENGLISH MASTERY COACH.
+- Bantu pengguna meningkatkan kemampuan Bahasa Inggris, terutama untuk konteks Offshore/Oil & Gas.
+- Jika pengguna bertanya tentang bahasa Inggris, berikan penjelasan serta contoh penggunaan di dunia kerja Migas.
 
 TUGASMU:
 Analisis kalimat pengguna: "${transcript}" dan:
-1. Berikan respon tekstual (ngobrol/penjelasan/mentor).
+1. Berikan respon tekstual (Proaktif, berikan insight, jangan cuma jawab).
 2. Deteksi jika ada perintah otomatis (BULK) di dalamnya.
 
 INTENT PERINTAH YANG DIDUKUNG:
-1. "SAVE_TRANSACTION": Catat uang.
-   - Schema Data: { amount: number, type: "expense"|"income", category: "string", description: "string", walletId: "id/nama_dompet" }
-   - DAFTAR KATEGORI WAJIB:
-     * PEMASUKAN: "Gaji", "Profit Trading/Investasi", "Pemasukan Lainnya".
-     * PENGELUARAN: "Makan & Minum", "Kebutuhan Harian/Bulanan", "Transportasi", "Tagihan & Utilitas", "Tempat Tinggal", "Tabungan Nikah", "Edukasi & Pengembangan", "Hiburan & Nongkrong", "Sosial & Sedekah", "Lain-lain / Tak Terduga".
-   - LOGIKA EKSTRAKSI:
-     * Jika pengguna menyebut item spesifik (misal: "beli telur", "bayar parkir"), masukkan item tersebut ke "description".
-     * Map item tersebut ke KATEGORI WAJIB yang paling relevan (misal: telur -> "Makan & Minum" atau "Kebutuhan Harian/Bulanan").
-     * JANGAN gunakan kategori di luar daftar di atas.
-2. "SAVE_SCHEDULE": Acara/Janji temu (HARUS ADA JAM/WAKTU). Data: { title: "string", datetime: "YYYY-MM-DDTHH:mm" }
-3. "SAVE_TASK_TODAY": Tugas harian BARU (To-Do). Data: { text: "isi tugas", priority: "p1"|"p2"|"p3" }
-4. "SAVE_TASK_KANBAN": Tugas umum/ide/proyek. Data: { title: "judul", description: "detail" }
-5. "NAVIGATE": Berpindah halaman. Data: { targetScreen: "screen_id" }
-6. "CHAT": Percakapan umum atau konsultasi data (Tanpa aksi otomatis).
-7. "UPDATE_TODO": Menceklis status Todo Hari Ini. Data: { id: "string" }
-8. "UPDATE_KANBAN": Memindahkan kartu Kanban menjadi selesai. Data: { id: "string" }
-9. "UPDATE_ISLAMIC": Memperbarui status ibadah. Data: { field: "subuh"|"dzuhur"|"ashar"|"maghrib"|"isya"|"sedekah"|"qobliyah"|dll }
-10. "SAVE_HABIT": Buat Target Habit Baru. Data: { name: "string" }
-11. "UPDATE_HABIT": Menceklis Habit hari ini. Data: { id: "string" }
-12. "SAVE_JOURNAL": Simpan Jurnal Rahasia. Data: { content: "string", mood: "senang"|"biasa"|"sedih" }
-13. "UPDATE_WORKOUT": Menceklis kategori workout. Data: { category: "gym1"|"gym2"|"home1"|"home2" }
-14. "UPDATE_NUTRITION": Menceklis nutrisi harian. Data: { category: "pagi"|"siang"|"malam"|"water"|dll }
-15. "GENERATE_HSE": Buat dokumen HSE baru. Data: { type: "jsa"|"pjsm"|"rca"|"tbt"|"jmp", description: "inti tugas", jsaType: "JSA"|"RA" }
-16. "SEARCH_LIBRARY": Cari item di Perpustakaan AI. Data: { query: "kata kunci" }
+1. "SAVE_TRANSACTION": { amount, type: "expense"|"income", category, description, walletId }
+   - KATEGORI: "Makan & Minum", "Kebutuhan Harian", "Transportasi", "Tagihan", "Tabungan", "Hiburan", "Sedekah".
+2. "SAVE_SCHEDULE": { title, datetime: "YYYY-MM-DDTHH:mm" }
+3. "SAVE_TASK_TODAY": { text, priority: "p1"|"p2"|"p3" }
+4. "SAVE_TASK_KANBAN": { title, description }
+5. "NAVIGATE": { targetScreen: "screen_id" }
+6. "CHAT": (Percakapan)
+7. "UPDATE_TODO": { id }
+8. "UPDATE_KANBAN": { id }
+9. "UPDATE_ISLAMIC": { field: "subuh"|"dzuhur"|"ashar"|"maghrib"|"isya"|"sedekah"|"qobliyah" }
+10. "SAVE_HABIT": { name }
+11. "UPDATE_HABIT": { id }
+12. "SAVE_JOURNAL": { content, mood: "senang"|"biasa"|"sedih" }
+13. "UPDATE_WORKOUT": { category: "gym1"|"gym2"|"home1"|"home2" }
+14. "UPDATE_NUTRITION": { category: "pagi"|"siang"|"malam"|"water" }
+15. "GENERATE_HSE": { type: "jsa"|"pjsm"|"rca"|"tbt"|"jmp", description }
+16. "SEARCH_LIBRARY": { query }
+17. "SAVE_ROUTINE": { time: "HH:mm", title: "string", icon: "emoji" }
+18. "DELETE_ROUTINE": { id: "string" }
 
-ATURAN OUTPUT:
-KEMBALIKAN HANYA JSON dengan struktur:
+ATURAN OUTPUT: JSON SAJA:
 {
-  "textResponse": "Kalimat respon verbal dari Jarvis (Asertif, cerdas, ala Iron Man)",
-  "commands": [
-    {
-      "intent": "INTENT_NAME",
-      "data": { ... sesuai schema di atas ... },
-      "message": "Konfirmasi singkat u/ kartu"
-    }
-  ]
+  "textResponse": "Jarvis personality style response",
+  "commands": [ { "intent": "NAME", "data": {}, "message": "short msg" } ]
 }
 
 PENTING:
@@ -146,6 +142,8 @@ PENTING:
 - JANGAN GUNAKAN TITLE/TEXT "Tanpa Nama" JIKA ADA INFO DI TRANSCRIPT.
 - Gunakan bahasa Indonesia yang formal namun asertif (Bahasa Jarvis).
 `;
+
+    if (typeof setJarvisNeuralStatus === 'function') setJarvisNeuralStatus('✨ Merumuskan Respon Neural...', true);
 
     try {
         const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -171,6 +169,8 @@ PENTING:
     } catch (error) {
         console.error('Unified Jarvis Error:', error);
         renderAssistantMessage('Maaf, Jarvis mengalami gangguan sinyal.', 'bot');
+    } finally {
+        if (typeof setJarvisNeuralStatus === 'function') setJarvisNeuralStatus('', false);
     }
 }
 
@@ -223,31 +223,35 @@ function showUniversalConfirmCard(cmd) {
     let detailsHtml = '';
     let confirmTitle = 'Konfirmasi Perintah';
 
+    const card = document.createElement('div');
+    card.className = 'jarvis-card-premium bot-message';
+    card.id = id;
+
     if (intent === 'SAVE_TRANSACTION') {
         icon = '💰';
         confirmTitle = 'Catatan Keuangan';
         const amount = data.amount || 0;
         const typeClass = (data.type || 'expense') === 'expense' ? 'text-danger' : 'text-success';
         detailsHtml = `
-            <div class="confirm-row"><span>Nominal:</span><strong class="${typeClass}">${formatCurrency(amount)}</strong></div>
-            <div class="confirm-row"><span>Kategori:</span><strong>${data.category || 'Lain-lain'}</strong></div>
-            <div class="confirm-row"><span>Info:</span><strong>${data.description || 'Tanpa keterangan'}</strong></div>
-            <div class="confirm-row"><span>Dompet:</span><strong>${data.walletId || 'Utama'}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Nominal:</span><strong class="confirm-value ${typeClass}">${formatCurrency(amount)}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Kategori:</span><strong class="confirm-value">${data.category || 'Lain-lain'}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Info:</span><strong class="confirm-value">${data.description || 'Tanpa keterangan'}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Dompet:</span><strong class="confirm-value">${data.walletId || 'Utama'}</strong></div>
         `;
     } else if (intent === 'SAVE_SCHEDULE') {
         icon = '📅';
         confirmTitle = 'Jadwal Baru';
         const displayTime = (data.datetime || "").replace('T', ' ') || 'Waktu tidak ditentukan';
         detailsHtml = `
-            <div class="confirm-row"><span>Kegiatan:</span><strong>${data.title || 'Tanpa Nama'}</strong></div>
-            <div class="confirm-row"><span>Waktu:</span><strong>${displayTime}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Kegiatan:</span><strong class="confirm-value">${data.title || 'Tanpa Nama'}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Waktu:</span><strong class="confirm-value">${displayTime}</strong></div>
         `;
     } else if (intent === 'SAVE_TASK_TODAY') {
         icon = '📝';
         confirmTitle = 'Tugas Hari Ini';
         detailsHtml = `
-            <div class="confirm-row"><span>Tugas:</span><strong>${data.text || data.title || 'Tanpa Nama'}</strong></div>
-            <div class="confirm-row"><span>Prioritas:</span><strong>${(data.priority || 'P2').toUpperCase()}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Tugas:</span><strong class="confirm-value">${data.text || data.title || 'Tanpa Nama'}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Prioritas:</span><strong class="confirm-value">${(data.priority || 'P2').toUpperCase()}</strong></div>
         `;
     } else if (intent === 'SAVE_TASK_KANBAN') {
         icon = '📋';
@@ -255,35 +259,23 @@ function showUniversalConfirmCard(cmd) {
         detailsHtml = `
             <div class="confirm-row"><span>Tugas:</span><strong>${data.title || 'Tanpa Nama'}</strong></div>
         `;
-    } else if (intent === 'UPDATE_TODO') {
+    } else if (intent === 'UPDATE_TODO' || intent === 'UPDATE_KANBAN') {
         icon = '✅';
-        confirmTitle = 'Ceklis Todo Hari Ini';
+        confirmTitle = intent === 'UPDATE_TODO' ? 'Ceklis Todo Hari Ini' : 'Selesaikan Kanban';
         detailsHtml = `
-            <div class="confirm-row"><span>Selesaikan:</span><strong>${data.title_context || 'Tugas Terpilih'}</strong></div>
-        `;
-    } else if (intent === 'UPDATE_KANBAN') {
-        icon = '✅';
-        confirmTitle = 'Selesaikan Kanban';
-        detailsHtml = `
-            <div class="confirm-row"><span>Selesaikan:</span><strong>${data.title_context || 'Tugas Terpilih'}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Selesaikan:</span><strong class="confirm-value">${data.title_context || 'Tugas Terpilih'}</strong></div>
         `;
     } else if (intent === 'UPDATE_ISLAMIC') {
-        icon = '🕌';
+        icon = 'Mosque';
         confirmTitle = 'Ceklis Ibadah';
         detailsHtml = `
-            <div class="confirm-row"><span>Ibadah:</span><strong style="text-transform: capitalize;">${data.field || 'Ibadah Terpilih'}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">Ibadah:</span><strong class="confirm-value" style="text-transform: capitalize;">${data.field || 'Ibadah Terpilih'}</strong></div>
         `;
-    } else if (intent === 'SAVE_HABIT') {
-        icon = '🌱';
-        confirmTitle = 'Target Habit Baru';
+    } else if (intent === 'SAVE_HABIT' || intent === 'UPDATE_HABIT') {
+        icon = intent === 'SAVE_HABIT' ? '🌱' : '✅';
+        confirmTitle = intent === 'SAVE_HABIT' ? 'Target Habit Baru' : 'Ceklis Habit';
         detailsHtml = `
-            <div class="confirm-row"><span>Nama:</span><strong>${data.name || 'Habit Baru'}</strong></div>
-        `;
-    } else if (intent === 'UPDATE_HABIT') {
-        icon = '✅';
-        confirmTitle = 'Ceklis Habit';
-        detailsHtml = `
-            <div class="confirm-row"><span>Selesaikan:</span><strong>${data.title_context || 'Habit Terpilih'}</strong></div>
+            <div class="confirm-row-premium"><span class="confirm-label">${intent === 'SAVE_HABIT' ? 'Nama' : 'Selesaikan'}:</span><strong class="confirm-value">${data.name || data.title_context || 'Habit Terpilih'}</strong></div>
         `;
     } else if (intent === 'SAVE_JOURNAL') {
         icon = '📖';
@@ -318,6 +310,19 @@ function showUniversalConfirmCard(cmd) {
         confirmTitle = 'Cari Perpustakaan';
         detailsHtml = `
             <div class="confirm-row"><span>Cari:</span><strong>${data.query || ''}</strong></div>
+        `;
+    } else if (intent === 'SAVE_ROUTINE') {
+        icon = '⏰';
+        confirmTitle = 'Rutinitas Harian';
+        detailsHtml = `
+            <div class="confirm-row"><span>Kegiatan:</span><strong>${data.title || 'Rutinitas'}</strong></div>
+            <div class="confirm-row"><span>Waktu:</span><strong>${data.time || '00:00'}</strong></div>
+        `;
+    } else if (intent === 'DELETE_ROUTINE') {
+        icon = '🗑️';
+        confirmTitle = 'Hapus Rutinitas';
+        detailsHtml = `
+            <div class="confirm-row"><span>Hapus ID:</span><strong>${data.id || '?'}</strong></div>
         `;
     } else if (intent === 'GENERATE_HSE' && data.type?.toLowerCase() === 'jmp') {
         icon = '🗺️';
@@ -354,7 +359,7 @@ function showConfirmAllButton() {
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
-async function executeCommandById(id) {
+async function executeJarvisCommand(id) {
     const cmd = pendingCommands.find(c => c.id === id);
     if (!cmd) return;
 
@@ -363,6 +368,19 @@ async function executeCommandById(id) {
     pendingCommands = pendingCommands.filter(c => c.id !== id);
     const card = document.getElementById(id);
     if (card) card.remove();
+    
+    if (pendingCommands.length <= 1) {
+        document.querySelectorAll('.confirm-all-container').forEach(c => c.remove());
+    }
+}
+
+function cancelJarvisCommand(id) {
+    pendingCommands = pendingCommands.filter(c => c.id !== id);
+    const card = document.getElementById(id);
+    if (card) card.remove();
+    if (pendingCommands.length <= 1) {
+        document.querySelectorAll('.confirm-all-container').forEach(c => c.remove());
+    }
 }
 
 async function executeSingleCommand(cmd) {
@@ -524,6 +542,19 @@ async function executeSingleCommand(cmd) {
             if (query && typeof searchLibrary === 'function') {
                 searchLibrary(query);
             }
+        } else if (intent === 'SAVE_ROUTINE') {
+            const rt = { id: generateId(), time: data.time || '08:00', title: data.title || 'Baru', icon: data.icon || '⏰', updatedAt: new Date().toISOString() };
+            if (typeof saveRoutine === 'function') {
+                await saveRoutine(rt);
+                if (typeof renderRoutinesList === 'function') renderRoutinesList();
+                if (typeof updateDailyScheduleWidget === 'function') updateDailyScheduleWidget();
+            }
+        } else if (intent === 'DELETE_ROUTINE') {
+            if (data.id && typeof deleteRoutine === 'function') {
+                await deleteRoutine(data.id);
+                if (typeof renderRoutinesList === 'function') renderRoutinesList();
+                if (typeof updateDailyScheduleWidget === 'function') updateDailyScheduleWidget();
+            }
         }
         
         if (typeof updateGlobalBudgetUI === 'function') updateGlobalBudgetUI();
@@ -540,16 +571,9 @@ async function executeAllPendingCommands() {
     for (const cmd of pendingCommands) {
         await executeSingleCommand(cmd);
     }
+    document.querySelectorAll('.jarvis-card-premium').forEach(c => c.remove());
     document.querySelectorAll('.universal-confirm-card').forEach(c => c.remove());
     document.querySelectorAll('.confirm-all-container').forEach(c => c.remove());
     pendingCommands = [];
 }
 
-function cancelCommandById(id) {
-    pendingCommands = pendingCommands.filter(c => c.id !== id);
-    const card = document.getElementById(id);
-    if (card) card.remove();
-    if (pendingCommands.length <= 1) {
-        document.querySelectorAll('.confirm-all-container').forEach(c => c.remove());
-    }
-}

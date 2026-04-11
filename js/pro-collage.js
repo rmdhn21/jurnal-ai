@@ -1,0 +1,283 @@
+/**
+ * JS/PRO-COLLAGE.JS - Smart Adaptive Edition
+ * Dokumentasi Pro dengan Watermark dan Multi-Page Support.
+ */
+
+let pdcSlots = {
+    1: [],
+    2: [],
+    3: [],
+    4: []
+};
+
+function initProCollage() {
+    const dateInput = document.getElementById('pdc-date');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    
+    document.getElementById('btn-generate-pdc')?.addEventListener('click', generatePDC);
+    document.getElementById('btn-download-pdc')?.addEventListener('click', downloadPDC);
+}
+
+function updatePDCGrid() {
+    const count = parseInt(document.getElementById('pdc-count').value);
+    const label1 = document.getElementById('pdc-label-1');
+    const label2 = document.getElementById('pdc-label-2');
+
+    for (let i = 1; i <= 4; i++) {
+        const slot = document.getElementById(`slot-pdc-${i}`);
+        if (i <= count) {
+            slot?.classList.remove('hidden');
+        } else {
+            slot?.classList.add('hidden');
+        }
+    }
+
+    if (count === 2) {
+        label1.innerText = "Foto 1 (BEFORE)";
+        label2.innerText = "Foto 2 (AFTER)";
+    } else {
+        label1.innerText = "Foto 1";
+        label2.innerText = "Foto 2";
+    }
+}
+
+function triggerPDCUpload(index) {
+    document.getElementById(`input-pdc-${index}`).click();
+}
+
+function handlePDCUpload(input, index) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            pdcSlots[index].push(e.target.result);
+            updatePDCSlotPreview(index);
+            input.value = "";
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function updatePDCSlotPreview(index) {
+    const preview = document.getElementById(`preview-pdc-${index}`);
+    preview.innerHTML = `<img src="${pdcSlots[index][pdcSlots[index].length - 1]}" style="width:100%; height:100%; object-fit:cover;">`;
+    
+    const slotElement = document.getElementById(`slot-pdc-${index}`);
+    slotElement.classList.add('has-image');
+    
+    const counter = document.getElementById(`counter-pdc-${index}`);
+    counter.innerText = `${pdcSlots[index].length} Halaman`;
+    counter.style.display = 'block';
+}
+
+function clearPDCSlot(index) {
+    pdcSlots[index] = [];
+    const preview = document.getElementById(`preview-pdc-${index}`);
+    const labelText = index === 1 ? 'Foto 1 (BEFORE)' : (index === 2 ? 'Foto 2 (AFTER)' : `Foto ${index}`);
+    
+    preview.innerHTML = `<span class="upload-plus">+</span><span class="upload-label">${labelText}</span>`;
+    
+    const slotElement = document.getElementById(`slot-pdc-${index}`);
+    slotElement.classList.remove('has-image');
+    document.getElementById(`counter-pdc-${index}`).style.display = 'none';
+}
+
+function clearPDCForm() {
+    [1,2,3,4].forEach(clearPDCSlot);
+    document.getElementById('pdc-result-container').classList.add('hidden');
+}
+
+/**
+ * Stitch with Watermark applied to each page
+ */
+async function stitchVerticalPDC(dataUrls, task, location) {
+    const loadedImgs = await Promise.all(dataUrls.map(url => loadImagePDC(url)));
+    const targetW = Math.max(...loadedImgs.map(img => img.width));
+    const borderWeight = 12;
+    const heights = loadedImgs.map(img => (targetW / img.width) * img.height);
+    const totalH = heights.reduce((a, b) => a + b, 0) + (borderWeight * (dataUrls.length - 1));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = totalH;
+    const ctx = canvas.getContext('2d');
+
+    let currentY = 0;
+    loadedImgs.forEach((img, i) => {
+        ctx.drawImage(img, 0, currentY, targetW, heights[i]);
+        
+        // Watermark each page
+        drawPDCWatermark(ctx, 0, currentY, targetW, heights[i]);
+        
+        currentY += heights[i];
+        if (i < loadedImgs.length - 1) {
+            ctx.fillStyle = '#111827';
+            ctx.fillRect(0, currentY, targetW, borderWeight);
+            currentY += borderWeight;
+        }
+    });
+
+    return await loadImagePDC(canvas.toDataURL('image/jpeg', 0.95));
+}
+
+function drawPDCWatermark(ctx, x, y, w, h) {
+    const now = new Date();
+    const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} - ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth()+1).padStart(2, '0')}/${now.getFullYear()}`;
+    
+    ctx.font = `${Math.max(20, w/50)}px Inter, sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.shadowColor = 'rgba(0,0,0,1)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(ts, x + w - 30, y + h - 30);
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+}
+
+async function generatePDC() {
+    const activeIndices = [1, 2, 3, 4].filter(i => pdcSlots[i].length > 0);
+    if (activeIndices.length === 0) {
+        alert('Mohon unggah minimal satu foto!');
+        return;
+    }
+
+    const task = document.getElementById('pdc-task').value || 'Dokumentasi';
+    const unit = document.getElementById('pdc-unit').value || 'Unit';
+    const location = document.getElementById('pdc-location').value || 'Field';
+
+    const btn = document.getElementById('btn-generate-pdc');
+    btn.innerHTML = '🕒 Processing...';
+    btn.disabled = true;
+
+    try {
+        const canvas = document.getElementById('pdc-canvas');
+        const ctx = canvas.getContext('2d');
+        const W = 2000;
+        const margin = 12;
+        const captionHeight = 220;
+
+        const processedImgs = [];
+        for (let i = 0; i < activeIndices.length; i++) {
+            const slotIdx = activeIndices[i];
+            let label = (i + 1).toString();
+            if (activeIndices.length === 2) {
+                label = (i === 0) ? 'BEFORE' : 'AFTER';
+            }
+            
+            const stitchedImg = await stitchVerticalPDC(pdcSlots[slotIdx], task, location);
+            processedImgs.push({
+                img: stitchedImg,
+                label: label
+            });
+        }
+
+        const count = processedImgs.length;
+        let H = 0;
+
+        if (count === 1) {
+            H = (W / processedImgs[0].img.width) * processedImgs[0].img.height + captionHeight;
+            canvas.width = W;
+            canvas.height = H;
+            drawPDCSlot(ctx, processedImgs[0].img, 0, 0, W, H - captionHeight, processedImgs[0].label);
+        } else if (count === 2) {
+            const h1 = (W / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const h2 = (W / processedImgs[1].img.width) * processedImgs[1].img.height;
+            H = h1 + h2 + margin + captionHeight;
+            canvas.width = W;
+            canvas.height = H;
+            drawPDCSlot(ctx, processedImgs[0].img, 0, 0, W, h1, processedImgs[0].label);
+            drawPDCSlot(ctx, processedImgs[1].img, 0, h1 + margin, W, h2, processedImgs[1].label);
+        } else if (count === 3) {
+            const hTop = (W / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const wBot = (W - margin) / 2;
+            const hBot = Math.max(
+                (wBot / processedImgs[1].img.width) * processedImgs[1].img.height,
+                (wBot / processedImgs[2].img.width) * processedImgs[2].img.height
+            );
+            H = hTop + hBot + margin + captionHeight;
+            canvas.width = W;
+            canvas.height = H;
+            drawPDCSlot(ctx, processedImgs[0].img, 0, 0, W, hTop, processedImgs[0].label);
+            drawPDCSlot(ctx, processedImgs[1].img, 0, hTop + margin, wBot, hBot, processedImgs[1].label);
+            drawPDCSlot(ctx, processedImgs[2].img, wBot + margin, hTop + margin, wBot, hBot, processedImgs[2].label);
+        } else {
+            const wSlot = (W - margin) / 2;
+            const hRow1 = Math.max(
+                (wSlot / processedImgs[0].img.width) * processedImgs[0].img.height,
+                (wSlot / processedImgs[1].img.width) * processedImgs[1].img.height
+            );
+            const hRow2 = Math.max(
+                (wSlot / processedImgs[2].img.width) * processedImgs[2].img.height,
+                (wSlot / processedImgs[3].img.width) * processedImgs[3].img.height
+            );
+            H = hRow1 + hRow2 + margin + captionHeight;
+            canvas.width = W;
+            canvas.height = H;
+            drawPDCSlot(ctx, processedImgs[0].img, 0, 0, wSlot, hRow1, processedImgs[0].label);
+            drawPDCSlot(ctx, processedImgs[1].img, wSlot + margin, 0, wSlot, hRow1, processedImgs[1].label);
+            drawPDCSlot(ctx, processedImgs[2].img, 0, hRow1 + margin, wSlot, hRow2, processedImgs[2].label);
+            drawPDCSlot(ctx, processedImgs[3].img, wSlot + margin, hRow1 + margin, wSlot, hRow2, processedImgs[3].label);
+        }
+
+        // Caption Bar
+        const dateRaw = new Date();
+        const dateFormatted = `${String(dateRaw.getDate()).padStart(2, '0')}/${String(dateRaw.getMonth() + 1).padStart(2, '0')}/${dateRaw.getFullYear()}`;
+        const finalCaption = `${task} - Rig ${unit} - ${location} (${dateFormatted})`;
+        
+        // Set UI caption for copying
+        const captionDisplay = document.getElementById('pdc-caption-text');
+        if (captionDisplay) captionDisplay.innerText = finalCaption;
+        
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, canvas.height - captionHeight, canvas.width, captionHeight);
+        ctx.fillStyle = '#ffffff';
+        const fontSize = Math.max(30, Math.min(60, canvas.width / 30));
+        ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(finalCaption, canvas.width / 2, canvas.height - 100);
+
+        document.getElementById('pdc-result-container').classList.remove('hidden');
+        document.getElementById('pdc-result-container').scrollIntoView({ behavior: 'smooth' });
+
+    } catch (err) {
+        console.error(err);
+        alert('Gagal membuat kolase PDC.');
+    } finally {
+        btn.innerHTML = '⚡ Buat Kolase Pro';
+        btn.disabled = false;
+    }
+}
+
+function drawPDCSlot(ctx, img, x, y, w, h, label) {
+    ctx.fillStyle = '#f9fafb';
+    ctx.fillRect(x, y, w, h);
+    ctx.drawImage(img, x, y, w, h);
+
+    // Label Badge
+    ctx.fillStyle = label === 'BEFORE' ? '#ef4444' : (label === 'AFTER' ? '#10b981' : '#374151');
+    const badgeW = label.length > 2 ? 180 : 80;
+    ctx.fillRect(x + 20, y + 20, badgeW, 60);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 30px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x + 20 + badgeW/2, y + 60);
+}
+
+function loadImagePDC(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+}
+
+function downloadPDC() {
+    const canvas = document.getElementById('pdc-canvas');
+    const task = document.getElementById('pdc-task').value || 'Dokumentasi';
+    const link = document.createElement('a');
+    link.download = `Pro_Documentation_${task.replace(/\s+/g, '_')}.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+}

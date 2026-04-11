@@ -13,32 +13,49 @@ const WIDGET_REGISTRY = {
         title: 'Ringkasan Stats',
         icon: '📊',
         html: `<div class="dashboard-grid">
-                    <div class="dashboard-card" style="position: relative; overflow: hidden;">
-                        <div style="position: absolute; top: -5px; right: -10px; opacity: 0.05; font-size: 3.5rem; pointer-events: none;">📝</div>
-                        <div class="dashboard-icon" style="position: relative; z-index: 1;">📝</div>
-                        <div class="dashboard-stat" id="stat-journals" style="position: relative; z-index: 1;">0</div>
-                        <div class="dashboard-label" style="position: relative; z-index: 1;">Total Jurnal</div>
+                    <div class="dashboard-card stat-premium" style="position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(99, 102, 241, 0.2);">
+                        <div class="stat-blur-icon">📝</div>
+                        <div class="dashboard-stat" id="stat-journals">0</div>
+                        <div class="dashboard-label">Total Jurnal</div>
                     </div>
-                    <div class="dashboard-card" style="position: relative; overflow: hidden;">
-                        <div style="position: absolute; top: -5px; right: -10px; opacity: 0.05; font-size: 3.5rem; pointer-events: none;">⏳</div>
-                        <div class="dashboard-icon" style="position: relative; z-index: 1;">⏳</div>
-                        <div class="dashboard-stat" id="stat-tasks" style="position: relative; z-index: 1;">0</div>
-                        <div class="dashboard-label" style="position: relative; z-index: 1;">Belum Dilakukan</div>
+                    <div class="dashboard-card stat-premium" style="position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(245, 158, 11, 0.2);">
+                        <div class="stat-blur-icon">⏳</div>
+                        <div class="dashboard-stat" id="stat-tasks">0</div>
+                        <div class="dashboard-label">Belum Dilakukan</div>
                     </div>
-                    <div class="dashboard-card" style="position: relative; overflow: hidden;">
-                        <div style="position: absolute; top: -5px; right: -10px; opacity: 0.05; font-size: 3.5rem; pointer-events: none;">💰</div>
-                        <div class="dashboard-icon" style="position: relative; z-index: 1;">💰</div>
-                        <div class="dashboard-stat" id="stat-balance" style="position: relative; z-index: 1;">Rp 0</div>
-                        <div class="dashboard-label" style="position: relative; z-index: 1;">Saldo</div>
+                    <div class="dashboard-card stat-premium" style="position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(16, 185, 129, 0.2);">
+                        <div class="stat-blur-icon">💰</div>
+                        <div class="dashboard-stat" id="stat-balance">Rp 0</div>
+                        <div class="dashboard-label">Saldo</div>
                     </div>
-                    <div class="dashboard-card" id="streak-card" style="position: relative; overflow: hidden;">
-                        <div style="position: absolute; top: -5px; right: -10px; opacity: 0.05; font-size: 3.5rem; pointer-events: none;">🔥</div>
-                        <div class="dashboard-icon" style="position: relative; z-index: 1;">🔥</div>
-                        <div class="dashboard-stat" id="current-streak" style="position: relative; z-index: 1;">0</div>
-                        <div class="dashboard-label" style="position: relative; z-index: 1;">Best Streak</div>
+                    <div class="dashboard-card stat-premium" id="streak-card" style="position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(239, 68, 68, 0.2);">
+                        <div class="stat-blur-icon">🔥</div>
+                        <div class="dashboard-stat" id="current-streak">0</div>
+                        <div class="dashboard-label">Best Streak</div>
                     </div>
                </div>`,
         init: () => { if (typeof updateDashboardStats === 'function') updateDashboardStats(); }
+    },
+    'jarvis-wisdom': {
+        id: 'jarvis-wisdom',
+        title: 'Jarvis Daily Wisdom',
+        icon: '✨',
+        html: `<div class="card premium-wisdom-card animate-pulse-border" id="jarvis-wisdom-card" style="border: 1px solid var(--primary); background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(0,0,0,0.3)); position: relative; overflow: hidden; cursor: pointer;">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">✨</div>
+                    <div style="display: flex; align-items: flex-start; gap: 12px; position: relative; z-index: 1;">
+                        <div class="wisdom-icon-container" style="background: var(--gradient-primary); border-radius: 12px; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                            <span style="font-size: 1.5rem;">🤖</span>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <h4 style="margin: 0; font-size: 0.8rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">Jarvis Insight</h4>
+                                <span style="font-size: 0.6rem; color: #4ade80; background: rgba(74, 222, 128, 0.1); padding: 2px 6px; border-radius: 10px;">PROACTIVE</span>
+                            </div>
+                            <p id="jarvis-wisdom-text" style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); font-style: italic;">"Memindai data Anda, Boss..."</p>
+                        </div>
+                    </div>
+               </div>`,
+        init: () => { if (typeof updateJarvisWisdom === 'function') updateJarvisWisdom(); }
     },
     'prayer': {
         id: 'prayer',
@@ -246,7 +263,7 @@ const WIDGET_REGISTRY = {
 };
 
 const DEFAULT_WIDGET_ORDER = [
-    'profile', 'overview', 'life-balance', 'prayer', 'daily-schedule', 'motivation', 
+    'profile', 'jarvis-wisdom', 'overview', 'life-balance', 'prayer', 'daily-schedule', 'motivation', 
     'brain-boost', 'hadith', 'finance-budget', 
     'reminders', 'calendar', 'weekly-report'
 ];

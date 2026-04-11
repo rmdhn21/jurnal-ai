@@ -403,7 +403,7 @@
         </nav>
 
         <!-- Main Content (Added bottom padding for the new fixed nav) -->
-        <main class="main" style="padding-bottom: 85px;">
+        <main class="main">
             <!-- Dashboard Screen -->
             <section id="dashboard-screen" class="screen active">
                 <div class="dashboard-header">
@@ -425,8 +425,14 @@
                 </div>
 
                 <div class="jarvis-chat-container card" style="display: flex; flex-direction: column; height: calc(100vh - 350px); min-height: 400px; padding: 0; overflow: hidden; background: rgba(255,255,255,0.02);">
+                    <!-- Neural Status Indicator -->
+                    <div id="jarvis-neural-status" class="jarvis-neural-status">
+                        <div class="neural-pulse"></div>
+                        <div id="neural-text" class="neural-text">Jarvis Neural Active</div>
+                    </div>
+
                     <div id="ai-assistant-chat-history" class="ai-chat-history" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;">
-                        <div class="bot-message" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 12px 16px; border-radius: 15px 15px 15px 5px; font-size: 0.9rem; align-self: flex-start; max-width: 85%;">Halo! Saya asisten AI Anda. Saya memiliki akses ke seluruh data Anda untuk memberikan saran yang lebih personal. Apa yang ingin Anda tanyakan hari ini?</div>
+                        <div class="bot-message">Halo! Saya asisten AI Anda. Saya memiliki akses ke seluruh data Anda untuk memberikan saran yang lebih personal. Apa yang ingin Anda tanyakan hari ini?</div>
                     </div>
                     <div id="ai-quick-actions" class="jarvis-quick-actions" style="display: flex; gap: 10px; padding: 15px; overflow-x: auto; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.1);">
                         <button class="qa-btn" style="white-space: nowrap; padding: 8px 16px; border-radius: 20px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; font-size: 0.75rem; font-weight: 700; cursor: pointer;">🎙️ Voice Command</button>
@@ -494,10 +500,81 @@
                         <div class="hub-icon" style="background: rgba(237, 100, 166, 0.1); color: #f687b3; border: 1px solid rgba(237, 100, 166, 0.2);">🎯</div>
                         <span class="hub-label">Goals</span>
                     </button>
+                    <button class="hub-btn" onclick="navigateToSubscreen('hse-center')" style="border: 1px solid var(--primary); background: rgba(var(--primary-rgb), 0.05);">
+                        <div class="hub-icon" style="background: linear-gradient(135deg, #059669, #10b981); color: white;">🛡️</div>
+                        <span class="hub-label">HSE Performance Center</span>
+                        <p class="hub-desc">Pusat kontrol pelaporan, kolase, dan standar HSE.</p>
+                        <span class="hse-badge" style="background: #ef4444; border: 1px solid white;">Active</span>
+                    </button>
                     <button class="hub-btn" onclick="navigateToSubscreen('workout-tracker')">
                         <div class="hub-icon" style="background: rgba(66, 153, 225, 0.1); color: #63b3ed; border: 1px solid rgba(66, 153, 225, 0.2);">🏋️</div>
                         <span class="hub-label">Workout</span>
                     </button>
+                </div>
+            </section>
+
+            <!-- HSE Performance Center Screen -->
+            <section id="hse-center-screen" class="screen">
+                <div class="hse-stat-banner">
+                    <div>
+                        <h2 style="color: white; margin: 0; font-size: 1.2rem;">🛡️ HSE Center</h2>
+                        <p style="margin: 0; opacity: 0.8; font-size: 0.75rem;">Consolidated Safety Performance Hub</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.65rem; opacity: 0.7;">TOTAL REPORTS</div>
+                        <div style="font-size: 1.5rem; font-weight: 800;">24</div>
+                    </div>
+                </div>
+
+                <div class="hse-grid">
+                    <!-- Daily Reporting -->
+                    <div class="hse-card" onclick="navigateToSubscreen('hse-wag-generator')">
+                        <div class="card-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">📝</div>
+                        <div class="card-title">Daily WAG Report</div>
+                        <div class="card-desc">Generate laporan harian untuk grup WhatsApp khusus Field Sangatta.</div>
+                    </div>
+
+                    <!-- PJSM Collage -->
+                    <div class="hse-card" onclick="navigateToSubscreen('report-collage')">
+                        <div class="card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">📸</div>
+                        <div class="card-title">PJSM & DCU</div>
+                        <div class="card-desc">Kolase foto PJSM dan Form DCU otomatis dengan penataan cerdas.</div>
+                    </div>
+
+                    <!-- PDC Documentation -->
+                    <div class="hse-card" onclick="navigateToSubscreen('pro-collage')">
+                        <div class="card-icon" style="background: rgba(107, 114, 128, 0.1); color: #6b7280;">🖼️</div>
+                        <div class="card-title">Pro Dokumentasi</div>
+                        <div class="card-desc">Kolase 2/4 foto progress pekerjaan dengan watermark timestamp.</div>
+                    </div>
+
+                    <!-- Rig Standards -->
+                    <div class="hse-card" onclick="navigateToSubscreen('hse-rig')">
+                        <div class="card-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">🏗️</div>
+                        <div class="card-title">Standar Rig</div>
+                        <div class="card-desc">Referensi teknis peralatan rig, inspeksi, dan standar keselamatan.</div>
+                    </div>
+
+                    <!-- HSSE Mastery -->
+                    <div class="hse-card" onclick="navigateToSubscreen('hsse')">
+                        <div class="card-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">🎓</div>
+                        <div class="card-title">HSSE Mastery</div>
+                        <div class="card-desc">Learning path K3 dari tingkat dasar hingga Leadership & Audit.</div>
+                    </div>
+
+                    <!-- English HSE -->
+                    <div class="hse-card" onclick="navigateToSubscreen('english-hse')">
+                        <div class="card-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">🔤</div>
+                        <div class="card-title">English for HSE</div>
+                        <div class="card-desc">Istilah teknis bahasa Inggris untuk O&G, JSA, dan dokumen PTW.</div>
+                    </div>
+
+                    <!-- JMP Generator -->
+                    <div class="hse-card" onclick="navigateToSubscreen('jmp-generator')">
+                        <div class="card-icon" style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;">⚙️</div>
+                        <div class="card-title">JMP Generator</div>
+                        <div class="card-desc">Pembuatan Job Management Plan otomatis untuk aktivitas Rig.</div>
+                    </div>
                 </div>
             </section>
 
@@ -777,6 +854,424 @@
                 </div>
             </section>
 
+            <!-- Report Collage Screen (PJSM & DCU) -->
+            <section id="report-collage-screen" class="screen">
+                <div class="card" style="background: linear-gradient(135deg, #065f46, #064e3b); color: white; border: none; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 style="color: white; margin: 0;">📸 Laporan PJSM & DCU</h2>
+                            <p style="opacity: 0.9; font-size: 0.85rem;">Gabungkan Dokumentasi PJSM & Daily Check Up.</p>
+                        </div>
+                        <div style="font-size: 2.5rem;">📊</div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Metadata Inputs -->
+                <div class="card mb-md">
+                    <h3 class="mb-sm">1. Data Laporan</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-group">
+                            <label class="text-xs text-muted">Shift</label>
+                            <select id="collage-shift" class="input" style="width: 100%;">
+                                <option value="Pagi">☀️ Pagi</option>
+                                <option value="Malam">🌙 Malam</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs text-muted">Nama Rig</label>
+                            <select id="collage-rig" class="input" style="width: 100%;">
+                                <option value="H-25">H-25</option>
+                                <option value="L-350">L-350</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs text-muted">Lokasi ST</label>
+                            <input type="text" id="collage-location" class="input" placeholder="Contoh: 01" value="01" style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs text-muted">Tanggal</label>
+                            <input type="date" id="collage-date" class="input" style="width: 100%;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Photo Selection -->
+                <div class="card mb-md">
+                    <h3 class="mb-sm">2. Unggah Foto</h3>
+                    <p class="text-xs text-muted mb-md">Klik kotak di bawah untuk mengunggah foto sesuai kategori.</p>
+                    
+                    <div class="collage-upload-grid">
+                        <!-- Foto PJSM (Landscape) -->
+                        <div class="upload-slot landscape has-controls" id="slot-pjsm-foto">
+                            <div class="slot-controls">
+                                <button class="slot-btn" onclick="triggerSlotUpload('pjsm-foto')" title="Tambah Halaman">+</button>
+                                <button class="slot-btn btn-remove" onclick="clearSlot('pjsm-foto')" title="Hapus Semua">🗑️</button>
+                            </div>
+                            <input type="file" id="input-pjsm-foto" accept="image/*" class="hidden" onchange="handleSlotUpload(this, 'pjsm-foto')">
+                            <div id="pjsm-foto-preview" class="preview-container" onclick="triggerSlotUpload('pjsm-foto')">
+                                <span class="upload-plus">+</span>
+                                <span class="upload-label">Foto PJSM<br>(Landscape)</span>
+                            </div>
+                            <div class="slot-counter" id="counter-pjsm-foto">1 Halaman</div>
+                        </div>
+
+                        <!-- Form PJSM (Portrait) -->
+                        <div class="upload-slot portrait has-controls" id="slot-pjsm-form">
+                            <div class="slot-controls">
+                                <button class="slot-btn" onclick="triggerSlotUpload('pjsm-form')" title="Tambah Halaman">+</button>
+                                <button class="slot-btn btn-remove" onclick="clearSlot('pjsm-form')" title="Hapus Semua">🗑️</button>
+                            </div>
+                            <input type="file" id="input-pjsm-form" accept="image/*" class="hidden" onchange="handleSlotUpload(this, 'pjsm-form')">
+                            <div id="pjsm-form-preview" class="preview-container" onclick="triggerSlotUpload('pjsm-form')">
+                                <span class="upload-plus">+</span>
+                                <span class="upload-label">Form PJSM<br>(Portrait)</span>
+                            </div>
+                            <div class="slot-counter" id="counter-pjsm-form">1 Halaman</div>
+                        </div>
+
+                        <!-- Foto DCU (Portrait) -->
+                        <div class="upload-slot portrait has-controls" id="slot-dcu-foto">
+                            <div class="slot-controls">
+                                <button class="slot-btn" onclick="triggerSlotUpload('dcu-foto')" title="Tambah Halaman">+</button>
+                                <button class="slot-btn btn-remove" onclick="clearSlot('dcu-foto')" title="Hapus Semua">🗑️</button>
+                            </div>
+                            <input type="file" id="input-dcu-foto" accept="image/*" class="hidden" onchange="handleSlotUpload(this, 'dcu-foto')">
+                            <div id="pjsm-dcu-foto-preview" class="preview-container" onclick="triggerSlotUpload('dcu-foto')">
+                                <span class="upload-plus">+</span>
+                                <span class="upload-label">Foto DCU<br>(Portrait)</span>
+                            </div>
+                            <div class="slot-counter" id="counter-dcu-foto">1 Halaman</div>
+                        </div>
+
+                        <!-- Form DCU (Landscape) -->
+                        <div class="upload-slot landscape has-controls" id="slot-dcu-form">
+                            <div class="slot-controls">
+                                <button class="slot-btn" onclick="triggerSlotUpload('dcu-form')" title="Tambah Halaman">+</button>
+                                <button class="slot-btn btn-remove" onclick="clearSlot('dcu-form')" title="Hapus Semua">🗑️</button>
+                            </div>
+                            <input type="file" id="input-dcu-form" accept="image/*" class="hidden" onchange="handleSlotUpload(this, 'dcu-form')">
+                            <div id="pjsm-dcu-form-preview" class="preview-container" onclick="triggerSlotUpload('dcu-form')">
+                                <span class="upload-plus">+</span>
+                                <span class="upload-label">Form DCU<br>(Landscape)</span>
+                            </div>
+                            <div class="slot-counter" id="counter-dcu-form">1 Halaman</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Action Buttons -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-secondary" onclick="clearCollageForm()" style="flex: 1;">🗑️ Bersihkan</button>
+                    <button class="btn btn-primary" id="btn-generate-collage" style="flex: 2;">⚡ Buat Kolase</button>
+                </div>
+
+                <!-- Step 4: Final Result (Hidden initially) -->
+                <div id="collage-result-container" class="card hidden" style="padding: 10px; text-align: center;">
+                    <h3 class="mb-sm">3. Hasil Kolase</h3>
+                    <canvas id="collage-canvas" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); background: #eee;"></canvas>
+                    
+                    <!-- Caption Copy Box -->
+                    <div class="card mt-sm mb-sm" style="background: rgba(255,255,255,0.05); border: 1px dashed var(--primary); text-align: left;">
+                        <p class="text-xs text-muted mb-xs">Caption WAG:</p>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <div id="collage-caption-text" class="text-sm" style="flex: 1; font-weight: 600; font-family: monospace;"></div>
+                            <button class="btn btn-primary btn-sm" onclick="copyCollageCaption('collage-caption-text')">Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-md">
+                        <button class="btn btn-primary btn-full" id="btn-download-collage">💾 Unduh Hasil (.jpg)</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pro Documentation Collage Screen (PDC) -->
+            <section id="pro-collage-screen" class="screen">
+                <div class="card" style="background: linear-gradient(135deg, #374151, #1f2937); color: white; border: none; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 style="color: white; margin: 0;">🖼️ Pro Dokumentasi</h2>
+                            <p style="opacity: 0.9; font-size: 0.85rem;">Kolase Fleksibel dengan Watermark Otomatis.</p>
+                        </div>
+                        <div style="font-size: 2.5rem;">📸</div>
+                    </div>
+                </div>
+
+                <!-- Step 1: PDC Options -->
+                <div class="card mb-md">
+                    <h3 class="mb-sm">1. Pengaturan Kolase</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-group">
+                            <label class="text-xs text-muted">Jumlah Foto</label>
+                            <select id="pdc-count" class="input" style="width: 100%;" onchange="updatePDCGrid()">
+                                <option value="2">2 Foto (Before-After)</option>
+                                <option value="4">4 Foto (Progress/Grid)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs text-muted">Nama Pekerjaan</label>
+                            <input type="text" id="pdc-task" class="input" placeholder="Contoh: R/U Tower" style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs text-muted">Rig / Unit</label>
+                            <select id="pdc-unit" class="input" style="width: 100%;">
+                                <option value="H-25">H-25</option>
+                                <option value="L-350">L-350</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs text-muted">Lokasi</label>
+                            <input type="text" id="pdc-location" class="input" value="ST-162" style="width: 100%;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: PDC Photo Grid -->
+                <div class="card mb-md">
+                    <h3 class="mb-sm">2. Unggah Dokumentasi</h3>
+                    <p class="text-xs text-muted mb-md">Layout akan menyesuaikan otomatis (Landscape/Portrait).</p>
+                    
+                    <div id="pdc-upload-grid" class="collage-upload-grid pdc-grid-2">
+                        <!-- PDC Slot 1 -->
+                        <div class="upload-slot pdc-slot has-controls" id="slot-pdc-1">
+                            <div class="slot-controls">
+                                <button class="slot-btn" onclick="triggerPDCUpload(1)" title="Tambah Halaman">+</button>
+                                <button class="slot-btn btn-remove" onclick="clearPDCSlot(1)" title="Hapus Semua">🗑️</button>
+                            </div>
+                            <input type="file" id="input-pdc-1" accept="image/*" class="hidden" onchange="handlePDCUpload(this, 1)">
+                            <div id="preview-pdc-1" class="preview-container" onclick="triggerPDCUpload(1)">
+                                <span class="upload-plus">+</span>
+                                <span class="upload-label" id="pdc-label-1">Foto 1 (BEFORE)</span>
+                            </div>
+                            <div class="slot-counter" id="counter-pdc-1">1 Halaman</div>
+                        </div>
+
+                        <!-- PDC Slot 2 -->
+                        <div class="upload-slot pdc-slot has-controls" id="slot-pdc-2">
+                            <div class="slot-controls">
+                                <button class="slot-btn" onclick="triggerPDCUpload(2)" title="Tambah Halaman">+</button>
+                                <button class="slot-btn btn-remove" onclick="clearPDCSlot(2)" title="Hapus Semua">🗑️</button>
+                            </div>
+                            <input type="file" id="input-pdc-2" accept="image/*" class="hidden" onchange="handlePDCUpload(this, 2)">
+                            <div id="preview-pdc-2" class="preview-container" onclick="triggerPDCUpload(2)">
+                                <span class="upload-plus">+</span>
+                                <span class="upload-label" id="pdc-label-2">Foto 2 (AFTER)</span>
+                            </div>
+                            <div class="slot-counter" id="counter-pdc-2">1 Halaman</div>
+                        </div>
+
+                        <!-- PDC Slot 3 -->
+                        <div class="upload-slot pdc-slot has-controls hidden" id="slot-pdc-3">
+                            <div class="slot-controls">
+                                <button class="slot-btn" onclick="triggerPDCUpload(3)" title="Tambah Halaman">+</button>
+                                <button class="slot-btn btn-remove" onclick="clearPDCSlot(3)" title="Hapus Semua">🗑️</button>
+                            </div>
+                            <input type="file" id="input-pdc-3" accept="image/*" class="hidden" onchange="handlePDCUpload(this, 3)">
+                            <div id="preview-pdc-3" class="preview-container" onclick="triggerPDCUpload(3)">
+                                <span class="upload-plus">+</span>
+                                <span class="upload-label">Foto 3</span>
+                            </div>
+                            <div class="slot-counter" id="counter-pdc-3">1 Halaman</div>
+                        </div>
+
+                        <!-- PDC Slot 4 -->
+                        <div class="upload-slot pdc-slot has-controls hidden" id="slot-pdc-4">
+                            <div class="slot-controls">
+                                <button class="slot-btn" onclick="triggerPDCUpload(4)" title="Tambah Halaman">+</button>
+                                <button class="slot-btn btn-remove" onclick="clearPDCSlot(4)" title="Hapus Semua">🗑️</button>
+                            </div>
+                            <input type="file" id="input-pdc-4" accept="image/*" class="hidden" onchange="handlePDCUpload(this, 4)">
+                            <div id="preview-pdc-4" class="preview-container" onclick="triggerPDCUpload(4)">
+                                <span class="upload-plus">+</span>
+                                <span class="upload-label">Foto 4</span>
+                            </div>
+                            <div class="slot-counter" id="counter-pdc-4">1 Halaman</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Action Buttons -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-secondary" onclick="clearPDCForm()" style="flex: 1;">🗑️ Bersihkan</button>
+                    <button class="btn btn-primary" id="btn-generate-pdc" style="flex: 2;">⚡ Buat Kolase Pro</button>
+                </div>
+
+                <!-- Step 4: Result -->
+                <div id="pdc-result-container" class="card hidden" style="padding: 10px; text-align: center;">
+                    <h3 class="mb-sm">3. Hasil Kolase</h3>
+                    <canvas id="pdc-canvas" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); background: #eee;"></canvas>
+                    
+                    <!-- Caption Copy Box -->
+                    <div class="card mt-sm mb-sm" style="background: rgba(255,255,255,0.05); border: 1px dashed var(--primary); text-align: left;">
+                        <p class="text-xs text-muted mb-xs">Caption WAG:</p>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <div id="pdc-caption-text" class="text-sm" style="flex: 1; font-weight: 600; font-family: monospace;"></div>
+                            <button class="btn btn-primary btn-sm" onclick="copyCollageCaption('pdc-caption-text')">Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-md">
+                        <button class="btn btn-primary btn-full" id="btn-download-pdc">💾 Unduh Hasil (.jpg)</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Daily HSSE Report WAG Generator Screen -->
+            <section id="hse-wag-generator-screen" class="screen">
+                <div class="card" style="background: linear-gradient(135deg, #1e3a8a, #1e40af); color: white; border: none; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 style="color: white; margin: 0;">📝 Generator Laporan WAG</h2>
+                            <p style="opacity: 0.9; font-size: 0.85rem;">Format HSSE Officer Field Sangatta.</p>
+                        </div>
+                        <div style="font-size: 2.5rem;">📱</div>
+                    </div>
+                </div>
+
+                <!-- Form sections logically grouped -->
+                <div class="tabs-scroll mb-md" id="wag-report-tabs">
+                    <button class="tab-btn active" onclick="switchWAGSection('general')">Umum</button>
+                    <button class="tab-btn" onclick="switchWAGSection('safety')">A. Safety</button>
+                    <button class="tab-btn" onclick="switchWAGSection('ops')">B. Ops</button>
+                    <button class="tab-btn" onclick="switchWAGSection('activity')">C/D. Activity</button>
+                </div>
+
+                <div id="wag-form-content">
+                    <!-- General Section -->
+                    <div id="wag-sec-general" class="card mb-md wag-section">
+                        <h3 class="mb-sm">📍 Informasi Umum</h3>
+                        <div class="form-group mb-sm">
+                            <label class="text-xs text-muted">Kepada (Penerima)</label>
+                            <input type="text" id="wr-recipient" class="input" value="Bapak/ Rizky Gunawan / Team HSSE Field Sangatta" style="width: 100%;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label class="text-xs text-muted">Lokasi / Sumur</label>
+                                <input type="text" id="wr-location" class="input" value="ST-162" placeholder="Contoh: ST-162" style="width: 100%;">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted">Field / Zona</label>
+                                <input type="text" id="wr-zona" class="input" value="Sangatta Field ZONA-9" style="width: 100%;">
+                            </div>
+                        </div>
+                        <div class="form-group mt-sm">
+                            <label class="text-xs text-muted">Tanggal Laporan</label>
+                            <input type="date" id="wr-date" class="input" style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <!-- A. Safety Performance -->
+                    <div id="wag-sec-safety" class="card mb-md wag-section hidden">
+                        <h3 class="mb-sm">🛡️ A. Safety Performance</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label class="text-xs text-muted">POB (Person)</label>
+                                <input type="number" id="wr-pob" class="input" value="11" style="width: 100%;">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted">Visitor</label>
+                                <input type="text" id="wr-visitor" class="input" value="" placeholder="-" style="width: 100%;">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted">SMH Rig</label>
+                                <input type="text" id="wr-smh" class="input" value="188.279" style="width: 100%;">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted">SMC</label>
+                                <input type="text" id="wr-smc" class="input" value="-" style="width: 100%;">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted">Cum</label>
+                                <input type="text" id="wr-cum" class="input" value="-" style="width: 100%;">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted">JSA/PTW Cum</label>
+                                <input type="number" id="wr-jsa-cum" class="input" value="4" style="width: 100%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B. Current Operation -->
+                    <div id="wag-sec-ops" class="card mb-md wag-section hidden">
+                        <h3 class="mb-sm">🏗️ B. Current Operation</h3>
+                        <div class="form-group mb-sm">
+                            <label class="text-xs text-muted">Nama Rig</label>
+                            <select id="wr-rig-name" class="input" style="width: 100%;">
+                                <option value="H-25">H-25</option>
+                                <option value="L-350">L-350</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-sm">
+                            <label class="text-xs text-muted">Weather (Cuaca)</label>
+                            <input type="text" id="wr-weather" class="input" value="cerah" style="width: 100%;">
+                        </div>
+                        <div class="form-group mb-sm">
+                            <label class="text-xs text-muted">Operation (Pekerjaan)</label>
+                            <input type="text" id="wr-ops-desc" class="input" value="well service" style="width: 100%;">
+                        </div>
+                        <hr style="opacity: 0.1; margin: 15px 0;">
+                        <div class="form-group mb-sm">
+                            <label class="text-xs text-muted">HSSE Coord</label>
+                            <input type="text" id="wr-coord" class="input" value="Denny Wicaksana" readonly style="width: 100%; opacity: 0.7; background: rgba(0,0,0,0.1);">
+                        </div>
+                        <div class="form-group mb-sm">
+                            <label class="text-xs text-muted">Rig Spv</label>
+                            <input type="text" id="wr-spv" class="input" value="Sumarlin R" style="width: 100%;">
+                        </div>
+                        <div class="form-group mb-sm">
+                            <label class="text-xs text-muted">HSSE Officer (Dinamis)</label>
+                            <textarea id="wr-officers" class="input" rows="2" placeholder="Contoh: Ferdi A, M Rafi" style="width: 100%;">Ferdi A, M Rafi</textarea>
+                        </div>
+                    </div>
+
+                    <!-- C/D. Activity -->
+                    <div id="wag-sec-activity" class="card mb-md wag-section hidden">
+                        <h3 class="mb-sm">📝 C. Summary Activity (07.00-19.00)</h3>
+                        <textarea id="wr-activity-c" class="input" rows="6" style="width: 100%; font-size: 0.8rem; line-height: 1.4;">- FTT & PJSM crew rig H25
+- Check dan packing peralatan persiapan Move ke lokasi ST-162
+- Moving Rig carrier beserta peralatan 
+Move in: 100 %
+Move out : 100 %
+- set peralatan di Lokasi ST-162
+- R/U menara rig H-25 
+- install guyline 
+- persiapan Function test peralatan
+- Fungtion test peralatan-ok
+- RSCL</textarea>
+
+                        <h3 class="mt-md mb-sm">🔥 Laporan BBM Fire Pump</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label class="text-xs text-muted">Stock Awal</label>
+                                <input type="text" id="wr-bbm-start" class="input" value="-" style="width: 100%;">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted">Pemakaian</label>
+                                <input type="number" id="wr-bbm-used" class="input" value="0" style="width: 100%;">
+                            </div>
+                        </div>
+
+                        <h3 class="mt-md mb-sm">📋 D. Summary Activity HSSE</h3>
+                        <textarea id="wr-activity-d" class="input" rows="4" style="width: 100%; font-size: 0.8rem;">- PJSM untuk menyampaikan pesan keselamatan
+- Monitoring FTT crew H-25 
+- Running dan function test fire pump
+- monitoring aspek HSSE di lingkungan kerja Rig H-25</textarea>
+                    </div>
+                </div>
+
+                <!-- Footer Summary Area -->
+                <div class="card" style="border: 2px solid var(--info); background: rgba(59, 130, 246, 0.02);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="margin: 0;">📤 Hasil Laporan (WAG)</h3>
+                        <button class="btn btn-secondary" onclick="generateWAGReport()" style="padding: 5px 15px; font-size: 0.75rem;">🔄 Segarkan</button>
+                    </div>
+                    <textarea id="wr-final-output" class="input" rows="10" readonly style="width: 100%; font-family: monospace; font-size: 0.75rem; background: rgba(0,0,0,0.1); color: #4ade80;"></textarea>
+                    <div class="mt-md">
+                        <button class="btn btn-primary btn-full" id="wr-copy-btn">📋 Salin Teks ke WhatsApp</button>
+                    </div>
+                </div>
+            </section>
+
             <!-- Screen 0: Dashboard -->
             <section id="dashboard-screen" class="screen active">
                 <div class="dashboard-header-row mb-md">
@@ -961,42 +1456,72 @@
             <!-- Screen 2.5: Planner (Jadwal) -->
             <section id="planner-screen" class="screen">
                 <div class="card mt-md">
-                    <!-- Calendar View -->
-                    <div class="calendar-view">
-                        <div class="calendar-header">
-                            <h3 id="calendar-month-year">Februari 2026</h3>
-                            <div class="calendar-nav">
-                                <button id="prev-month">◀</button>
-                                <button id="next-month">▶</button>
+                    <!-- Planner Tabs -->
+                    <div class="tabs-scroll mb-md">
+                        <button class="tab-btn active" onclick="switchPlannerTab('events')">📅 Event & Jadwal</button>
+                        <button class="tab-btn" onclick="switchPlannerTab('routine')">⏰ Rutinitas Harian</button>
+                    </div>
+
+                    <!-- Events Panel (Existing) -->
+                    <div id="planner-events-panel">
+                        <!-- Calendar View -->
+                        <div class="calendar-view">
+                            <div class="calendar-header">
+                                <h3 id="calendar-month-year">Februari 2026</h3>
+                                <div class="calendar-nav">
+                                    <button id="prev-month">◀</button>
+                                    <button id="next-month">▶</button>
+                                </div>
+                            </div>
+                            <div class="calendar-grid" id="calendar-grid">
+                                <!-- Injected by JS -->
+                            </div>
+                            <div id="selected-date-events" class="selected-date-events" style="display: none;">
+                                <h4 id="selected-date-label">Events</h4>
+                                <ul id="selected-date-list" class="date-events-list">
+                                    <!-- Injected by JS -->
+                                </ul>
                             </div>
                         </div>
-                        <div class="calendar-grid" id="calendar-grid">
+
+                        <hr style="margin: 20px 0; border: 1px solid var(--border);">
+
+                        <h2>📅 Tambah Jadwal</h2>
+                        <div class="add-form">
+                            <input type="text" id="new-schedule-title" placeholder="Nama kegiatan..." class="input">
+                            <div class="form-row">
+                                <input type="datetime-local" id="new-schedule-datetime" class="input">
+                                <select id="new-schedule-priority" class="input">
+                                    <option value="allah">🔴 Allah (Ibadah)</option>
+                                    <option value="self">🟢 Diri (Istirahat/Belajar)</option>
+                                    <option value="others">🔵 Umat (Kerja/Sosial)</option>
+                                </select>
+                            </div>
+                            <button id="add-schedule-btn" class="btn btn-primary">+ Tambah</button>
+                        </div>
+                        <div id="schedule-list" class="schedule-list"></div>
+                    </div>
+
+                    <!-- Daily Routine Panel (New) -->
+                    <div id="planner-routine-panel" class="hidden">
+                        <div style="background: rgba(var(--primary-rgb), 0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--primary); margin-bottom: 20px;">
+                            <h4 style="margin:0; color: var(--primary);">📝 Atur Rutinitas Harian</h4>
+                            <p class="text-xs text-muted">Aktivitas yang berulang setiap hari (Bangun tidur, Makan, Tidur). Ini akan muncul di Timeline dasbor.</p>
+                        </div>
+
+                        <div class="add-form">
+                            <div class="form-row">
+                                <input type="time" id="routine-time" class="input" style="flex: 1;">
+                                <input type="text" id="routine-icon" placeholder="Emoji" class="input" style="flex: 0.3; text-align: center;">
+                            </div>
+                            <input type="text" id="routine-title" placeholder="Nama Rutinitas (misal: Ngopi Pagi)" class="input">
+                            <button id="add-routine-btn" class="btn btn-primary" onclick="handleAddRoutine()">+ Tambah Rutinitas</button>
+                        </div>
+
+                        <div id="routine-list" class="mt-md" style="display: flex; flex-direction: column; gap: 10px;">
                             <!-- Injected by JS -->
                         </div>
-                        <div id="selected-date-events" class="selected-date-events" style="display: none;">
-                            <h4 id="selected-date-label">Events</h4>
-                            <ul id="selected-date-list" class="date-events-list">
-                                <!-- Injected by JS -->
-                            </ul>
-                        </div>
                     </div>
-
-                    <hr style="margin: 20px 0; border: 1px solid var(--border);">
-
-                    <h2>📅 Tambah Jadwal</h2>
-                    <div class="add-form">
-                        <input type="text" id="new-schedule-title" placeholder="Nama kegiatan..." class="input">
-                        <div class="form-row">
-                            <input type="datetime-local" id="new-schedule-datetime" class="input">
-                            <select id="new-schedule-priority" class="input">
-                                <option value="allah">🔴 Allah (Ibadah)</option>
-                                <option value="self">🟢 Diri (Istirahat/Belajar)</option>
-                                <option value="others">🔵 Umat (Kerja/Sosial)</option>
-                            </select>
-                        </div>
-                        <button id="add-schedule-btn" class="btn btn-primary">+ Tambah</button>
-                    </div>
-                    <div id="schedule-list" class="schedule-list"></div>
                 </div>
 
                 <!-- AI Analysis Button -->
@@ -2905,6 +3430,9 @@
     </div>
 
     <!-- App Initialization (must be last) -->
+    <script src="js/report-collage.js"></script>
+    <script src="js/pro-collage.js"></script>
+    <script src="js/hse-daily-report.js"></script>
     <script src="js/rig-3d-viewer.js"></script>
     <script src="js/dashboard-widgets.js"></script>
     <script src="js/notifications.js"></script>

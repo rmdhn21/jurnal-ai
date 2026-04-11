@@ -59,17 +59,16 @@ let workoutState = {
     earnedXpToday: [] // [taskId1, taskId2] to avoid double XP
 };
 
-function initWorkoutTracker() {
-    loadWorkoutState();
+async function initWorkoutTracker() {
+    await loadWorkoutState();
     setupWorkoutTabs();
     renderWorkoutTab(workoutState.activeTab);
 }
 
-function loadWorkoutState() {
-    const saved = localStorage.getItem('hybrid_workout_state');
+async function loadWorkoutState() {
+    const saved = await getWorkoutState();
     if (saved) {
-        const parsed = JSON.parse(saved);
-        workoutState = { ...workoutState, ...parsed };
+        workoutState = { ...workoutState, ...saved };
         workoutState.loadingAi = null;
 
         // Reset daily XP tracker if it's a new day
@@ -80,8 +79,8 @@ function loadWorkoutState() {
     }
 }
 
-function saveWorkoutState() {
-    localStorage.setItem('hybrid_workout_state', JSON.stringify(workoutState));
+async function saveWorkoutStateLocal() {
+    await saveWorkoutState(workoutState);
 }
 
 function setupWorkoutTabs() {
@@ -92,7 +91,7 @@ function setupWorkoutTabs() {
             tab.classList.add('active');
             workoutState.activeTab = tab.dataset.tab;
             renderWorkoutTab(workoutState.activeTab);
-            saveWorkoutState();
+            saveWorkoutStateLocal();
         };
     });
 }
@@ -402,7 +401,7 @@ async function askAiCoach(taskId, exerciseName) {
     }
 
     workoutState.loadingAi = null;
-    saveWorkoutState();
+    await saveWorkoutStateLocal();
     renderWorkoutTab(workoutState.activeTab);
 }
 
@@ -410,7 +409,7 @@ function updateAiQuery(taskId, value) {
     workoutState.aiQueries[taskId] = value;
 }
 
-function toggleWorkoutTask(category, id) {
+async function toggleWorkoutTask(category, id) {
     if (!workoutState.progress[category]) workoutState.progress[category] = [];
     const index = workoutState.progress[category].indexOf(id);
     const today = new Date().toISOString().split('T')[0];
@@ -436,7 +435,7 @@ function toggleWorkoutTask(category, id) {
         workoutState.progress[category].splice(index, 1);
     }
     
-    saveWorkoutState();
+    await saveWorkoutStateLocal();
     renderWorkoutTab(workoutState.activeTab);
 }
 
@@ -445,10 +444,10 @@ function toggleWorkoutExpand(taskId) {
     renderWorkoutTab(workoutState.activeTab);
 }
 
-function resetWorkoutCategory(category) {
+async function resetWorkoutCategory(category) {
     if (confirm('Reset progress latihan ini?')) {
         workoutState.progress[category] = [];
-        saveWorkoutState();
+        await saveWorkoutStateLocal();
         renderWorkoutTab(workoutState.activeTab);
     }
 }

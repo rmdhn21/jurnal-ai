@@ -386,8 +386,18 @@ async function renderTransactionList() {
 
 async function updateFinanceSummary() {
     const transactions = await getTransactions();
-    const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Filter to current month for summary cards
+    const monthTransactions = transactions.filter(t => {
+        const d = parseLocalDate(t.date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+
+    const income = monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expense = monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
     const wallets = await getWallets();
     const totalWalletBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);

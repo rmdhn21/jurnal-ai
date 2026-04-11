@@ -14,6 +14,12 @@ async function initDashboard() {
     if (dailyInsightBtn) {
         dailyInsightBtn.addEventListener('click', getDailyInsight);
     }
+
+    // Add listener for Jarvis Wisdom Card
+    const wisdomCard = document.getElementById('jarvis-wisdom-card');
+    if (wisdomCard) {
+        wisdomCard.addEventListener('click', () => updateJarvisWisdom(true));
+    }
 }
 
 
@@ -149,12 +155,9 @@ async function updateDashboardStats() {
     }).length;
 
     // 3. To-Do List Hari Ini Pending
-    const savedDailyData = localStorage.getItem('jurnal_ai_todo_today_data');
-    if (savedDailyData) {
-        try {
-            const dailyTodos = JSON.parse(savedDailyData);
-            totalPending += dailyTodos.filter(t => !t.completed).length;
-        } catch (e) { }
+    const dailyTodos = await getDailyTodos();
+    if (dailyTodos) {
+        totalPending += dailyTodos.filter(t => !t.completed).length;
     }
 
     // 4. Upcoming Schedules (Planner)
@@ -215,28 +218,24 @@ async function updateDashboardReminders() {
         });
     });
 
-    // 2. To-Do List Hari Ini
-    const savedDailyData = localStorage.getItem('jurnal_ai_todo_today_data');
-    if (savedDailyData) {
-        try {
-            const dailyTodos = JSON.parse(savedDailyData);
-            const pendingTodos = dailyTodos.filter(t => !t.completed);
-            pendingTodos.forEach(t => {
-                let priorityLabel = 'Hari Ini';
-                let extraWeight = 500;
-                if (t.priority === 'p1') { priorityLabel = 'Mendesak'; extraWeight = 0; }
-                else if (t.priority === 'p2') priorityLabel = 'Penting';
+    // 2. To-Do List Hari Ini (Incomplete)
+    const dailyTodos = await getDailyTodos();
+    if (dailyTodos) {
+        dailyTodos.filter(t => !t.completed).forEach(t => {
+            let priorityLabel = 'Hari Ini';
+            let extraWeight = 500;
+            if (t.priority === 'p1') { priorityLabel = 'Mendesak'; extraWeight = 0; }
+            else if (t.priority === 'p2') { priorityLabel = 'Penting'; extraWeight = 200; }
 
-                allReminders.push({
-                    type: 'todo-today',
-                    icon: '✅',
-                    title: t.text,
-                    timeLabel: `To-Do: ${priorityLabel}`,
-                    sortWeight: now.getTime() + extraWeight,
-                    targetScreen: 'todo-today'
-                });
+            allReminders.push({
+                type: 'todo-today',
+                icon: '✅',
+                title: t.text,
+                timeLabel: `To-Do: ${priorityLabel}`,
+                sortWeight: now.getTime() + extraWeight,
+                targetScreen: 'todo-today'
             });
-        } catch (e) { }
+        });
     }
 
     // 3. Kanban
@@ -615,24 +614,18 @@ async function updateDailyScheduleWidget() {
         return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     };
 
-    // 2. Base Routines
-    events.push({ time: addMinutes(timings['Fajr'], -40), title: 'Bangun Tidur & Tahajud', icon: '⏰', type: 'routine' });
-    events.push({ time: addMinutes(timings['Fajr'], -10), title: 'Persiapan & Sedekah Subuh', icon: '💦', type: 'routine' });
+    // 2. Add Dynamic Prayers
     events.push({ time: timings['Fajr'], title: 'Sholat Subuh', icon: '🕌', type: 'prayer' });
-    
-    events.push({ time: '06:30', title: 'Mandi Pagi & Persiapan', icon: '🚿', type: 'routine' });
-    events.push({ time: '07:00', title: 'Sarapan Pagi (Nutrisi)', icon: '🍳', type: 'routine' });
-    
-    events.push({ time: '08:00', title: 'Mulai Kerja / Selesaikan Todo', icon: '💼', type: 'routine' });
-    
     events.push({ time: timings['Dhuhr'], title: 'Sholat Dzuhur', icon: '🕌', type: 'prayer' });
-    events.push({ time: addMinutes(timings['Dhuhr'], 30), title: 'Makan Siang (Nutrisi)', icon: '🍱', type: 'routine' });
-    
     events.push({ time: timings['Asr'], title: 'Sholat Ashar', icon: '🕌', type: 'prayer' });
     events.push({ time: timings['Maghrib'], title: 'Sholat Maghrib', icon: '🕌', type: 'prayer' });
     events.push({ time: timings['Isha'], title: 'Sholat Isya', icon: '🕌', type: 'prayer' });
-    events.push({ time: addMinutes(timings['Isha'], 30), title: 'Makan Malam (Nutrisi)', icon: '🍽️', type: 'routine' });
-    events.push({ time: '22:00', title: 'Evaluasi Jurnal & Tidur', icon: '😴', type: 'routine' });
+
+    // 2.5 Add Saved Routines from DB
+    const savedRoutines = await getRoutines();
+    savedRoutines.forEach(r => {
+        events.push({ time: r.time, title: r.title, icon: r.icon, type: 'routine' });
+    });
 
     // 3. Workout Logic (Pagi jam 05:30)
     if (typeof workoutSchedule !== 'undefined') {
@@ -872,3 +865,67 @@ async function exportReportToPDF() {
     }
 }
 
+
+// ===== JARVIS DAILY WISDOM MODULE =====
+async function updateJarvisWisdom(force = false) {
+    const textEl = document.getElementById('jarvis-wisdom-text');
+    if (!textEl) return;
+
+    const todayStr = getTodayString();
+    const storageKey = 'jurnal_ai_jarvis_wisdom_cache';
+    const cached = JSON.parse(localStorage.getItem(storageKey) || '{}');
+
+    // Use cache if same day and not forced
+    if (!force && cached.date === todayStr && cached.text) {
+        textEl.textContent = cached.text;
+        return;
+    }
+
+    textEl.style.opacity = '0.5';
+    textEl.textContent = "Menganalisis data Boss...";
+
+    try {
+        // 1. Get Context Summary (No API call yet, just local aggregation)
+        const context = await aggregateUserContext();
+        
+        // 2. Prepare Prompt
+        const prompt = `You are Jarvis (Iron Man style). Based on this summarized user data, give ONE sentence of proactive advice or a dry wit observation for today. 
+        Keep it under 20 words. Use Boss/Sir. Respond in Indonesian.
+        Data: ${context}`;
+
+        // 3. Call AI (Minimal version uses existing callAI structure if available or direct fetch)
+        const response = await callJarvisMinimal(prompt);
+        
+        if (response) {
+            textEl.textContent = `"${response}"`;
+            textEl.style.opacity = '1';
+            // Cache it
+            localStorage.setItem(storageKey, JSON.stringify({ date: todayStr, text: `"${response}"` }));
+        }
+    } catch (e) {
+        console.error('Wisdom Error:', e);
+        textEl.textContent = "Data siap, silakan tanya apa saja Boss.";
+        textEl.style.opacity = '1';
+    }
+}
+
+async function callJarvisMinimal(prompt) {
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : localStorage.getItem('gemini_api_key');
+    if (!apiKey) return null;
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.8, maxOutputTokens: 60 }
+            })
+        });
+
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    } catch (e) {
+        return null;
+    }
+}

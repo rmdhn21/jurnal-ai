@@ -93,6 +93,15 @@ function showScreen(targetScreen) {
         // No special entry logic needed yet
     } else if (targetScreen === 'rig-3d-viewer') {
         if (typeof initRig3DViewer === 'function') initRig3DViewer();
+    } else if (targetScreen === 'report-collage') {
+        if (typeof initReportCollage === 'function') initReportCollage();
+    } else if (targetScreen === 'pro-collage') {
+        if (typeof initProCollage === 'function') initProCollage();
+    } else if (targetScreen === 'hse-wag-generator') {
+        if (typeof initHSEDailyReport === 'function') initHSEDailyReport();
+    } else if (targetScreen === 'hse-center') {
+        // Logic for HSE center if needed
+        currentHub = 'hse-center'; 
     }
 }
 

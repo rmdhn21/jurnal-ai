@@ -5,7 +5,8 @@ if (typeof Dexie === 'undefined') {
 const db = new Dexie('JurnalAIDB');
 
 // Define Schema
-db.version(5).stores({
+// Define Schema
+db.version(8).stores({
     journals: 'id, mood, createdAt, updatedAt, synced',
     tasks: 'id, status, done, createdAt, updatedAt, synced',
     schedules: 'id, datetime, createdAt, updatedAt, synced',
@@ -21,7 +22,12 @@ db.version(5).stores({
     saved_generations: 'id, title, category, type, createdAt, updatedAt, synced',
     rig_memos: 'id, updatedAt, synced',
     rig_inspection_state: 'id',
-    settings: 'key' // For simple key-value settings
+    settings: 'key', // For simple key-value settings
+    todo_today: 'id, text, completed, updatedAt, synced',
+    workout_state: 'key, updatedAt, synced',
+    gamification: 'key, updatedAt, synced',
+    learning_progress: 'key, updatedAt, synced',
+    routines: 'id, time, updatedAt, synced'
 });
 
 // Initialize Database

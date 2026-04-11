@@ -250,37 +250,77 @@ async function handleAssistantSend() {
     }
 }
 
-function renderAssistantMessage(text, sender) {
+function setJarvisNeuralStatus(text, active = true) {
+    const statusContainer = document.getElementById('jarvis-neural-status');
+    const statusText = document.getElementById('neural-text');
+    if (!statusContainer || !statusText) return;
+
+    if (active) {
+        statusContainer.classList.add('active');
+        statusText.textContent = text;
+    } else {
+        statusContainer.classList.remove('active');
+    }
+}
+
+async function renderStreamingAssistantMessage(text, sender) {
     const chatHistory = document.getElementById('ai-assistant-chat-history');
     if (!chatHistory) return;
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `${sender}-message`;
-    
+    chatHistory.appendChild(msgDiv);
+
     if (sender === 'bot') {
-        // Basic Markdown-ish to HTML conversion
-        let html = text
+        // Convert markdown-ish to HTML first, but render char by char
+        let htmlContent = text
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/\n/g, '<br>')
             .replace(/^- (.*)/gm, '• $1');
-        msgDiv.innerHTML = html;
+
+        // Typing simulation
+        const cursor = document.createElement('span');
+        cursor.className = 'typing-cursor';
+        msgDiv.appendChild(cursor);
+
+        // Simple way: textContent then replace with HTML at the end, 
+        // OR better: temporary element to parse HTML and then append nodes.
+        // For simplicity and speed, we'll reveal the HTML content gradually.
+        
+        let i = 0;
+        const speed = 20; // ms per char (Medium-Fast)
+        
+        return new Promise(resolve => {
+            const timer = setInterval(() => {
+                if (i < text.length) {
+                    // We render based on characters but we want the HTML to be parsed correctly.
+                    // This is a bit tricky with raw HTML. 
+                    // Let's use a simpler approach: set textContent per char until end, then swap to innerHTML.
+                    msgDiv.innerHTML = text.substring(0, i) + '<span class="typing-cursor"></span>';
+                    i++;
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                } else {
+                    clearInterval(timer);
+                    msgDiv.innerHTML = htmlContent;
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                    resolve();
+                }
+            }, speed);
+        });
     } else {
         msgDiv.textContent = text;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
     }
-    
-    chatHistory.appendChild(msgDiv);
-    
-    // Auto scroll
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-    
+
     // Save to history state
     assistantMessages.push({ role: sender === 'user' ? 'user' : 'model', parts: [{ text: text }] });
-    
-    // Keep history manageable (last 10 messages)
-    if (assistantMessages.length > 20) {
-        assistantMessages = assistantMessages.slice(-20);
-    }
+    if (assistantMessages.length > 20) assistantMessages = assistantMessages.slice(-20);
+}
+
+// Keeping original for backward compatibility or simple usage
+function renderAssistantMessage(text, sender) {
+    renderStreamingAssistantMessage(text, sender);
 }
 
 async function aggregateUserContext() {
@@ -291,6 +331,7 @@ async function aggregateUserContext() {
     const wallets = await getWallets();
     const budgets = await getBudgets();
     const islamicTracks = await getIslamicTracks();
+    const routines = await getRoutines();
 
     // Last 14 days grouping
     const dailySnapshot = {};
@@ -314,11 +355,22 @@ async function aggregateUserContext() {
         if (dailySnapshot[date]) dailySnapshot[date].tasksCompleted++;
     });
 
-    // Map Transactions (last 14 days)
+    // Map Transactions (last 14 days) and aggregate categories
+    const categoryTotals = {};
     transactions.filter(t => t.type === 'expense').forEach(t => {
         const date = t.date;
         if (dailySnapshot[date]) dailySnapshot[date].spending += (t.amount || 0);
+        
+        // Aggregate categories
+        const cat = t.category || 'Lain-lain';
+        categoryTotals[cat] = (categoryTotals[cat] || 0) + (t.amount || 0);
     });
+
+    const topCategories = Object.entries(categoryTotals)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([cat, amt]) => `${cat}: Rp ${amt.toLocaleString('id-ID')}`)
+        .join(', ');
 
     // Map Islamic Track (Subuh only for correlation)
     Object.values(islamicTracks).forEach(t => {
@@ -332,14 +384,19 @@ async function aggregateUserContext() {
 
     const totalBalance = wallets.reduce((s, w) => s + (w.balance || 0), 0);
     const pendingTasksCount = tasks.filter(t => !t.done).length;
+    
+    // Routine context
+    const routineSummary = (routines || []).map(r => `${r.time}: ${r.title}`).join(', ') || 'Belum ada rutinitas';
 
     return `
 === KONTEKS ANALITIK (14 HARI TERAKHIR) ===
 ${snapshotText}
 
-RINGKASAN SAAT INI:
+=== RINGKASAN DATA ===
 Total Saldo: Rp ${totalBalance.toLocaleString('id-ID')}
+Top Pengeluaran: ${topCategories}
 Tugas Pending: ${pendingTasksCount} item
+Rutinitas Harian: ${routineSummary}
 ===========================================
     `;
 }
@@ -348,7 +405,9 @@ async function getGlobalAIResponse(userMessage) {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error('API Key Missing');
 
+    setJarvisNeuralStatus('📦 Sinkronisasi Memori...', true);
     const context = await aggregateUserContext();
+    setJarvisNeuralStatus('🧠 Menganalisis Pola Hidup...', true);
     
     const systemPrompt = `Kamu adalah "Jurnal AI Assistant - Personal Mentor". Tugasmu membantu pengguna sukses dengan menganalisis korelasi antar data mereka.
 
@@ -381,6 +440,8 @@ ATURAN KOMUNIKASI:
         }
     };
 
+    setJarvisNeuralStatus('✨ Merumuskan Insight Neural...', true);
+
     const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -389,5 +450,6 @@ ATURAN KOMUNIKASI:
 
     if (!response.ok) throw new Error('API Error');
     const data = await response.json();
+    setJarvisNeuralStatus('', false); 
     return data.candidates?.[0]?.content?.[1]?.text || data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, coba lagi.";
 }

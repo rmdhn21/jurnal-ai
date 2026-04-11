@@ -73,6 +73,41 @@ async function migrateFromLocalStorageToIDB() {
         } catch (e) {}
     }
 
+    // Special case for Daily To-Do
+    const rawDailyTodos = localStorage.getItem('jurnal_ai_todo_today_data');
+    if (rawDailyTodos) {
+        try {
+            const data = JSON.parse(rawDailyTodos);
+            if (Array.isArray(data) && data.length > 0) {
+                await idbBulkSave('todo_today', data.map(d => ({ ...d, updatedAt: new Date().toISOString(), synced: 0 })));
+            }
+        } catch (e) {}
+    }
+
+    // Special case for Workout State
+    const rawWorkout = localStorage.getItem('hybrid_workout_state');
+    if (rawWorkout) {
+        try {
+            const data = JSON.parse(rawWorkout);
+            await idbSave('workout_state', { key: 'current', data, updatedAt: new Date().toISOString(), synced: 0 });
+        } catch (e) {}
+    }
+
+    // Special case for Gamification
+    const gamificationKeys = {
+        XP: 'jurnal_ai_xp',
+        LEVEL: 'jurnal_ai_level',
+        BADGES: 'jurnal_ai_badges',
+        INVENTORY: 'jurnal_ai_inventory',
+        EQUIPPED: 'jurnal_ai_equipped'
+    };
+    for (const [id, lsKey] of Object.entries(gamificationKeys)) {
+        const val = localStorage.getItem(lsKey);
+        if (val) {
+            await idbSave('gamification', { key: lsKey, value: val, updatedAt: new Date().toISOString(), synced: 0 });
+        }
+    }
+
     localStorage.setItem(MIGRATION_KEY, 'true');
     if (status) status.textContent = 'Migrasi Selesai! Memuat aplikasi...';
     setTimeout(() => { if (overlay) overlay.classList.add('hidden'); }, 1000);
@@ -666,4 +701,133 @@ async function deleteSavedGeneration(id) {
         }
     }
     triggerCloudSync();
+}
+
+// ==== DAILY TODO TODAY FUNCTIONS ====
+async function getDailyTodos(includeDeleted = false) {
+    if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
+        const data = localStorage.getItem('jurnal_ai_todo_today_data');
+        const items = data ? JSON.parse(data) : [];
+        return includeDeleted ? items : items.filter(t => !t.deleted);
+    }
+    const items = await idbGetAll('todo_today');
+    return includeDeleted ? items : items.filter(t => !t.deleted);
+}
+
+async function saveDailyTodo(todo) {
+    if (!todo.id) todo.id = generateId();
+    todo.updatedAt = new Date().toISOString();
+    todo.synced = 0;
+    await idbSave('todo_today', todo);
+    triggerCloudSync();
+    return todo;
+}
+
+async function deleteDailyTodo(id) {
+    await idbDelete('todo_today', id);
+    triggerCloudSync();
+}
+
+// ==== WORKOUT TRACKER FUNCTIONS ====
+async function getWorkoutState() {
+    if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
+        const data = localStorage.getItem('hybrid_workout_state');
+        return data ? JSON.parse(data) : null;
+    }
+    const row = await idbGet('workout_state', 'current');
+    return row ? row.data : null;
+}
+
+async function saveWorkoutState(state) {
+    const row = {
+        key: 'current',
+        data: state,
+        updatedAt: new Date().toISOString(),
+        synced: 0
+    };
+    await idbSave('workout_state', row);
+    triggerCloudSync();
+}
+
+// ==== GAMIFICATION FUNCTIONS ====
+async function getGamificationValue(key, defaultValue = null) {
+    if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
+        return localStorage.getItem(key) || defaultValue;
+    }
+    const row = await idbGet('gamification', key);
+    return row ? row.value : defaultValue;
+}
+
+async function saveGamificationValue(key, value) {
+    const row = {
+        key: key,
+        value: value,
+        updatedAt: new Date().toISOString(),
+        synced: 0
+    };
+    await idbSave('gamification', row);
+    triggerCloudSync();
+}
+
+// ==== LEARNING PROGRESS FUNCTIONS ====
+async function getLearningData(key) {
+    if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
+        return localStorage.getItem(key);
+    }
+    const row = await idbGet('learning_progress', key);
+    return row ? row.data : null;
+}
+
+async function saveLearningData(key, data) {
+    const row = {
+        key: key,
+        data: data,
+        updatedAt: new Date().toISOString(),
+        synced: 0
+    };
+    await idbSave('learning_progress', row);
+    triggerCloudSync();
+}
+
+// ==== DAILY ROUTINE FUNCTIONS ====
+async function getRoutines(includeDeleted = false) {
+    const items = await idbGetAll('routines');
+    return includeDeleted ? items : items.filter(t => !t.deleted);
+}
+
+async function saveRoutine(routine) {
+    if (!routine.id) routine.id = generateId();
+    routine.updatedAt = new Date().toISOString();
+    routine.synced = 0;
+    await idbSave('routines', routine);
+    triggerCloudSync();
+    return routine;
+}
+
+async function deleteRoutine(id) {
+    await idbDelete('routines', id);
+    triggerCloudSync();
+}
+
+async function migrateDefaultRoutines() {
+    const routines = await idbGetAll('routines');
+    if (routines.length > 0) return; // Already exists
+
+    const defaults = [
+        { id: 'r1', time: '04:00', title: 'Bangun Tidur & Tahajud', icon: '⏰' },
+        { id: 'r2', time: '04:20', title: 'Persiapan & Sedekah Subuh', icon: '💦' },
+        { id: 'r3', time: '06:30', title: 'Mandi Pagi & Persiapan', icon: '🚿' },
+        { id: 'r4', time: '07:00', title: 'Sarapan Pagi (Nutrisi)', icon: '🍳' },
+        { id: 'r5', time: '08:00', title: 'Mulai Kerja / Selesaikan Todo', icon: '💼' },
+        { id: 'r6', time: '22:00', title: 'Evaluasi Jurnal & Tidur', icon: '😴' }
+    ];
+
+    for (const d of defaults) {
+        await idbSave('routines', {
+            ...d,
+            updatedAt: new Date().toISOString(),
+            synced: 0
+        });
+    }
+    console.log('✅ Default routines migrated');
 }

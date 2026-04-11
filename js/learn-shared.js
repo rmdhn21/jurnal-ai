@@ -22,8 +22,8 @@ window.showAiLessonScreen = async function(screenId, moduleName, prompt, onCompl
     const editKey = moduleId ? `lesson_edit_${moduleId}` : null;
     
     if (cacheKey && !forceRefresh) {
-        const edited = editKey ? localStorage.getItem(editKey) : null;
-        const cached = localStorage.getItem(cacheKey);
+        const edited = editKey ? await getLearningData(editKey) : null;
+        const cached = await getLearningData(cacheKey);
         
         if (edited) {
             console.log(`Loading ${moduleId} from edited version...`);
@@ -82,7 +82,7 @@ window.showAiLessonScreen = async function(screenId, moduleName, prompt, onCompl
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal menghasilkan materi.';
 
         // Save to cache
-        if (cacheKey) localStorage.setItem(cacheKey, text);
+        if (cacheKey) await saveLearningData(cacheKey, text);
 
         renderLessonContent(screen, moduleName, text, onComplete, moduleId, screenId, prompt, onBack);
 
@@ -153,10 +153,12 @@ function renderLessonContent(screen, moduleName, rawText, onComplete, moduleId, 
         }
     };
 
-    document.getElementById('lesson-regenerate-btn').onclick = () => {
+    document.getElementById('lesson-regenerate-btn').onclick = async () => {
         if(confirm('Materi baru akan di-generate ulang. Semua highlight dan catatan manual Anda akan hilang. Lanjutkan?')) {
             const editKey = moduleId ? `lesson_edit_${moduleId}` : null;
-            if (editKey) localStorage.removeItem(editKey);
+            if (editKey) {
+                await idbDelete('learning_progress', editKey); // Or use saveLearningData(editKey, null)
+            }
             showAiLessonScreen(screenId, moduleName, prompt, onComplete, moduleId, true, onBack);
         }
     };
@@ -200,10 +202,11 @@ function renderLessonContent(screen, moduleName, rawText, onComplete, moduleId, 
 /**
  * Universal progress tracker
  */
-window.completeGenericModule = function(storageKey, moduleKey) {
-    const progress = JSON.parse(localStorage.getItem(storageKey) || '{}');
+window.completeGenericModule = async function(storageKey, moduleKey) {
+    const progressRaw = await getLearningData(storageKey);
+    const progress = JSON.parse(progressRaw || '{}');
     progress[moduleKey] = true;
-    localStorage.setItem(storageKey, JSON.stringify(progress));
+    await saveLearningData(storageKey, JSON.stringify(progress));
     
     // Check if we should add to general progress or history
     console.log(`Module ${moduleKey} completed in ${storageKey}`);
@@ -325,11 +328,11 @@ function insertMasteryNoteBlock() {
     }
 }
 
-function saveMasteryEdit(moduleId) {
+async function saveMasteryEdit(moduleId) {
     const editable = document.getElementById('lesson-content-editable');
     const html = editable.innerHTML;
     
-    localStorage.setItem(`lesson_edit_${moduleId}`, html);
+    await saveLearningData(`lesson_edit_${moduleId}`, html);
     
     alert('Perubahan berhasil disimpan!');
     toggleMasteryEditMode();

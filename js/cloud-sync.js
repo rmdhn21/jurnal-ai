@@ -29,6 +29,9 @@ function refreshAllUIs() {
     if (typeof renderCalendar === 'function') renderCalendar();
     if (typeof initWalletUI === 'function') initWalletUI();
     if (typeof initBudgetUI === 'function') initBudgetUI();
+    if (typeof initTodoToday === 'function') initTodoToday();
+    if (typeof initWorkoutTracker === 'function') initWorkoutTracker();
+    if (typeof initGamification === 'function') initGamification();
 }
 
 function initSupabase() {
@@ -116,6 +119,13 @@ async function syncToCloud() {
         const hseVocabBank = typeof getVocabBank === 'function' ? await getVocabBank(true) : [];
         const savedGenerations = typeof getSavedGenerations === 'function' ? await getSavedGenerations(true) : [];
         
+        // New Migrated Data
+        const todoToday = await idbGetAll('todo_today');
+        const workoutState = await idbGetAll('workout_state');
+        const gamification = await idbGetAll('gamification');
+        const learningProgress = await idbGetAll('learning_progress');
+        const routines = await idbGetAll('routines');
+        
         updateSyncStatus('Syncing', 75);
 
         const data = {
@@ -133,8 +143,13 @@ async function syncToCloud() {
             rigInspectionState,
             hseVocabBank,
             savedGenerations,
+            todoToday,
+            workoutState,
+            gamification,
+            learningProgress,
+            routines,
             updatedAt: new Date().toISOString(),
-            version: '2.0-idb'
+            version: '2.1-idb-full'
         };
 
         // Size calculation
@@ -232,6 +247,7 @@ async function syncFromCloud() {
         if (cloudData.goals) await mergeAndSave('goals', await getGoals(true), cloudData.goals);
         if (cloudData.wallets) await mergeAndSave('wallets', await getWallets(true), cloudData.wallets);
         if (cloudData.budgets) await mergeAndSave('budgets', await getBudgets(true), cloudData.budgets);
+        if (cloudData.routines) await mergeAndSave('routines', await getRoutines(true), cloudData.routines);
         
         // Progress & missing tables
         if (cloudData.hseVocabBank) await mergeAndSave('hse_vocab_bank', await getVocabBank(true), cloudData.hseVocabBank);
@@ -251,6 +267,29 @@ async function syncFromCloud() {
             const mergedTracks = { ...localTracks, ...cloudData.islamicTracks };
             await idbBulkSave('islamic_tracks', Object.values(mergedTracks));
         }
+
+        // Merge helper for Key-Value tables
+        const mergeAndSaveKV = async (tableName, remoteItems) => {
+            if (!remoteItems) return;
+            const localItems = await idbGetAll(tableName);
+            const merged = new Map();
+            localItems.forEach(item => merged.set(item.key, item));
+            
+            let changed = false;
+            remoteItems.forEach(cloudItem => {
+                const localItem = merged.get(cloudItem.key);
+                if (!localItem || new Date(cloudItem.updatedAt || 0) > new Date(localItem.updatedAt || 0)) {
+                    merged.set(cloudItem.key, cloudItem);
+                    changed = true;
+                }
+            });
+            if (changed) await idbBulkSave(tableName, Array.from(merged.values()));
+        };
+
+        if (cloudData.todoToday) await mergeAndSave('todo_today', await idbGetAll('todo_today'), cloudData.todoToday);
+        if (cloudData.workoutState) await mergeAndSaveKV('workout_state', cloudData.workoutState);
+        if (cloudData.gamification) await mergeAndSaveKV('gamification', cloudData.gamification);
+        if (cloudData.learningProgress) await mergeAndSaveKV('learning_progress', cloudData.learningProgress);
 
         console.log('✅ Smart IDB Sync from cloud completed');
         return true;
@@ -306,6 +345,12 @@ async function syncFromCloudReplace() {
         if (cloudData.islamicTracks) localStorage.setItem(STORAGE_KEYS.ISLAMIC_TRACKS, JSON.stringify(cloudData.islamicTracks));
         if (cloudData.reminderSettings) localStorage.setItem(STORAGE_KEYS.REMINDER_SETTINGS, JSON.stringify(cloudData.reminderSettings));
         if (cloudData.pushSubscription) localStorage.setItem('jurnal_ai_push_subscription', cloudData.pushSubscription);
+
+        // Replace IDB tables
+        if (cloudData.todoToday) await idbBulkSave('todo_today', cloudData.todoToday);
+        if (cloudData.workoutState) await idbBulkSave('workout_state', cloudData.workoutState);
+        if (cloudData.gamification) await idbBulkSave('gamification', cloudData.gamification);
+        if (cloudData.learningProgress) await idbBulkSave('learning_progress', cloudData.learningProgress);
 
         console.log('✅ Cloud-Only Sync completed - local data replaced with cloud data');
 

@@ -14,6 +14,7 @@ async function initPlannerUI() {
     initKanbanDragDrop();
     await renderScheduleList();
     await renderCalendar(); // Initialize Calendar
+    await renderRoutinesList();
 }
 
 async function handleAddTodo() {
@@ -92,6 +93,96 @@ async function addScheduleFromSuggestion(text) {
     await saveSchedule(schedule);
     await renderScheduleList();
 }
+
+// ===== DAILY ROUTINE UI FUNCTIONS =====
+function switchPlannerTab(tab) {
+    const eventsPanel = document.getElementById('planner-events-panel');
+    const routinePanel = document.getElementById('planner-routine-panel');
+    const tabs = document.querySelectorAll('#planner-screen .tab-btn');
+
+    tabs.forEach(t => t.classList.remove('active'));
+
+    if (tab === 'events') {
+        eventsPanel.classList.remove('hidden');
+        routinePanel.classList.add('hidden');
+        tabs[0].classList.add('active');
+    } else {
+        eventsPanel.classList.add('hidden');
+        routinePanel.classList.remove('hidden');
+        tabs[1].classList.add('active');
+        renderRoutinesList();
+    }
+}
+
+async function renderRoutinesList() {
+    const container = document.getElementById('routine-list');
+    if (!container) return;
+
+    const routines = await getRoutines();
+    // Sort by time
+    routines.sort((a, b) => a.time.localeCompare(b.time));
+
+    if (routines.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted p-md">Belum ada rutinitas harian.</p>';
+        return;
+    }
+
+    container.innerHTML = routines.map(r => `
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--surface-hover); border: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 1.2rem;">${r.icon || '⏰'}</span>
+                <div>
+                    <div style="font-weight: 700; font-size: 0.95rem;">${r.title}</div>
+                    <div style="font-size: 0.75rem; color: var(--primary); font-weight: bold;">🕒 ${r.time}</div>
+                </div>
+            </div>
+            <button class="icon-btn" onclick="handleDeleteRoutineUI('${r.id}')" style="color: var(--danger); font-size: 1rem;">🗑️</button>
+        </div>
+    `).join('');
+}
+
+async function handleAddRoutine() {
+    const timeInput = document.getElementById('routine-time');
+    const titleInput = document.getElementById('routine-title');
+    const iconInput = document.getElementById('routine-icon');
+
+    const time = timeInput.value;
+    const title = titleInput.value.trim();
+    const icon = iconInput.value.trim() || '⏰';
+
+    if (!time || !title) {
+        alert('Isi jam dan nama rutinitas!');
+        return;
+    }
+
+    const routine = {
+        id: generateId(),
+        time,
+        title,
+        icon,
+        updatedAt: new Date().toISOString()
+    };
+
+    await saveRoutine(routine);
+    
+    // Reset inputs
+    titleInput.value = '';
+    iconInput.value = '';
+    
+    await renderRoutinesList();
+    if (typeof updateDailyScheduleWidget === 'function') updateDailyScheduleWidget();
+}
+
+async function handleDeleteRoutineUI(id) {
+    if (!confirm('Hapus rutinitas ini?')) return;
+    await deleteRoutine(id);
+    await renderRoutinesList();
+    if (typeof updateDailyScheduleWidget === 'function') updateDailyScheduleWidget();
+}
+
+window.switchPlannerTab = switchPlannerTab;
+window.handleAddRoutine = handleAddRoutine;
+window.handleDeleteRoutineUI = handleDeleteRoutineUI;
 
 
 async function renderKanbanBoard() {
@@ -389,8 +480,12 @@ async function renderScheduleList() {
 // =========================================
 let currentCalendarDate = new Date();
 let selectedDate = null;
+let isRenderingCalendar = false;
 
 async function renderCalendar() {
+    if (isRenderingCalendar) return;
+    isRenderingCalendar = true;
+
     const calendarTargets = [
         {
             gridId: 'calendar-grid',
@@ -406,75 +501,74 @@ async function renderCalendar() {
         }
     ];
 
-    for (const target of calendarTargets) {
-        const grid = document.getElementById(target.gridId);
-        const monthYearLabel = document.getElementById(target.monthYearId);
+    try {
+        const year = currentCalendarDate.getFullYear();
+        const month = currentCalendarDate.getMonth();
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
 
-        // Safety check for elements
-        if (!grid || !monthYearLabel) continue;
+        // 1. Pre-fetch Data (Single DB call for the whole month)
+        let allSchedules = await getSchedules();
+        allSchedules = allSchedules.filter(s => {
+            return !(s.isPrayer || String(s.id).startsWith('prayer-') || (s.title && s.title.includes('🕌')));
+        });
 
-        try {
-            grid.innerHTML = '';
+        const cachedPrayerData = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRAYER_DATA) || '{}');
+        const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'July', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const dayHeaders = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
-            const year = currentCalendarDate.getFullYear();
-            const month = currentCalendarDate.getMonth();
+        for (const target of calendarTargets) {
+            const grid = document.getElementById(target.gridId);
+            const monthYearLabel = document.getElementById(target.monthYearId);
 
-            // Set Header
-            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'July', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            if (!grid || !monthYearLabel) continue;
+
+            // Set Header Label
             monthYearLabel.textContent = `${monthNames[month]} ${year}`;
 
+            // 2. Build Offline via Fragment (Atomic Update)
+            const fragment = document.createDocumentFragment();
+
             // Day Headers
-            const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-            days.forEach(day => {
+            dayHeaders.forEach(day => {
                 const el = document.createElement('div');
                 el.className = 'calendar-day-header';
                 el.textContent = day;
-                grid.appendChild(el);
+                fragment.appendChild(el);
             });
 
-            // Calendar Days
+            // Calendar Logic
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const today = new Date();
 
             // Empty cells for previous month
             for (let i = 0; i < firstDay; i++) {
                 const el = document.createElement('div');
                 el.className = 'calendar-day empty';
-                grid.appendChild(el);
+                fragment.appendChild(el);
             }
 
             // Days
             for (let i = 1; i <= daysInMonth; i++) {
-                const date = new Date(year, month, i);
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-
+                
                 const el = document.createElement('div');
                 el.className = 'calendar-day';
                 el.textContent = i;
                 el.dataset.date = dateStr;
 
-                // Highlight Today
-                if (date.toDateString() === today.toDateString()) {
-                    el.classList.add('today');
-                }
+                // Sync Highlight Logic
+                if (dateStr === todayStr) el.classList.add('today');
+                if (selectedDate === dateStr) el.classList.add('selected');
 
-                // Highlight Selected
-                if (selectedDate === dateStr) {
-                    el.classList.add('selected');
-                }
-
-                // Add Event Indicators
-                const events = await getEventsForDate(dateStr);
-                // FILTER: Don't show dots for prayer times (too cluttered)
-                const visibleEvents = events.filter(e => !e.isPrayer);
-
-                if (visibleEvents.length > 0) {
+                // 3. Sync Event Markers (Using pre-fetched data)
+                const dayEvents = allSchedules.filter(s => s.datetime && s.datetime.startsWith(dateStr));
+                
+                // Add dot indicators
+                if (dayEvents.length > 0) {
                     const indicatorContainer = document.createElement('div');
                     indicatorContainer.className = 'event-indicator';
-
-                    // Limit dots to 3
-                    visibleEvents.slice(0, 3).forEach(event => {
+                    dayEvents.slice(0, 3).forEach(event => {
                         const dot = document.createElement('div');
                         dot.className = `event-dot priority-${event.priority || 'default'}`;
                         indicatorContainer.appendChild(dot);
@@ -485,29 +579,34 @@ async function renderCalendar() {
                 // Interaction
                 el.addEventListener('click', async () => {
                     selectedDate = dateStr;
-                    await renderCalendar(); // Re-render to update highlights
-                    await showSelectedDateEvents(dateStr);
+                    renderCalendar(); // Recursive call, blocked by isRendering if triggered too fast
+                    showSelectedDateEvents(dateStr);
                 });
 
-                grid.appendChild(el);
+                fragment.appendChild(el);
             }
 
-            // Navigation Listeners
+            // 4. Update DOM in ONE step
+            grid.innerHTML = '';
+            grid.appendChild(fragment);
+
+            // Re-bind Navigation (using onclick to avoid duplicate listeners)
             const prevBtn = document.getElementById(target.prevBtnId);
             const nextBtn = document.getElementById(target.nextBtnId);
 
-            if (prevBtn) prevBtn.onclick = async () => {
+            if (prevBtn) prevBtn.onclick = () => {
                 currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
-                await renderCalendar();
+                renderCalendar();
             };
-            if (nextBtn) nextBtn.onclick = async () => {
+            if (nextBtn) nextBtn.onclick = () => {
                 currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
-                await renderCalendar();
+                renderCalendar();
             };
-        } catch (e) {
-            console.error('Error rendering calendar:', e);
-            grid.innerHTML = '<p class="error-text">Gagal memuat kalender</p>';
         }
+    } catch (e) {
+        console.error('Error rendering calendar:', e);
+    } finally {
+        isRenderingCalendar = false;
     }
 }
 
