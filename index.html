@@ -118,7 +118,7 @@
         #jarvis-global-fab {
             position: fixed;
             right: 20px;
-            bottom: 100px; /* Above Bottom Nav Bar */
+            bottom: calc(100px + env(safe-area-inset-bottom)); /* Elevated above bottom nav */
             width: 58px;
             height: 58px;
             background: linear-gradient(135deg, var(--primary), #fbbf24);

@@ -1191,6 +1191,7 @@ body::before {
 /* ===== Screen Management ===== */
 .screen {
     display: none;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
 }
 
 .screen.active {
@@ -2026,6 +2027,7 @@ body::before {
 .jarvis-input-area {
     padding: 10px 0;
     margin-top: auto;
+    margin-bottom: 10px; /* Extra breathing room */
 }
 
 .jarvis-input-area .ai-input-wrapper {
