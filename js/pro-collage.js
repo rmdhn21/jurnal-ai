@@ -21,7 +21,9 @@ function initProCollage() {
 }
 
 function updatePDCGrid() {
-    const count = parseInt(document.getElementById('pdc-count').value);
+    const count = parseInt(document.getElementById('pdc-count')?.value || 2);
+    const mode = document.getElementById('pdc-label-mode')?.value || 'standard';
+    
     const label1 = document.getElementById('pdc-label-1');
     const label2 = document.getElementById('pdc-label-2');
 
@@ -34,12 +36,12 @@ function updatePDCGrid() {
         }
     }
 
-    if (count === 2) {
-        label1.innerText = "Foto 1 (BEFORE)";
-        label2.innerText = "Foto 2 (AFTER)";
+    if (mode === 'bf' && count >= 2) {
+        if (label1) label1.innerText = "Foto 1 (BEFORE)";
+        if (label2) label2.innerText = "Foto 2 (AFTER)";
     } else {
-        label1.innerText = "Foto 1";
-        label2.innerText = "Foto 2";
+        if (label1) label1.innerText = "Foto 1";
+        if (label2) label2.innerText = "Foto 2";
     }
 }
 
@@ -151,18 +153,19 @@ async function generatePDC() {
     btn.disabled = true;
 
     try {
+        const labelMode = document.getElementById('pdc-label-mode')?.value || 'standard';
         const canvas = document.getElementById('pdc-canvas');
         const ctx = canvas.getContext('2d');
         const W = 2000;
         const margin = 12;
-        const captionHeight = 220;
+        const captionHeight = 350;
 
         const processedImgs = [];
         for (let i = 0; i < activeIndices.length; i++) {
             const slotIdx = activeIndices[i];
             let label = (i + 1).toString();
-            if (activeIndices.length === 2) {
-                label = (i === 0) ? 'BEFORE' : 'AFTER';
+            if (labelMode === 'bf') {
+                label = (i === 0) ? 'BEFORE' : (i === 1 ? 'AFTER' : (i + 1).toString());
             }
             
             const stitchedImg = await stitchVerticalPDC(pdcSlots[slotIdx], task, location);
@@ -181,13 +184,33 @@ async function generatePDC() {
             canvas.height = H;
             drawPDCSlot(ctx, processedImgs[0].img, 0, 0, W, H - captionHeight, processedImgs[0].label);
         } else if (count === 2) {
-            const h1 = (W / processedImgs[0].img.width) * processedImgs[0].img.height;
-            const h2 = (W / processedImgs[1].img.width) * processedImgs[1].img.height;
-            H = h1 + h2 + margin + captionHeight;
-            canvas.width = W;
-            canvas.height = H;
-            drawPDCSlot(ctx, processedImgs[0].img, 0, 0, W, h1, processedImgs[0].label);
-            drawPDCSlot(ctx, processedImgs[1].img, 0, h1 + margin, W, h2, processedImgs[1].label);
+            // Adaptive Layout for 2 Images
+            const h1_full = (W / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const h2_full = (W / processedImgs[1].img.width) * processedImgs[1].img.height;
+            
+            const isPortrait1 = processedImgs[0].img.width < processedImgs[0].img.height;
+            const isPortrait2 = processedImgs[1].img.width < processedImgs[1].img.height;
+            
+            if (isPortrait1 || isPortrait2) {
+                // Side-by-side if even one is portrait (usually users mix before/after)
+                const wSlot = (W - margin) / 2;
+                const hRow = Math.max(
+                    (wSlot / processedImgs[0].img.width) * processedImgs[0].img.height,
+                    (wSlot / processedImgs[1].img.width) * processedImgs[1].img.height
+                );
+                H = hRow + captionHeight;
+                canvas.width = W;
+                canvas.height = H;
+                drawPDCSlot(ctx, processedImgs[0].img, 0, 0, wSlot, hRow, processedImgs[0].label);
+                drawPDCSlot(ctx, processedImgs[1].img, wSlot + margin, 0, wSlot, hRow, processedImgs[1].label);
+            } else {
+                // Vertical stack for landscape
+                H = h1_full + h2_full + margin + captionHeight;
+                canvas.width = W;
+                canvas.height = H;
+                drawPDCSlot(ctx, processedImgs[0].img, 0, 0, W, h1_full, processedImgs[0].label);
+                drawPDCSlot(ctx, processedImgs[1].img, 0, h1_full + margin, W, h2_full, processedImgs[1].label);
+            }
         } else if (count === 3) {
             const hTop = (W / processedImgs[0].img.width) * processedImgs[0].img.height;
             const wBot = (W - margin) / 2;
@@ -232,10 +255,12 @@ async function generatePDC() {
         ctx.fillStyle = '#111827';
         ctx.fillRect(0, canvas.height - captionHeight, canvas.width, captionHeight);
         ctx.fillStyle = '#ffffff';
-        const fontSize = Math.max(30, Math.min(60, canvas.width / 30));
+        const fontSize = Math.max(30, Math.min(60, canvas.width / 35));
         ctx.font = `bold ${fontSize}px Inter, sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillText(finalCaption, canvas.width / 2, canvas.height - 100);
+        
+        // Multiline Wrapping
+        wrapTextPDC(ctx, finalCaption, canvas.width / 2, canvas.height - 230, canvas.width - 100, fontSize + 20);
 
         document.getElementById('pdc-result-container').classList.remove('hidden');
         document.getElementById('pdc-result-container').scrollIntoView({ behavior: 'smooth' });
@@ -252,7 +277,27 @@ async function generatePDC() {
 function drawPDCSlot(ctx, img, x, y, w, h, label) {
     ctx.fillStyle = '#f9fafb';
     ctx.fillRect(x, y, w, h);
-    ctx.drawImage(img, x, y, w, h);
+    
+    // Maintain aspect ratio (Object-Fit Contain)
+    const imgRatio = img.width / img.height;
+    const slotRatio = w / h;
+    
+    let drawW, drawH, drawX, drawY;
+    if (imgRatio > slotRatio) {
+        // Image is wider than slot
+        drawW = w;
+        drawH = w / imgRatio;
+        drawX = x;
+        drawY = y + (h - drawH) / 2;
+    } else {
+        // Image is taller than slot
+        drawH = h;
+        drawW = h * imgRatio;
+        drawY = y;
+        drawX = x + (w - drawW) / 2;
+    }
+    
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
     // Label Badge
     ctx.fillStyle = label === 'BEFORE' ? '#ef4444' : (label === 'AFTER' ? '#10b981' : '#374151');
@@ -280,4 +325,24 @@ function downloadPDC() {
     link.download = `Pro_Documentation_${task.replace(/\s+/g, '_')}.jpg`;
     link.href = canvas.toDataURL('image/jpeg', 0.95);
     link.click();
+}
+
+function wrapTextPDC(ctx, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    let currentY = y;
+
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+            ctx.fillText(line, x, currentY);
+            line = words[n] + ' ';
+            currentY += lineHeight;
+        } else {
+            line = testLine;
+        }
+    }
+    ctx.fillText(line, x, currentY);
 }

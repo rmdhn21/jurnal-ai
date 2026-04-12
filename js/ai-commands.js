@@ -359,7 +359,7 @@ function showConfirmAllButton() {
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
-async function executeJarvisCommand(id) {
+async function executeCommandById(id) {
     const cmd = pendingCommands.find(c => c.id === id);
     if (!cmd) return;
 
@@ -374,7 +374,7 @@ async function executeJarvisCommand(id) {
     }
 }
 
-function cancelJarvisCommand(id) {
+function cancelCommandById(id) {
     pendingCommands = pendingCommands.filter(c => c.id !== id);
     const card = document.getElementById(id);
     if (card) card.remove();
@@ -442,11 +442,15 @@ async function executeSingleCommand(cmd) {
                 id: Date.now().toString(), 
                 text: data.text || data.title || 'Tanpa Nama', 
                 priority: data.priority || 'p2', 
-                completed: false 
+                completed: false,
+                date: getTodayString()
             };
-            if (typeof dailyTodos !== 'undefined') {
-                dailyTodos.push(newTodo);
-                if (typeof saveTodos === 'function') saveTodos();
+            if (typeof saveDailyTodo === 'function') {
+                await saveDailyTodo(newTodo);
+                if (typeof getDailyTodos === 'function') {
+                    // Update global variable so renderDailyTodos works correctly
+                    dailyTodos = await getDailyTodos();
+                }
             }
         } else if (intent === 'SAVE_TASK_KANBAN') {
             const task = { ...data, id: generateId(), done: false, createdAt: new Date().toISOString(), createdFrom: 'jarvis_unified' };

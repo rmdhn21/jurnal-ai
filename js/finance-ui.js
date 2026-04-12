@@ -56,7 +56,23 @@ async function initFinanceUI() {
 
 async function updateFinancialHealthScore() {
     const transactions = await getTransactions();
-    if (transactions.length === 0) return;
+    
+    const scoreCircle = document.getElementById('health-score-circle');
+    const scoreValue = document.getElementById('health-score-value');
+    const statusText = document.getElementById('health-status-text');
+    const adviceText = document.getElementById('health-advice');
+    const statSavingsRate = document.getElementById('stat-savings-rate');
+
+    if (!scoreCircle) return;
+
+    if (transactions.length === 0) {
+        scoreValue.textContent = '--';
+        statSavingsRate.textContent = '--%';
+        scoreCircle.className = 'health-score-circle'; // Reset classes
+        statusText.textContent = 'Belum Ada Data 📊';
+        adviceText.textContent = 'Mulai catat transaksi Anda untuk melihat analisis kesehatan keuangan.';
+        return;
+    }
 
     const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -68,12 +84,6 @@ async function updateFinancialHealthScore() {
     let score = Math.max(0, Math.min(100, (savingsRate / 20) * 50 + 30)); 
     if (income === 0 && expense > 0) score = 10;
     if (income > 0 && expense === 0) score = 100;
-
-    const scoreCircle = document.getElementById('health-score-circle');
-    const scoreValue = document.getElementById('health-score-value');
-    const statusText = document.getElementById('health-status-text');
-    const adviceText = document.getElementById('health-advice');
-    const statSavingsRate = document.getElementById('stat-savings-rate');
 
     if (!scoreCircle) return;
 

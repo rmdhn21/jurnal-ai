@@ -102,6 +102,10 @@ function showScreen(targetScreen) {
     } else if (targetScreen === 'hse-center') {
         // Logic for HSE center if needed
         currentHub = 'hse-center'; 
+    } else if (targetScreen === 'audio-ai') {
+        if (typeof AudioAI !== 'undefined' && AudioAI.init) {
+            AudioAI.init();
+        }
     }
 }
 

@@ -345,7 +345,8 @@ let categoryChart = null;
 async function initCategoryChart(period) {
     if (period) currentChartPeriod = period;
     const ctx = document.getElementById('category-chart');
-    if (!ctx) return;
+    const wrapper = ctx ? ctx.closest('.category-chart-wrapper') : null;
+    if (!ctx || !wrapper) return;
 
     const transactions = await getTransactions();
     
@@ -383,10 +384,26 @@ async function initCategoryChart(period) {
     const labels = Object.keys(categoryTotals);
     const data = Object.values(categoryTotals);
 
-    if (categoryChart) { categoryChart.destroy(); }
+    if (categoryChart) { 
+        categoryChart.destroy(); 
+        categoryChart = null;
+    }
+
+    // Remove existing no-data message if any
+    const existingMsg = wrapper.querySelector('.no-data-msg');
+    if (existingMsg) existingMsg.remove();
 
     if (labels.length === 0) {
-        // Handle empty state if needed
+        const noDataMsg = document.createElement('div');
+        noDataMsg.className = 'no-data-msg';
+        noDataMsg.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted);">
+                <span style="font-size: 3rem; margin-bottom: 10px;">📉</span>
+                <p>Belum ada data pengeluaran</p>
+                <small>Periode: ${period || 'Bulan Ini'}</small>
+            </div>
+        `;
+        wrapper.appendChild(noDataMsg);
         return;
     }
 

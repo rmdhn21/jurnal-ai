@@ -799,11 +799,11 @@
                         <span class="hub-label">Perpustakaan AI</span>
                         <p class="hub-desc">Simpan & kelola hasil generate AI Anda.</p>
                     </button>
-                    <!-- New 3D Rig Digital Twin -->
-                    <button class="hub-btn" onclick="navigateToSubscreen('rig-3d-viewer')" style="border: 1px solid var(--primary); background: rgba(245, 158, 11, 0.05);">
-                        <div class="hub-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white;">🏗️</div>
-                        <span class="hub-label">Digital Twin 3D</span>
-                        <p class="hub-desc">Visualisasi interaktif peralatan Rig dalam 3D.</p>
+                    <!-- New Audio AI Meeting Transcriber -->
+                    <button class="hub-btn" onclick="navigateToSubscreen('audio-ai')" style="border: 1px solid #8b5cf6; background: rgba(139, 92, 246, 0.05);">
+                        <div class="hub-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white;">🎙️</div>
+                        <span class="hub-label">Meeting Transcriber</span>
+                        <p class="hub-desc">Transkrip full-text meeting & voice memo via AI.</p>
                     </button>
                 </div>
             </section>
@@ -1002,10 +1002,19 @@
                     <h3 class="mb-sm">1. Pengaturan Kolase</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <div class="form-group">
-                            <label class="text-xs text-muted">Jumlah Foto</label>
+                            <label class="text-xs text-muted">Layout / Grid</label>
                             <select id="pdc-count" class="input" style="width: 100%;" onchange="updatePDCGrid()">
-                                <option value="2">2 Foto (Before-After)</option>
-                                <option value="4">4 Foto (Progress/Grid)</option>
+                                <option value="2">2 Foto (Split)</option>
+                                <option value="4">4 Foto (Grid)</option>
+                                <option value="1">1 Foto (Single)</option>
+                                <option value="3">3 Foto (T-Grid)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs text-muted">Mode Label</label>
+                            <select id="pdc-label-mode" class="input" style="width: 100%;" onchange="updatePDCGrid()">
+                                <option value="standard">Standard (1, 2, 3..)</option>
+                                <option value="bf">Before / After</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1239,6 +1248,9 @@ Move out : 100 %
 - Fungtion test peralatan-ok
 - RSCL</textarea>
 
+                        <label class="text-xs text-muted mt-sm" style="display: block;">Plan (Siang):</label>
+                        <textarea id="wr-plan-c" class="input" rows="3" style="width: 100%; font-size: 0.8rem;" placeholder="Contoh: • Lanjut function test..."></textarea>
+
                         <h3 class="mt-md mb-sm">🔥 Laporan BBM Fire Pump</h3>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div class="form-group">
@@ -1251,11 +1263,20 @@ Move out : 100 %
                             </div>
                         </div>
 
+                        <h3 class="mt-md mb-sm">🌙 Summary Activity (19.00-07.00)</h3>
+                        <textarea id="wr-activity-night" class="input" rows="4" style="width: 100%; font-size: 0.8rem;" placeholder="- Pekerjaan malam..."></textarea>
+                        
+                        <label class="text-xs text-muted mt-sm" style="display: block;">Plan (Malam):</label>
+                        <textarea id="wr-plan-night" class="input" rows="3" style="width: 100%; font-size: 0.8rem;" placeholder="- Lanjut pekerjaan malam..."></textarea>
+
                         <h3 class="mt-md mb-sm">📋 D. Summary Activity HSSE</h3>
                         <textarea id="wr-activity-d" class="input" rows="4" style="width: 100%; font-size: 0.8rem;">- PJSM untuk menyampaikan pesan keselamatan
 - Monitoring FTT crew H-25 
 - Running dan function test fire pump
 - monitoring aspek HSSE di lingkungan kerja Rig H-25</textarea>
+
+                        <h3 class="mt-md mb-sm">🚀 E. Next HSSE Activity</h3>
+                        <textarea id="wr-next-hsse" class="input" rows="3" style="width: 100%; font-size: 0.8rem;" placeholder="- Rencana kegiatan HSSE besok..."></textarea>
                     </div>
                 </div>
 
@@ -2758,6 +2779,75 @@ Move out : 100 %
                 </div>
             </div>
         </section>
+        
+        <!-- Screen: HSE Audio Meeting Transcriber -->
+        <section id="audio-ai-screen" class="screen">
+            <div class="card" style="background: linear-gradient(135deg, #1e1b4b, #312e81); color: white; border: none; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="color: white; margin: 0;">🎙️ HSE Meeting Transcriber</h2>
+                        <p style="opacity: 0.9; font-size: 0.85rem;">Full-Text High Fidelity Transcription (Gemini 1.5 Flash)</p>
+                    </div>
+                    <div style="font-size: 2.5rem;">📡</div>
+                </div>
+            </div>
+
+            <!-- Upload Area -->
+            <div class="card" id="audio-upload-container" style="border: 2px dashed rgba(255,255,255,0.2); background: rgba(255,255,255,0.03); text-align: center; padding: 40px 20px; transition: all 0.3s ease;">
+                <input type="file" id="audio-file-input" accept="audio/*" style="display: none;">
+                <div id="upload-idle">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">📁</div>
+                    <h3 style="margin-bottom: 8px;">Pilih File Audio</h3>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 20px;">Format: MP3, WAV, M4A, AAC</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('audio-file-input').click()">Unggah Meeting</button>
+                    <p class="text-xs text-muted mt-md">Atau tarik file ke sini</p>
+                </div>
+                <div id="upload-processing" class="hidden">
+                    <div class="loading-spinner" style="margin: 0 auto 15px;"></div>
+                    <h3>Mengunggah ke AI...</h3>
+                    <p class="text-muted" id="upload-status-text">Membaca file audio...</p>
+                </div>
+            </div>
+
+            <!-- Recorder Section -->
+            <div class="card mt-md" style="text-align: center; background: var(--surface-hover);">
+                <h3 style="margin-bottom: 15px;">Record Live Meeting</h3>
+                <div id="recorder-timer" style="font-family: monospace; font-size: 2rem; font-weight: bold; margin-bottom: 20px; color: var(--primary);">00:00</div>
+                
+                <div style="display: flex; justify-content: center; gap: 20px; align-items: center;">
+                    <button id="record-btn" class="btn-primary" style="width: 70px; height: 70px; border-radius: 50%; font-size: 1.5rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #e11d48; box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4);">🎙️</button>
+                </div>
+                
+                <p id="recorder-hint" class="text-xs text-muted mt-md">Tekan mic untuk mulai merekam memo HSE.</p>
+            </div>
+
+            <!-- Result Area -->
+            <div id="transcription-result-container" class="hidden mt-lg">
+                <div class="card" style="border-top: 4px solid #8b5cf6;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">📝 Full Text Transcript</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-xs" onclick="copyTranscriptionText()">📋 Copy</button>
+                            <button class="btn btn-secondary btn-xs" onclick="useTranscriptInJSA()">📑 Use for JSA</button>
+                        </div>
+                    </div>
+                    
+                    <div id="transcription-text" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; font-size: 0.95rem; line-height: 1.6; max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: 'Inter', sans-serif;">
+                        <!-- Transcript injected here -->
+                    </div>
+
+                    <div class="mt-md p-sm" style="background: rgba(139, 92, 246, 0.1); border-radius: 8px; border-left: 3px solid #8b5cf6;">
+                        <p style="font-size: 0.8rem; margin: 0;"><strong>💡 AI Note:</strong> Transkrip ini dihasilkan dengan mode presisi tinggi untuk menangkap detail teknis HSE.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="transcription-loading" class="hidden text-center p-xl">
+                <div class="loading-spinner" style="margin: 0 auto 15px;"></div>
+                <p class="text-muted">AI sedang mendengarkan & mentranskrip (High Fidelity)...</p>
+                <p class="text-xs text-muted mt-sm">Mungkin memakan waktu 10-30 detik tergantung durasi.</p>
+            </div>
+        </section>
 
         <!-- Screen: Oxford 3000 Vocabulary Mastery -->
         <section id="oxford-vocab-screen" class="screen">
@@ -3389,6 +3479,7 @@ Move out : 100 %
     <script src="js/jarvis-voice.js"></script>
     <script src="js/features.js"></script>
     <script src="js/extras.js"></script>
+    <script src="js/audio-ai.js"></script>
     <script src="js/edit-modal.js"></script>
     <script src="js/onboarding.js"></script>
     <script src="js/insight.js"></script>

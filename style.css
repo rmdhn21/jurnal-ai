@@ -1598,6 +1598,17 @@ body::before {
     border-color: var(--info);
 }
 
+.no-data-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    text-align: center;
+    pointer-events: none;
+    animation: fadeIn 0.5s ease-out;
+}
+
 .insight-card.finance {
     border-color: var(--warning);
 }
@@ -6631,4 +6642,40 @@ body::before {
     align-items: center;
     margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(6, 95, 70, 0.3);
+}
+
+/* Audio AI Meeting Transcriber Styles */
+#audio-upload-container.dragover {
+    background: rgba(139, 92, 246, 0.1) !important;
+    border-color: #8b5cf6 !important;
+    transform: scale(1.02);
+}
+
+.recording-pulse {
+    animation: pjsm-pulse 1.5s infinite;
+}
+
+@keyframes pjsm-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(225, 29, 72, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+}
+
+#transcription-text strong {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+#transcription-text {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+}
+
+#transcription-text::-webkit-scrollbar {
+    width: 6px;
+}
+
+#transcription-text::-webkit-scrollbar-thumb {
+    background-color: var(--primary);
+    border-radius: 10px;
 }

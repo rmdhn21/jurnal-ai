@@ -86,7 +86,11 @@ function generateWAGReport() {
         activityC: document.getElementById('wr-activity-c').value,
         bbmStart: document.getElementById('wr-bbm-start').value,
         bbmUsed: document.getElementById('wr-bbm-used').value,
-        activityD: document.getElementById('wr-activity-d').value
+        activityD: document.getElementById('wr-activity-d').value,
+        planC: document.getElementById('wr-plan-c').value || '• ',
+        activityNight: document.getElementById('wr-activity-night').value || '-',
+        planNight: document.getElementById('wr-plan-night').value || '-',
+        nextHsse: document.getElementById('wr-next-hsse').value || '-'
     };
 
     // Auto-calculate BBM End
@@ -124,22 +128,22 @@ C. Summary Activity
 ${data.activityC}
 
 Plan : 
-• 
-
+${data.planC}
+ 
 Weather : ${data.weather} 
-
+ 
 Laporan BBM fire pump ( 12 jam )
 - Stock Awal  : ${data.bbmStart} liter
 - Terima bbm : 0 liter
 - Pemakaian  : ${data.bbmUsed} liter 
 - Stock Akhir  : ${bbmEnd === '-' ? '-' : bbmEnd + ' liter'}
-
+ 
 Activity : 
 19.00 - 07.00 WITA :
--  
-
+${data.activityNight}
+ 
 Plan
-- 
+${data.planNight}
 
 Weather : 
 
@@ -148,7 +152,7 @@ ${data.activityD}
 
 
 E. Next HSSE Activity:
-- 
+${data.nextHsse}
 F. Dokumentasi terlampir
 
 ${data.officers} 
@@ -195,7 +199,11 @@ function saveReportDraft() {
         rig: document.getElementById('wr-rig-name').value,
         coord: document.getElementById('wr-coord').value,
         spv: document.getElementById('wr-spv').value,
-        officers: document.getElementById('wr-officers').value
+        officers: document.getElementById('wr-officers').value,
+        'plan-c': document.getElementById('wr-plan-c').value,
+        'activity-night': document.getElementById('wr-activity-night').value,
+        'plan-night': document.getElementById('wr-plan-night').value,
+        'next-hsse': document.getElementById('wr-next-hsse').value
     };
     localStorage.setItem(HSE_REPORT_DRAFT_KEY, JSON.stringify(draft));
 }
