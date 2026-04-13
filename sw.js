@@ -67,6 +67,9 @@ const urlsToCache = [
     // Experimental / Misc
     './js/jarvis-ui.js',
     './js/jarvis-voice.js',
+    // External Libraries (for offline mapping)
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
     // HSE & Mapping
     './js/hse-geomapper.js',
     './js/hse-analytics.js',

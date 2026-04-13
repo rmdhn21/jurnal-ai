@@ -138,7 +138,8 @@ const STORAGE_KEYS = {
     CACHED_NEWS: 'jurnal_ai_cached_news',
     TUTOR_LAST_DATE: 'jurnal_ai_tutor_last_date',
     HSE_VOCAB_BANK: 'jurnal_ai_hse_vocab_bank',
-    SAVED_GENERATIONS: 'jurnal_ai_saved_generations'
+    SAVED_GENERATIONS: 'jurnal_ai_saved_generations',
+    HSE_ROUTES: 'jurnal_ai_hse_routes'
 };
 
 // ===== UTILITY FUNCTIONS =====
@@ -802,6 +803,60 @@ async function saveRoutine(routine) {
     await idbSave('routines', routine);
     triggerCloudSync();
     return routine;
+}
+
+// ==== HSE GEO-MAPPER ROUTES FUNCTIONS ====
+async function getHSERoutes(includeDeleted = false) {
+    let items = [];
+    if (localStorage.getItem(MIGRATION_KEY) !== 'true') {
+        const data = localStorage.getItem(STORAGE_KEYS.HSE_ROUTES);
+        items = data ? JSON.parse(data) : [];
+    } else {
+        items = await idbGetAll('hse_routes');
+    }
+    const filtered = includeDeleted ? items : items.filter(r => !r.deleted);
+    return filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+async function saveHSERoute(routeObject) {
+    if (!routeObject.id) routeObject.id = generateId();
+    if (!routeObject.timestamp) routeObject.timestamp = new Date().toISOString();
+    routeObject.updatedAt = new Date().toISOString();
+    routeObject.synced = 0;
+
+    // Use IndexedDB if migrated, otherwise fallback
+    if (localStorage.getItem(MIGRATION_KEY) === 'true') {
+        await idbSave('hse_routes', routeObject);
+    } else {
+        const data = await getHSERoutes(true);
+        const idx = data.findIndex(r => r.id === routeObject.id);
+        if (idx >= 0) data[idx] = routeObject;
+        else data.push(routeObject);
+        localStorage.setItem(STORAGE_KEYS.HSE_ROUTES, JSON.stringify(data));
+    }
+    triggerCloudSync();
+    return routeObject;
+}
+
+async function deleteHSERoute(id) {
+    if (localStorage.getItem(MIGRATION_KEY) === 'true') {
+        const route = await idbGet('hse_routes', id);
+        if (route) {
+            route.deleted = true;
+            route.updatedAt = new Date().toISOString();
+            route.synced = 0;
+            await idbSave('hse_routes', route);
+        }
+    } else {
+        const data = await getHSERoutes(true);
+        const idx = data.findIndex(r => r.id === id);
+        if (idx >= 0) {
+            data[idx].deleted = true;
+            data[idx].updatedAt = new Date().toISOString();
+            localStorage.setItem(STORAGE_KEYS.HSE_ROUTES, JSON.stringify(data));
+        }
+    }
+    triggerCloudSync();
 }
 
 async function deleteRoutine(id) {

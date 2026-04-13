@@ -40,6 +40,10 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Leaflet Local Mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <!-- Dexie.js for IndexedDB -->
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 
@@ -773,6 +777,15 @@
             <section id="hse-geomapper-screen" class="screen no-padding subscreen">
                 <div class="hse-mapper-container">
                     <div id="hse-geomapper-map"></div>
+
+                    <!-- Search Bar & Coordinate HUD -->
+                    <div class="mapper-header">
+                        <div class="mapper-search-container">
+                            <input type="text" id="mapper-search-input" placeholder="Cari Lokasi / Koordinat..." onkeydown="if(event.key==='Enter') searchLocation()">
+                            <button onclick="searchLocation()"><i class="fas fa-search"></i></button>
+                        </div>
+                        <div class="mapper-coord-hud" id="mapper-coord-hud">0.000000°, 0.000000°</div>
+                    </div>
                     
                     <!-- Navigation HUD -->
                     <div class="geomapper-hud hidden" id="geomapper-nav-hud">
@@ -797,6 +810,9 @@
                     <div class="snapshot-overlay" id="geomapper-snapshot-stats">
                         <div id="snap-dist">Jarak: 0.00 km</div>
                         <div id="snap-time">Waktu: 00:00</div>
+                        <button class="snap-export-btn" onclick="exportPathToKML()">
+                            <i class="fas fa-file-export"></i> Export KML
+                        </button>
                     </div>
 
                     <!-- Map Actions -->
@@ -814,9 +830,32 @@
                             <span id="txt-map-layer">Satellite View</span>
                         </button>
                         <button class="mapper-btn" onclick="centerMapOnUser()">
-                            <i class="fas fa-crosshair"></i>
+                            <i class="fas fa-crosshairs"></i>
                             <span>Pusatkan</span>
                         </button>
+                        <div class="mapper-zoom-group">
+                            <button class="mapper-btn zoom-btn" onclick="mapperZoomIn()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="mapper-btn zoom-btn" onclick="mapperZoomOut()">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                        <button class="mapper-btn history-btn" onclick="toggleMapperHistory()">
+                            <i class="fas fa-history"></i>
+                            <span>Rute</span>
+                        </button>
+                    </div>
+
+                    <!-- History List Overlay -->
+                    <div id="mapper-history-overlay" class="mapper-history-overlay hidden">
+                        <div class="history-header">
+                            <h3><i class="fas fa-history"></i> Riwayat Rute</h3>
+                            <button onclick="toggleMapperHistory()">&times;</button>
+                        </div>
+                        <div id="mapper-history-list" class="history-list">
+                            <!-- Items via JS -->
+                        </div>
                     </div>
                 </div>
             </section>
