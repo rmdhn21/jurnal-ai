@@ -1,5 +1,5 @@
 // Service Worker for Jurnal AI PWA
-const CACHE_NAME = 'jurnal-ai-v17';
+const CACHE_NAME = 'jurnal-ai-v18';
 const urlsToCache = [
     './',
     './index.html',
@@ -67,6 +67,10 @@ const urlsToCache = [
     // Experimental / Misc
     './js/jarvis-ui.js',
     './js/jarvis-voice.js',
+    // HSE & Mapping
+    './js/hse-geomapper.js',
+    './js/hse-analytics.js',
+    './js/hse-emergency.js',
     // App Initialization
     './js/app-init.js'
 ];
@@ -104,12 +108,39 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch event - Network first, then cache fallback
+// Fetch event - Custom strategy for different resource types
 self.addEventListener('fetch', (event) => {
+    const url = new URL(event.request.url);
+
+    // Special Strategy for Map Tiles (Esri/ArcGIS and OSM)
+    // Caching map tiles ensures the mapper works offline in the field.
+    if (url.hostname.includes('arcgisonline.com') || url.hostname.includes('openstreetmap.org')) {
+        event.respondWith(
+            caches.match(event.request).then((cachedResponse) => {
+                if (cachedResponse) return cachedResponse;
+                
+                return fetch(event.request).then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        const responseToCache = networkResponse.clone();
+                        caches.open('jurnal-ai-map-tiles').then((cache) => {
+                            cache.put(event.request, responseToCache);
+                        });
+                    }
+                    return networkResponse;
+                }).catch(() => {
+                    // Fail silently for tiles
+                    return new Response('', { status: 404 });
+                });
+            })
+        );
+        return;
+    }
+
+    // Default Strategy: Network first, then cache fallback
     event.respondWith(
         fetch(event.request)
             .then((response) => {
-                // Update cache with fresh response
+                // Update cache with fresh response (for same-origin only to be safe)
                 if (response && response.status === 200 && response.type === 'basic') {
                     const responseToCache = response.clone();
                     caches.open(CACHE_NAME)

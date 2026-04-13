@@ -6679,3 +6679,325 @@ body::before {
     background-color: var(--primary);
     border-radius: 10px;
 }
+
+/* ===== HSE PREMIUM FEATURES ===== */
+
+/* Safety Ticker */
+.hse-ticker {
+    background: #111827;
+    color: #10b981;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 10px 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+    margin: -15px -15px 15px -15px;
+    position: relative;
+    border-radius: 12px 12px 0 0;
+}
+
+.hse-ticker-inner {
+    display: inline-block;
+    padding-left: 100%;
+    animation: hse-ticker-scroll 40s linear infinite;
+}
+
+@keyframes hse-ticker-scroll {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
+}
+
+/* Emergency FAB */
+.emergency-fab {
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5);
+    z-index: 1000;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    animation: hse-pulse-red 2s infinite;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-size: 1.5rem;
+}
+
+.emergency-fab:active {
+    transform: scale(0.9) rotate(-10deg);
+}
+
+@keyframes hse-pulse-red {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+}
+
+/* Analytics Chart Card */
+.hse-analytics-card {
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 25px;
+    backdrop-filter: blur(10px);
+}
+
+.hse-analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.hse-analytics-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hse-analytics-chart-container {
+    height: 220px;
+    position: relative;
+    width: 100%;
+}
+
+/* Emergency Modal Styles */
+.emergency-modal-body {
+    max-height: 75vh;
+    overflow-y: auto;
+    padding: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(239, 68, 68, 0.5) transparent;
+}
+
+.emergency-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.emergency-item {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    padding: 18px;
+    border-left: 5px solid #ef4444;
+    transition: transform 0.2s;
+}
+
+.emergency-item:hover {
+    transform: translateX(5px);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.emergency-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    font-size: 0.75rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.emergency-item h4 {
+    margin: 0 0 10px 0;
+    color: #fff;
+    font-size: 1.1rem;
+}
+
+.emergency-action-list {
+    margin: 5px 0 0 0;
+    padding-left: 18px;
+    font-size: 0.9rem;
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.emergency-action-list li {
+    margin-bottom: 8px;
+}
+
+/* ===== HSE GEO-MAPPER PRO ===== */
+
+.hse-mapper-container {
+    height: calc(100vh - 70px);
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+}
+
+#hse-geomapper-map {
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+}
+
+/* Navigation HUD Overlay */
+.geomapper-hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 15px;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.geomapper-hud.hidden {
+    opacity: 0;
+}
+
+.hud-stat {
+    flex: 1;
+    text-align: center;
+}
+
+.hud-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.hud-value {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.hud-value span {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #10b981;
+    margin-left: 2px;
+}
+
+/* Map Action Controls */
+.mapper-controls {
+    position: absolute;
+    bottom: 30px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    gap: 12px;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.mapper-btn {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 14px;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s;
+}
+
+.mapper-btn:active {
+    transform: scale(0.95);
+    background: #1e293b;
+}
+
+.mapper-btn i {
+    font-size: 1.2rem;
+}
+
+.mapper-btn.active {
+    background: #10b981;
+    border-color: #059669;
+}
+
+.btn-danger-map {
+    background: rgba(239, 68, 68, 0.9);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Waypoint Input Modal */
+#waypoint-modal-content {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 320px;
+}
+
+.waypoint-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 15px 0;
+    font-size: 1.1rem;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* Navigation Line Styling */
+.guidance-line {
+    stroke-dasharray: 10, 10;
+    animation: dash 30s linear infinite;
+}
+
+@keyframes dash {
+    to { stroke-dashoffset: 1000; }
+}
+
+/* Map Snapshot Mode */
+.snapshot-overlay {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 15px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.8rem;
+    z-index: 1001;
+    display: none;
+    border-left: 4px solid #3b82f6;
+}
+
+.hse-mapper-container.snapshot-mode .mapper-controls,
+.hse-mapper-container.snapshot-mode .geomapper-hud {
+    display: none;
+}
+
+.hse-mapper-container.snapshot-mode .snapshot-overlay {
+    display: block;
+}
+
+

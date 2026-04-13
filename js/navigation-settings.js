@@ -102,16 +102,27 @@ function showScreen(targetScreen) {
     } else if (targetScreen === 'hse-center') {
         // Logic for HSE center if needed
         currentHub = 'hse-center'; 
+    } else if (targetScreen.startsWith('hse-')) {
+        // Handle all standalone Rig Standards chapters
+        if (typeof initHseRig === 'function') initHseRig();
+        // If it's the center itself, update hub
+        if (targetScreen === 'hse-center') currentHub = 'hse-center';
     } else if (targetScreen === 'audio-ai') {
         if (typeof AudioAI !== 'undefined' && AudioAI.init) {
             AudioAI.init();
         }
+    } else if (targetScreen === 'moving-checklist') {
+        if (typeof initMovingChecklist === 'function') initMovingChecklist();
     }
 }
 
 // Called from HTML onclick in Hub grids
 function navigateToSubscreen(targetScreen) {
     showScreen(targetScreen);
+
+    if (targetScreen === 'hse-geomapper' && typeof refreshHSEGeoMapper === 'function') {
+        refreshHSEGeoMapper();
+    }
 
     // Show back button
     const backBtn = document.getElementById('header-back-btn');
@@ -121,24 +132,10 @@ function navigateToSubscreen(targetScreen) {
     }
 }
 
-// Shortcut: Navigate to HSE Rig and auto-switch to a specific tab (e.g. 'inspection', 'pjsm')
-function navigateToRigTab(tabName) {
-    navigateToSubscreen('hse-rig');
-    // Auto-click the requested tab after a short delay for rendering
-    setTimeout(() => {
-        const tabBtn = document.querySelector(`.rig-tab[onclick*="'${tabName}'"]`);
-        if (tabBtn) {
-            tabBtn.click();
-        } else {
-            // Fallback: call switchRigChapter directly
-            if (typeof switchRigChapter === 'function') switchRigChapter(tabName, null);
-        }
-    }, 100);
-}
 
-// Shortcut: Navigate to English O&G and scroll to JSA & PTW section
+// Shortcut: Navigate to the new JSA Generator screen
 function navigateToJSAGenerator() {
-    navigateToSubscreen('english-hse');
+    navigateToSubscreen('hse-jsa');
     setTimeout(() => {
         const jsaSection = document.getElementById('jsa-doc-type') || document.querySelector('#generate-jsa-btn');
         if (jsaSection) {

@@ -146,51 +146,105 @@ async function generateCollage() {
         let H = 0;
         
         // 2. Determine Layout and Canvas Height
+        const outerPadding = 12; // Outer frame thickness
+        const innerGap = 12; // Gap between photos
+
         if (count === 1) {
-            H = (W / processedImgs[0].img.width) * processedImgs[0].img.height + captionHeight;
+            H = (W / processedImgs[0].img.width) * processedImgs[0].img.height + captionHeight + (outerPadding * 2);
             canvas.width = W;
             canvas.height = H;
-            drawAdaptiveSlot(ctx, processedImgs[0].img, 0, 0, W, H - captionHeight, processedImgs[0].label);
         } else if (count === 2) {
-            const h1 = (W / processedImgs[0].img.width) * processedImgs[0].img.height;
-            const h2 = (W / processedImgs[1].img.width) * processedImgs[1].img.height;
-            H = h1 + h2 + margin + captionHeight;
+            const h1 = ((W - (outerPadding * 2)) / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const h2 = ((W - (outerPadding * 2)) / processedImgs[1].img.width) * processedImgs[1].img.height;
+            H = h1 + h2 + innerGap + captionHeight + (outerPadding * 2);
             canvas.width = W;
             canvas.height = H;
-            drawAdaptiveSlot(ctx, processedImgs[0].img, 0, 0, W, h1, processedImgs[0].label);
-            drawAdaptiveSlot(ctx, processedImgs[1].img, 0, h1 + margin, W, h2, processedImgs[1].label);
         } else if (count === 3) {
-            // Option A: 1 Top, 2 Bottom
-            const hTop = (W / processedImgs[0].img.width) * processedImgs[0].img.height;
-            const wBot = (W - margin) / 2;
+            const drawW = W - (outerPadding * 2);
+            const hTop = (drawW / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const wBot = (drawW - innerGap) / 2;
             const hBot = Math.max(
                 (wBot / processedImgs[1].img.width) * processedImgs[1].img.height,
                 (wBot / processedImgs[2].img.width) * processedImgs[2].img.height
             );
-            H = hTop + hBot + margin + captionHeight;
+            H = hTop + hBot + innerGap + captionHeight + (outerPadding * 2);
             canvas.width = W;
             canvas.height = H;
-            drawAdaptiveSlot(ctx, processedImgs[0].img, 0, 0, W, hTop, processedImgs[0].label);
-            drawAdaptiveSlot(ctx, processedImgs[1].img, 0, hTop + margin, wBot, hBot, processedImgs[1].label);
-            drawAdaptiveSlot(ctx, processedImgs[2].img, wBot + margin, hTop + margin, wBot, hBot, processedImgs[2].label);
+        } else if (count === 4) {
+            const drawW = W - (outerPadding * 2);
+            const wSlot = (drawW - innerGap) / 2;
+            
+            const hL1 = (wSlot / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const hP1 = (wSlot / processedImgs[1].img.width) * processedImgs[1].img.height;
+            const hP2 = (wSlot / processedImgs[2].img.width) * processedImgs[2].img.height;
+            const hL2 = (wSlot / processedImgs[3].img.width) * processedImgs[3].img.height;
+
+            const hCol1 = hL1 + hP1 + innerGap;
+            const hCol2 = hP2 + hL2 + innerGap;
+            
+            H = Math.max(hCol1, hCol2) + captionHeight + (outerPadding * 2);
+            canvas.width = W;
+            canvas.height = H;
         } else {
-            // 4 Photos (Grid 2x2)
-            const wSlot = (W - margin) / 2;
-            const hRow1 = Math.max(
-                (wSlot / processedImgs[0].img.width) * processedImgs[0].img.height,
-                (wSlot / processedImgs[1].img.width) * processedImgs[1].img.height
-            );
-            const hRow2 = Math.max(
-                (wSlot / processedImgs[2].img.width) * processedImgs[2].img.height,
-                (wSlot / processedImgs[3].img.width) * processedImgs[3].img.height
-            );
-            H = hRow1 + hRow2 + margin + captionHeight;
+            const drawW = W - (outerPadding * 2);
+            const wSlot = (drawW - innerGap) / 2;
+            const cols = 2;
+            const rows = Math.ceil(count / cols);
+            H = rows * (drawW / 2 * 0.75) + captionHeight + (outerPadding * 2);
             canvas.width = W;
             canvas.height = H;
-            drawAdaptiveSlot(ctx, processedImgs[0].img, 0, 0, wSlot, hRow1, processedImgs[0].label);
-            drawAdaptiveSlot(ctx, processedImgs[1].img, wSlot + margin, 0, wSlot, hRow1, processedImgs[1].label);
-            drawAdaptiveSlot(ctx, processedImgs[2].img, 0, hRow1 + margin, wSlot, hRow2, processedImgs[2].label);
-            drawAdaptiveSlot(ctx, processedImgs[3].img, wSlot + margin, hRow1 + margin, wSlot, hRow2, processedImgs[3].label);
+        }
+
+        // Fill background with Caption Color to act as Frame/Border
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, 0, W, H);
+
+        if (count === 1) {
+            drawAdaptiveSlot(ctx, processedImgs[0].img, outerPadding, outerPadding, W - (outerPadding * 2), H - captionHeight - (outerPadding * 2), processedImgs[0].label);
+        } else if (count === 2) {
+            const drawW = W - (outerPadding * 2);
+            const h1 = (drawW / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const h2 = (drawW / processedImgs[1].img.width) * processedImgs[1].img.height;
+            drawAdaptiveSlot(ctx, processedImgs[0].img, outerPadding, outerPadding, drawW, h1, processedImgs[0].label);
+            drawAdaptiveSlot(ctx, processedImgs[1].img, outerPadding, outerPadding + h1 + innerGap, drawW, h2, processedImgs[1].label);
+        } else if (count === 3) {
+            const drawW = W - (outerPadding * 2);
+            const hTop = (drawW / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const wBot = (drawW - innerGap) / 2;
+            const hBot = H - captionHeight - (outerPadding * 2) - hTop - innerGap;
+            drawAdaptiveSlot(ctx, processedImgs[0].img, outerPadding, outerPadding, drawW, hTop, processedImgs[0].label);
+            drawAdaptiveSlot(ctx, processedImgs[1].img, outerPadding, outerPadding + hTop + innerGap, wBot, hBot, processedImgs[1].label);
+            drawAdaptiveSlot(ctx, processedImgs[2].img, outerPadding + wBot + innerGap, outerPadding + hTop + innerGap, wBot, hBot, processedImgs[2].label);
+        } else if (count === 4) {
+            const drawW = W - (outerPadding * 2);
+            const wSlot = (drawW - innerGap) / 2;
+            
+            const hL1 = (wSlot / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const hP1 = (wSlot / processedImgs[1].img.width) * processedImgs[1].img.height;
+            const hP2 = (wSlot / processedImgs[2].img.width) * processedImgs[2].img.height;
+            const hL2 = (wSlot / processedImgs[3].img.width) * processedImgs[3].img.height;
+
+            // Column 1 (Left)
+            drawAdaptiveSlot(ctx, processedImgs[0].img, outerPadding, outerPadding, wSlot, hL1, processedImgs[0].label);
+            drawAdaptiveSlot(ctx, processedImgs[1].img, outerPadding, outerPadding + hL1 + innerGap, wSlot, hP1, processedImgs[1].label);
+            
+            // Column 2 (Right)
+            drawAdaptiveSlot(ctx, processedImgs[2].img, outerPadding + wSlot + innerGap, outerPadding, wSlot, hP2, processedImgs[2].label);
+            drawAdaptiveSlot(ctx, processedImgs[3].img, outerPadding + wSlot + innerGap, outerPadding + hP2 + innerGap, wSlot, hL2, processedImgs[3].label);
+        } else {
+            const drawW = W - (outerPadding * 2);
+            const wSlot = (drawW - innerGap) / 2;
+            const cols = 2;
+            const rows = Math.ceil(count / cols);
+            const slotH = (H - captionHeight - (outerPadding * 2) - ((rows - 1) * innerGap)) / rows;
+            
+            processedImgs.forEach((data, i) => {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const x = outerPadding + col * (wSlot + innerGap);
+                const y = outerPadding + row * (slotH + innerGap);
+                drawAdaptiveSlot(ctx, data.img, x, y, wSlot, slotH, data.label);
+            });
         }
 
         // Draw Caption Bar
@@ -207,11 +261,11 @@ async function generateCollage() {
         if (captionDisplay) captionDisplay.innerText = captionStr;
 
         ctx.fillStyle = '#111827';
-        ctx.fillRect(0, H - captionHeight, W, captionHeight);
+        ctx.fillRect(0, H - captionHeight - outerPadding, W, captionHeight + outerPadding); 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 50px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(captionStr, W / 2, H - 70);
+        ctx.fillText(captionStr, W / 2, H - outerPadding - 70);
 
         document.getElementById('collage-result-container').classList.remove('hidden');
         document.getElementById('collage-result-container').scrollIntoView({ behavior: 'smooth' });
@@ -226,7 +280,7 @@ async function generateCollage() {
 }
 
 function drawAdaptiveSlot(ctx, img, x, y, w, h, label) {
-    ctx.fillStyle = '#f1f5f9';
+    ctx.fillStyle = '#111827';
     ctx.fillRect(x, y, w, h);
     
     const imgRatio = img.width / img.height;

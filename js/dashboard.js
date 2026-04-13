@@ -313,7 +313,8 @@ async function getDailyInsight() {
 Tulis TEPAT 2 kalimat motivasi singkat dalam bahasa Indonesia. Maksimal 50 kata total. Langsung tulis kalimatnya tanpa pembuka.`;
 
     try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -453,7 +454,8 @@ Gunakan bahasa Indonesia yang memotivasi.`;
     showAnalysisModal(title);
 
     try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -776,7 +778,8 @@ async function generateWeeklyExecutiveReport() {
     Jangan berikan kata pembuka/penutup seperti "Tentu,". Hanya kembalikan elemen HTML murni (tanpa tag \`\`\`html).`;
 
     try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -914,7 +917,8 @@ async function callJarvisMinimal(prompt) {
     if (!apiKey) return null;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -923,9 +927,15 @@ async function callJarvisMinimal(prompt) {
             })
         });
 
+        if (response.status === 429) {
+            console.warn('Gemini API Rate Limit Hit (429). Waiting for reset...');
+            return null;
+        }
+
         const data = await response.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
     } catch (e) {
+        console.error('Jarvis API Fetch Error:', e);
         return null;
     }
 }

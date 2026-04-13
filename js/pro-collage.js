@@ -157,8 +157,35 @@ async function generatePDC() {
         const canvas = document.getElementById('pdc-canvas');
         const ctx = canvas.getContext('2d');
         const W = 2000;
-        const margin = 12;
-        const captionHeight = 350;
+        const outerPadding = 12; 
+        const innerGap = 12;
+
+        // 1. Prepare Caption Text & Calculate Dynamic Height
+        const ts = new Date();
+        const dateFormatted = `${String(ts.getDate()).padStart(2, '0')}/${String(ts.getMonth() + 1).padStart(2, '0')}/${ts.getFullYear()}`;
+        const finalCaption = `${task} - Rig ${unit} - ${location} (${dateFormatted})`;
+        
+        const fontSize = Math.max(30, Math.min(60, W / 35));
+        const lineHeight = fontSize + 20;
+        ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+        
+        // Measure lines to determine captionHeight
+        const words = finalCaption.split(' ');
+        let testLine = '';
+        let lineCount = 1;
+        const maxWidth = W - 150;
+        for (let n = 0; n < words.length; n++) {
+            const metrics = ctx.measureText(testLine + words[n] + ' ');
+            if (metrics.width > maxWidth && n > 0) {
+                lineCount++;
+                testLine = words[n] + ' ';
+            } else {
+                testLine += words[n] + ' ';
+            }
+        }
+        
+        // Final Caption Height: Lines + Padding
+        const captionHeight = (lineCount * lineHeight) + 120; // 120px padding (60 top, 60 bot)
 
         const processedImgs = [];
         for (let i = 0; i < activeIndices.length; i++) {
@@ -179,53 +206,45 @@ async function generatePDC() {
         let H = 0;
 
         if (count === 1) {
-            H = (W / processedImgs[0].img.width) * processedImgs[0].img.height + captionHeight;
+            H = (W / processedImgs[0].img.width) * processedImgs[0].img.height + captionHeight + (outerPadding * 2);
             canvas.width = W;
             canvas.height = H;
-            drawPDCSlot(ctx, processedImgs[0].img, 0, 0, W, H - captionHeight, processedImgs[0].label);
         } else if (count === 2) {
-            // Adaptive Layout for 2 Images
-            const h1_full = (W / processedImgs[0].img.width) * processedImgs[0].img.height;
-            const h2_full = (W / processedImgs[1].img.width) * processedImgs[1].img.height;
+            const drawW = W - (outerPadding * 2);
+            const h1_full = (drawW / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const h2_full = (drawW / processedImgs[1].img.width) * processedImgs[1].img.height;
             
             const isPortrait1 = processedImgs[0].img.width < processedImgs[0].img.height;
             const isPortrait2 = processedImgs[1].img.width < processedImgs[1].img.height;
             
             if (isPortrait1 || isPortrait2) {
-                // Side-by-side if even one is portrait (usually users mix before/after)
-                const wSlot = (W - margin) / 2;
+                const wSlot = (drawW - innerGap) / 2;
                 const hRow = Math.max(
                     (wSlot / processedImgs[0].img.width) * processedImgs[0].img.height,
                     (wSlot / processedImgs[1].img.width) * processedImgs[1].img.height
                 );
-                H = hRow + captionHeight;
+                H = hRow + captionHeight + (outerPadding * 2);
                 canvas.width = W;
                 canvas.height = H;
-                drawPDCSlot(ctx, processedImgs[0].img, 0, 0, wSlot, hRow, processedImgs[0].label);
-                drawPDCSlot(ctx, processedImgs[1].img, wSlot + margin, 0, wSlot, hRow, processedImgs[1].label);
             } else {
-                // Vertical stack for landscape
-                H = h1_full + h2_full + margin + captionHeight;
+                H = h1_full + h2_full + innerGap + captionHeight + (outerPadding * 2);
                 canvas.width = W;
                 canvas.height = H;
-                drawPDCSlot(ctx, processedImgs[0].img, 0, 0, W, h1_full, processedImgs[0].label);
-                drawPDCSlot(ctx, processedImgs[1].img, 0, h1_full + margin, W, h2_full, processedImgs[1].label);
             }
         } else if (count === 3) {
-            const hTop = (W / processedImgs[0].img.width) * processedImgs[0].img.height;
-            const wBot = (W - margin) / 2;
+            const drawW = W - (outerPadding * 2);
+            const hTop = (drawW / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const wBot = (drawW - innerGap) / 2;
             const hBot = Math.max(
                 (wBot / processedImgs[1].img.width) * processedImgs[1].img.height,
                 (wBot / processedImgs[2].img.width) * processedImgs[2].img.height
             );
-            H = hTop + hBot + margin + captionHeight;
+            H = hTop + hBot + innerGap + captionHeight + (outerPadding * 2);
             canvas.width = W;
             canvas.height = H;
-            drawPDCSlot(ctx, processedImgs[0].img, 0, 0, W, hTop, processedImgs[0].label);
-            drawPDCSlot(ctx, processedImgs[1].img, 0, hTop + margin, wBot, hBot, processedImgs[1].label);
-            drawPDCSlot(ctx, processedImgs[2].img, wBot + margin, hTop + margin, wBot, hBot, processedImgs[2].label);
         } else {
-            const wSlot = (W - margin) / 2;
+            const drawW = W - (outerPadding * 2);
+            const wSlot = (drawW - innerGap) / 2;
             const hRow1 = Math.max(
                 (wSlot / processedImgs[0].img.width) * processedImgs[0].img.height,
                 (wSlot / processedImgs[1].img.width) * processedImgs[1].img.height
@@ -234,33 +253,68 @@ async function generatePDC() {
                 (wSlot / processedImgs[2].img.width) * processedImgs[2].img.height,
                 (wSlot / processedImgs[3].img.width) * processedImgs[3].img.height
             );
-            H = hRow1 + hRow2 + margin + captionHeight;
+            H = hRow1 + hRow2 + innerGap + captionHeight + (outerPadding * 2);
             canvas.width = W;
             canvas.height = H;
-            drawPDCSlot(ctx, processedImgs[0].img, 0, 0, wSlot, hRow1, processedImgs[0].label);
-            drawPDCSlot(ctx, processedImgs[1].img, wSlot + margin, 0, wSlot, hRow1, processedImgs[1].label);
-            drawPDCSlot(ctx, processedImgs[2].img, 0, hRow1 + margin, wSlot, hRow2, processedImgs[2].label);
-            drawPDCSlot(ctx, processedImgs[3].img, wSlot + margin, hRow1 + margin, wSlot, hRow2, processedImgs[3].label);
         }
 
-        // Caption Bar
-        const dateRaw = new Date();
-        const dateFormatted = `${String(dateRaw.getDate()).padStart(2, '0')}/${String(dateRaw.getMonth() + 1).padStart(2, '0')}/${dateRaw.getFullYear()}`;
-        const finalCaption = `${task} - Rig ${unit} - ${location} (${dateFormatted})`;
-        
-        // Set UI caption for copying
+        // Fill background with Dark Color
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, 0, W, H);
+
+        if (count === 1) {
+            drawPDCSlot(ctx, processedImgs[0].img, outerPadding, outerPadding, W - (outerPadding * 2), H - captionHeight - (outerPadding * 2), processedImgs[0].label);
+        } else if (count === 2) {
+            const drawW = W - (outerPadding * 2);
+            const isPortrait1 = processedImgs[0].img.width < processedImgs[0].img.height;
+            const isPortrait2 = processedImgs[1].img.width < processedImgs[1].img.height;
+            
+            if (isPortrait1 || isPortrait2) {
+                const wSlot = (drawW - innerGap) / 2;
+                const hRow = H - captionHeight - (outerPadding * 2);
+                drawPDCSlot(ctx, processedImgs[0].img, outerPadding, outerPadding, wSlot, hRow, processedImgs[0].label);
+                drawPDCSlot(ctx, processedImgs[1].img, outerPadding + wSlot + innerGap, outerPadding, wSlot, hRow, processedImgs[1].label);
+            } else {
+                const h1 = (drawW / processedImgs[0].img.width) * processedImgs[0].img.height;
+                const h2 = (drawW / processedImgs[1].img.width) * processedImgs[1].img.height;
+                drawPDCSlot(ctx, processedImgs[0].img, outerPadding, outerPadding, drawW, h1, processedImgs[0].label);
+                drawPDCSlot(ctx, processedImgs[1].img, outerPadding, outerPadding + h1 + innerGap, drawW, h2, processedImgs[1].label);
+            }
+        } else if (count === 3) {
+            const drawW = W - (outerPadding * 2);
+            const hTop = (drawW / processedImgs[0].img.width) * processedImgs[0].img.height;
+            const wBot = (drawW - innerGap) / 2;
+            const hBot = H - captionHeight - (outerPadding * 2) - hTop - innerGap;
+            drawPDCSlot(ctx, processedImgs[0].img, outerPadding, outerPadding, drawW, hTop, processedImgs[0].label);
+            drawPDCSlot(ctx, processedImgs[1].img, outerPadding, outerPadding + hTop + innerGap, wBot, hBot, processedImgs[1].label);
+            drawPDCSlot(ctx, processedImgs[2].img, outerPadding + wBot + innerGap, outerPadding + hTop + innerGap, wBot, hBot, processedImgs[2].label);
+        } else {
+            const drawW = W - (outerPadding * 2);
+            const wSlot = (drawW - innerGap) / 2;
+            const hRow1 = Math.max(
+                (wSlot / processedImgs[0].img.width) * processedImgs[0].img.height,
+                (wSlot / processedImgs[1].img.width) * processedImgs[1].img.height
+            );
+            const hRow2 = H - captionHeight - (outerPadding * 2) - hRow1 - innerGap;
+            drawPDCSlot(ctx, processedImgs[0].img, outerPadding, outerPadding, wSlot, hRow1, processedImgs[0].label);
+            drawPDCSlot(ctx, processedImgs[1].img, outerPadding + wSlot + innerGap, outerPadding, wSlot, hRow1, processedImgs[1].label);
+            drawPDCSlot(ctx, processedImgs[2].img, outerPadding, outerPadding + hRow1 + innerGap, wSlot, hRow2, processedImgs[2].label);
+            drawPDCSlot(ctx, processedImgs[3].img, outerPadding + wSlot + innerGap, outerPadding + hRow1 + innerGap, wSlot, hRow2, processedImgs[3].label);
+        }
+
+        // 3. Draw Caption Bar
         const captionDisplay = document.getElementById('pdc-caption-text');
         if (captionDisplay) captionDisplay.innerText = finalCaption;
         
         ctx.fillStyle = '#111827';
-        ctx.fillRect(0, canvas.height - captionHeight, canvas.width, captionHeight);
+        ctx.fillRect(0, H - captionHeight - outerPadding, W, captionHeight + outerPadding);
         ctx.fillStyle = '#ffffff';
-        const fontSize = Math.max(30, Math.min(60, canvas.width / 35));
         ctx.font = `bold ${fontSize}px Inter, sans-serif`;
         ctx.textAlign = 'center';
         
-        // Multiline Wrapping
-        wrapTextPDC(ctx, finalCaption, canvas.width / 2, canvas.height - 230, canvas.width - 100, fontSize + 20);
+        // Centered Multiline Wrapping (dynamic Y)
+        const textStartY = H - captionHeight - outerPadding + 80;
+        wrapTextPDC(ctx, finalCaption, W / 2, textStartY, maxWidth, lineHeight);
 
         document.getElementById('pdc-result-container').classList.remove('hidden');
         document.getElementById('pdc-result-container').scrollIntoView({ behavior: 'smooth' });
@@ -275,7 +329,7 @@ async function generatePDC() {
 }
 
 function drawPDCSlot(ctx, img, x, y, w, h, label) {
-    ctx.fillStyle = '#f9fafb';
+    ctx.fillStyle = '#111827';
     ctx.fillRect(x, y, w, h);
     
     // Maintain aspect ratio (Object-Fit Contain)

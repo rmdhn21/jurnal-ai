@@ -62,6 +62,8 @@ async function showMainApp() {
     await safelyInit('initReportCollage');
     await safelyInit('initProCollage');
     await safelyInit('initHSEDailyReport');
+    await safelyInit('initHSEFavorites');
+    await safelyInit('initHSETrendChart');
 
     // Check if Onboarding is needed
     if (typeof initOnboarding === 'function') initOnboarding();
@@ -79,11 +81,9 @@ async function showMainApp() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 App Initializing...');
 
-    // Load theme
-    const theme = localStorage.getItem(STORAGE_KEYS.THEME) || 'light';
-    if (theme === 'dark') {
-        document.body.classList.add('dark-mode');
-    }
+    // Load and Apply Theme immediately
+    const theme = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
 
     // Apply UI Scale ASAP
     const savedScale = localStorage.getItem('app-ui-scale');
@@ -129,6 +129,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
             }
+
+            // Handle PWA Shortcuts / Deep Links
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetScreen = urlParams.get('screen');
+            const targetAction = urlParams.get('action');
+
+            if (targetScreen && typeof navigateToSubscreen === 'function') {
+                setTimeout(() => navigateToSubscreen(targetScreen), 500);
+            } else if (targetAction === 'emergency' && typeof toggleHSEEmergencyModal === 'function') {
+                setTimeout(() => toggleHSEEmergencyModal(), 800);
+            }
+
         } else {
             showLoginScreen();
         }

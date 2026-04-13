@@ -146,7 +146,8 @@ PENTING:
     if (typeof setJarvisNeuralStatus === 'function') setJarvisNeuralStatus('✨ Merumuskan Respon Neural...', true);
 
     try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -566,9 +567,39 @@ async function executeSingleCommand(cmd) {
         if (typeof renderKanbanBoard === 'function') renderKanbanBoard();
         if (typeof renderDailyTodos === 'function') renderDailyTodos();
 
+        // HSE Analytics Hook
+        if (intent === 'GENERATE_HSE') {
+            logHSEReport(data.type?.toLowerCase() || 'other');
+        }
+
     } catch (e) {
         console.error('Execute Unified error:', e);
     }
+}
+
+/**
+ * Log HSE Report generation for analytics
+ */
+function logHSEReport(type) {
+    const ANALYTICS_KEY = 'hse_report_analytics';
+    let data = [];
+    try {
+        const stored = localStorage.getItem(ANALYTICS_KEY);
+        data = stored ? JSON.parse(stored) : [];
+    } catch (e) { data = []; }
+
+    data.push({
+        type: type,
+        timestamp: new Date().toISOString()
+    });
+
+    // Keep only last 1000 entries to prevent bloat
+    if (data.length > 1000) data.shift();
+
+    localStorage.setItem(ANALYTICS_KEY, JSON.stringify(data));
+    
+    // Refresh chart if visible
+    if (typeof initHSETrendChart === 'function') initHSETrendChart();
 }
 
 async function executeAllPendingCommands() {

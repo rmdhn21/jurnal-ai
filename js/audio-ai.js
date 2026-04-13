@@ -73,10 +73,19 @@ const AudioAI = {
     },
 
     async toggleRecording() {
-        if (this.isRecording) {
-            this.stopRecording();
-        } else {
-            await this.startRecording();
+        if (this.isBusy) return;
+        this.isBusy = true;
+        
+        try {
+            if (this.isRecording) {
+                this.stopRecording();
+            } else {
+                await this.startRecording();
+            }
+        } catch (err) {
+            console.error('Toggle error:', err);
+        } finally {
+            this.isBusy = false;
         }
     },
 
@@ -87,7 +96,7 @@ const AudioAI = {
             this.audioChunks = [];
 
             this.mediaRecorder.ondataavailable = (e) => {
-                this.audioChunks.push(e.data);
+                if (e.data.size > 0) this.audioChunks.push(e.data);
             };
 
             this.mediaRecorder.onstop = async () => {
@@ -96,7 +105,7 @@ const AudioAI = {
                 const base64Data = await this.fileToBase64(audioBlob);
                 await this.transcribeWithAI(base64Data, 'audio/webm');
                 
-                // Stop all tracks
+                // Final cleanup of tracks
                 stream.getTracks().forEach(track => track.stop());
             };
 
@@ -108,16 +117,17 @@ const AudioAI = {
             const btn = document.getElementById('record-btn');
             btn.innerHTML = '⏹️';
             btn.classList.add('recording-pulse');
-            document.getElementById('recorder-hint').innerText = 'Sedang merekam meeting... Klik tombol STOP jika sudah selesai.';
+            document.getElementById('recorder-hint').innerText = 'Sedang merekam... Klik tombol STOP jika sudah selesai.';
             
         } catch (error) {
             console.error('Microphone error:', error);
-            alert('Tidak dapat mengakses microphone. Pastikan izin diberikan.');
+            alert('Tidak dapat mengakses microphone. Pastikan izin diberikan dan Anda menggunakan http://localhost atau HTTPS.');
+            this.isRecording = false;
         }
     },
 
     stopRecording() {
-        if (this.mediaRecorder && this.isRecording) {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
             this.mediaRecorder.stop();
             this.isRecording = false;
             clearInterval(this.recordTimer);
@@ -153,7 +163,8 @@ const AudioAI = {
     },
 
     async transcribeWithAI(base64Data, mimeType) {
-        const apiKey = localStorage.getItem('gemini_api_key');
+        // Use the correct key name defined in storage.js
+        const apiKey = localStorage.getItem('jurnal_ai_gemini_key');
         if (!apiKey) {
             alert('⚠️ API Key Gemini belum diatur di Settings.');
             this.showProcessing(false);
@@ -171,7 +182,7 @@ const AudioAI = {
         const prompt = "Please provide an accurate, high-fidelity FULL TEXT transcription of this HSE (Health, Safety, and Environment) meeting or voice memo. Focus on technical terms relevant to Oil & Gas operations in Indonesia/English mix. If there are multiple speakers, try to distinguish them. Do not summarize, I need the FULL transcript.";
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

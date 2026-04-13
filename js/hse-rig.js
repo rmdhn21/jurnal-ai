@@ -1020,29 +1020,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initHseRig();
 });
 
-function switchRigChapter(chapterId, buttonElement) {
-    // 1. Hide all chapters
-    const chapters = document.querySelectorAll('.rig-chapter');
-    chapters.forEach(ch => {
-        ch.classList.add('hidden');
-    });
-
-    // 2. Show the selected chapter
-    const activeChapter = document.getElementById(`rig-chapter-${chapterId}`);
-    if (activeChapter) {
-        activeChapter.classList.remove('hidden');
-    }
-
-    // 3. Update tab active state
-    if (buttonElement) {
-        const tabs = document.querySelectorAll('.rig-tab');
-        tabs.forEach(t => t.classList.remove('active'));
-        buttonElement.classList.add('active');
-        
-        // Scroll horizontal tab container to make button visible if it's overflowing
-        buttonElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-}
 
 function renderInteractiveFlashcards(containerId, dataArray) {
     const container = document.getElementById(containerId);
@@ -1185,21 +1162,21 @@ async function generatePJSM(workDescOverride = null) {
     btn.textContent = '⏳ Generating...';
 
     try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
+        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                systemInstruction: { parts: [{ text: PJSM_SYSTEM_PROMPT }] },
                 contents: [{
                     role: "user",
                     parts: [{
-                        text: `${PJSM_SYSTEM_PROMPT}\n\n--- DAFTAR PEKERJAAN HARI INI ---\n${workList}\n\nBuatkan naskah PJSM lengkap sesuai struktur 6 bagian di atas.`
+                        text: `DAFTAR PEKERJAAN HARI INI:\n${workList}\n\nBuatkan naskah PJSM lengkap sesuai struktur 6 bagian.`
                     }]
                 }],
                 generationConfig: {
-                    temperature: 0.8,
-                    topK: 40,
-                    topP: 0.95,
-                    maxOutputTokens: 10240
+                    temperature: 0.7,
+                    maxOutputTokens: 2048
                 }
             })
         });
@@ -1207,7 +1184,7 @@ async function generatePJSM(workDescOverride = null) {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error('Gemini API Error details:', errorData);
-            throw new Error(errorData.error?.message || `Gagal menghubungi Gemini (Status: ${response.status})`);
+            throw new Error(errorData.error?.message || `Gagal menghubungi AI (${response.status})`);
         }
 
         const data = await response.json();

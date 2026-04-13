@@ -29,6 +29,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 
+    <!-- Word Template Engine Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.1/pizzip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.2/docxtemplater.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -147,105 +152,82 @@
             100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
 
-        /* Oxford 3000 Styles */
-        .oxford-level-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
-            margin-top: 15px;
-        }
 
-        .oxford-level-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .oxford-level-card:active { transform: scale(0.95); }
-
-        .oxford-level-card.active {
-            border-color: var(--primary);
-            background: rgba(245, 158, 11, 0.05);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
-        }
-
-        .oxford-level-card h4 { margin: 0; font-size: 1.2rem; }
-        .oxford-level-card p { margin: 4px 0 0; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
-
-        .oxford-progress-mini {
-            height: 4px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 2px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-
-        .oxford-progress-fill {
-            height: 100%;
-            background: var(--primary);
-            width: 0%;
-            transition: width 0.5s ease;
-        }
-
-        .oxford-word-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .oxford-word-item {
-            background: var(--surface-hover);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .oxford-word-item:active { transform: scale(0.95); }
-        .oxford-word-item.mastered { border-color: #38a169; background: rgba(56, 161, 105, 0.05); color: #38a169; }
-
-        .oxford-learning-card {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 400px;
-            z-index: 2000;
-            animation: modal-fade-in 0.3s;
-        }
-
-        /* Tech Reference Badge UI */
-        .tech-ref-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: rgba(34, 211, 238, 0.1);
-            border: 1px solid rgba(34, 211, 238, 0.3);
-            color: #22d3ee;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
+        /* HSE Center Dashboard Styling */
+        .hse-section-title {
+            font-size: 1rem;
             font-weight: 700;
+            color: var(--primary);
+            margin: 25px 0 15px 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             text-transform: uppercase;
-            margin: 4px 0;
-            box-shadow: 0 0 10px rgba(34, 211, 238, 0.1);
+            letter-spacing: 0.5px;
         }
-        .tech-ref-badge::before {
-            content: "📑";
-            font-size: 0.8rem;
+        .hse-section-title::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            opacity: 0.3;
         }
+
+        .hse-card-compact {
+            padding: 12px 10px !important;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-direction: row !important;
+            text-align: left !important;
+        }
+        .hse-card-compact .card-icon {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 1.2rem !important;
+            margin: 0 !important;
+            flex-shrink: 0;
+        }
+        .hse-card-compact .card-title {
+            font-size: 0.85rem !important;
+            margin: 0 !important;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+        .hse-card-compact .card-desc {
+            display: none; /* Hide descriptions on compact cards to save space */
+        }
+
+        /* HSE Favorit Star */
+        .hse-card {
+            position: relative;
+        }
+        .fav-star {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 0.3;
+            transition: all 0.2s;
+            padding: 5px;
+            filter: grayscale(1);
+        }
+        .fav-star:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+        .fav-star.active {
+            opacity: 1;
+            filter: grayscale(0);
+            text-shadow: 0 0 5px rgba(245, 158, 11, 0.5);
+        }
+        #hse-favorites-container.hidden {
+            display: none;
+        }
+
         .tech-ref-disclaimer {
             font-size: 0.7rem;
             color: var(--text-muted);
@@ -256,6 +238,34 @@
             display: block;
         }
         .hidden { display: none !important; }
+        /* JMP Official Preview Refinement */
+        .jmp-official-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin: 15px 0;
+            background: white;
+            border: 2px solid #333;
+        }
+        .jmp-official-preview th {
+            background: #f1f5f9 !important;
+            color: #1e293b !important;
+            border: 1px solid #333 !important;
+            padding: 10px 8px !important;
+            text-transform: uppercase;
+            font-weight: 800;
+            text-align: center;
+        }
+        .jmp-official-preview td {
+            border: 1px solid #333 !important;
+            padding: 10px 8px !important;
+            vertical-align: top;
+            color: #334155;
+            line-height: 1.5;
+        }
+        .official-jmp-table-wrapper table {
+            margin-top: -1px; 
+        }
     </style>
 </head>
 
@@ -488,10 +498,6 @@
                         <div class="hub-icon" style="background: rgba(245, 101, 101, 0.1); color: #fc8181; border: 1px solid rgba(245, 101, 101, 0.2);">📊</div>
                         <span class="hub-label">Kanban</span>
                     </button>
-                    <button class="hub-btn" onclick="navigateToSubscreen('oxford-vocab')">
-                        <div class="hub-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);">🇬🇧</div>
-                        <span class="hub-label">Oxford 3000</span>
-                    </button>
                     <button class="hub-btn" onclick="navigateToSubscreen('journal')">
                         <div class="hub-icon" style="background: rgba(237, 137, 54, 0.1); color: #f6ad55; border: 1px solid rgba(237, 137, 54, 0.2);">📝</div>
                         <span class="hub-label">Jurnal</span>
@@ -515,6 +521,13 @@
 
             <!-- HSE Performance Center Screen -->
             <section id="hse-center-screen" class="screen">
+                <!-- Safety Ticker -->
+                <div class="hse-ticker" id="hse-safety-ticker-container">
+                    <div class="hse-ticker-inner" id="hse-ticker-content">
+                        ⚠️ HSE ALERT: Selalu gunakan LOTO sebelum melakukan perbaikan mekanikal. &nbsp;&nbsp;&nbsp; 🛠️ K3 ADALAH PRIORITAS: Tidak ada pekerjaan yang begitu mendesak sehingga mengabaikan keselamatan. &nbsp;&nbsp;&nbsp; 🌡️ CEK CUACA: Pantau parameter well secara berkala saat drilling operation.
+                    </div>
+                </div>
+
                 <div class="hse-stat-banner">
                     <div>
                         <h2 style="color: white; margin: 0; font-size: 1.2rem;">🛡️ HSE Center</h2>
@@ -526,54 +539,284 @@
                     </div>
                 </div>
 
+                <!-- HSE Performance Insights (New Analytics Card) -->
+                <div class="hse-analytics-card">
+                    <div class="hse-analytics-header">
+                        <div class="hse-analytics-title">📊 HSE Performance Trends</div>
+                        <span style="font-size: 0.7rem; color: #10b981; font-weight: 800;">LIVE UPDATES</span>
+                    </div>
+                    <div class="hse-analytics-chart-container">
+                        <canvas id="hse-trend-chart"></canvas>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.7rem; color: #94a3b8; text-align: center;">Data performa dalam 20 hari terakhir (JSA, JMP, PJSM, RCA).</p>
+                </div>
+
+                <!-- Favorit Section (Dynamic) -->
+                <div id="hse-favorites-container" class="hidden">
+                    <div class="hse-section-title">⭐ Favorit</div>
+                    <div class="hse-grid" id="hse-favorites-grid">
+                        <!-- Fav cards will be cloned here -->
+                    </div>
+                </div>
+
+                <!-- Category 1: AI Safety Intelligence -->
+                <div class="hse-section-title">🤖 AI Safety Intelligence</div>
                 <div class="hse-grid">
-                    <!-- Daily Reporting -->
-                    <div class="hse-card" onclick="navigateToSubscreen('hse-wag-generator')">
-                        <div class="card-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">📝</div>
+                    <!-- Meeting Transcriber -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('audio-ai')" style="border: 2px solid #8b5cf6; background: rgba(139, 92, 246, 0.05);">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white;">🎙️</div>
+                        <div class="card-title">Meeting Transcriber</div>
+                        <div class="card-desc">Transkrip full-text meeting & voice memo.</div>
+                    </div>
+
+                    <!-- Regulation Expert -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-regulation')">
+                        <div class="card-icon" style="background: rgba(13, 148, 136, 0.1); color: #0d9488;">⚖️</div>
+                        <div class="card-title">Regulation Expert</div>
+                        <div class="card-desc">Tanya standar K3, OSHA & PHE via Chat.</div>
+                    </div>
+
+                    <!-- JSA Generator -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-jsa')">
+                        <div class="card-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">📑</div>
+                        <div class="card-title">AI JSA Generator</div>
+                        <div class="card-desc">Generate draf JSA (Tabel) atau RA (5 Lembar).</div>
+                    </div>
+
+                    <!-- Incident Investigator -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-rca')">
+                        <div class="card-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">🚨</div>
+                        <div class="card-title">Incident RCA</div>
+                        <div class="card-desc">Analisis akar masalah & draf Laporan 5-Whys.</div>
+                    </div>
+
+                    <!-- PJSM Generator -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-pjsm')">
+                        <div class="card-icon" style="background: rgba(229, 62, 62, 0.1); color: #e53e3e;">📢</div>
+                        <div class="card-title">PJSM Generator</div>
+                        <div class="card-desc">Naskah briefing PJSM/TBT dengan mitigasi.</div>
+                    </div>
+                </div>
+
+                <!-- Category 2: Field Reporting & Tools -->
+                <div class="hse-section-title">📝 Field Reporting & Tools</div>
+                <div class="hse-grid">
+                    <!-- Daily WAG -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-wag-generator')">
+                        <div class="card-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">📲</div>
                         <div class="card-title">Daily WAG Report</div>
-                        <div class="card-desc">Generate laporan harian untuk grup WhatsApp khusus Field Sangatta.</div>
+                        <div class="card-desc">Laporan harian format WA khusus Sangatta.</div>
                     </div>
 
-                    <!-- PJSM Collage -->
-                    <div class="hse-card" onclick="navigateToSubscreen('report-collage')">
+                    <!-- PJSM Photo -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('report-collage')">
                         <div class="card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">📸</div>
-                        <div class="card-title">PJSM & DCU</div>
-                        <div class="card-desc">Kolase foto PJSM dan Form DCU otomatis dengan penataan cerdas.</div>
+                        <div class="card-title">PJSM & DCU Photo</div>
+                        <div class="card-desc">Kolase foto PJSM dan Form DCU otomatis.</div>
                     </div>
 
-                    <!-- PDC Documentation -->
-                    <div class="hse-card" onclick="navigateToSubscreen('pro-collage')">
+                    <!-- Pro Documentation -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('pro-collage')">
                         <div class="card-icon" style="background: rgba(107, 114, 128, 0.1); color: #6b7280;">🖼️</div>
                         <div class="card-title">Pro Dokumentasi</div>
-                        <div class="card-desc">Kolase 2/4 foto progress pekerjaan dengan watermark timestamp.</div>
-                    </div>
-
-                    <!-- Rig Standards -->
-                    <div class="hse-card" onclick="navigateToSubscreen('hse-rig')">
-                        <div class="card-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">🏗️</div>
-                        <div class="card-title">Standar Rig</div>
-                        <div class="card-desc">Referensi teknis peralatan rig, inspeksi, dan standar keselamatan.</div>
-                    </div>
-
-                    <!-- HSSE Mastery -->
-                    <div class="hse-card" onclick="navigateToSubscreen('hsse')">
-                        <div class="card-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">🎓</div>
-                        <div class="card-title">HSSE Mastery</div>
-                        <div class="card-desc">Learning path K3 dari tingkat dasar hingga Leadership & Audit.</div>
-                    </div>
-
-                    <!-- English HSE -->
-                    <div class="hse-card" onclick="navigateToSubscreen('english-hse')">
-                        <div class="card-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">🔤</div>
-                        <div class="card-title">English for HSE</div>
-                        <div class="card-desc">Istilah teknis bahasa Inggris untuk O&G, JSA, dan dokumen PTW.</div>
+                        <div class="card-desc">Kolase 2/4 foto progress dengan watermark.</div>
                     </div>
 
                     <!-- JMP Generator -->
-                    <div class="hse-card" onclick="navigateToSubscreen('jmp-generator')">
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('jmp-generator')">
                         <div class="card-icon" style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;">⚙️</div>
                         <div class="card-title">JMP Generator</div>
-                        <div class="card-desc">Pembuatan Job Management Plan otomatis untuk aktivitas Rig.</div>
+                        <div class="card-desc">Journey Management Plan aktivitas Rig.</div>
+                    </div>
+
+                    <!-- Moving Checklist -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('moving-checklist')">
+                        <div class="card-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">🚛</div>
+                        <div class="card-title">Pre-Moving Ceklis</div>
+                        <div class="card-desc">Persiapan demobilisasi & pindah lokasi.</div>
+                    </div>
+
+                    <!-- Form Inspeksi -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-inspection')">
+                        <div class="card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">📋</div>
+                        <div class="card-title">Form Inspeksi</div>
+                        <div class="card-desc">Ceklis bulanan APAR, Kotak P3K & Safety.</div>
+                    </div>
+
+                    <!-- Geo-Mapper PRO (Avenza Style) -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-geomapper')" style="border: 1px solid #3b82f6; background: rgba(59, 130, 246, 0.05);">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white;">🛰️</div>
+                        <div class="card-title">Geo-Mapper PRO</div>
+                        <div class="card-desc">Tracking peta satelit & navigasi waypoint.</div>
+                    </div>
+                </div>
+
+                <!-- Category 3: Rig Standards & Operations -->
+                <div class="hse-section-title">🏗️ Rig Standards & Operations</div>
+                <div class="hse-grid">
+                    <!-- Intro -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-intro')">
+                        <div class="card-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">🏗️</div>
+                        <div class="card-title">Pengenalan Rig</div>
+                        <div class="card-desc">Komponen utama onshore rig darat.</div>
+                    </div>
+
+                    <!-- Hazards -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-hazards')">
+                        <div class="card-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">⚠️</div>
+                        <div class="card-title">Major Hazards</div>
+                        <div class="card-desc">Risiko tinggi H2S, Blowout, & Dropped.</div>
+                    </div>
+
+                    <!-- PPE -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-ppe')">
+                        <div class="card-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">👷</div>
+                        <div class="card-title">Standar APD</div>
+                        <div class="card-desc">Requirements wajib di area drill floor.</div>
+                    </div>
+
+                    <!-- Routine -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-routine')">
+                        <div class="card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">📋</div>
+                        <div class="card-title">Rutinitas HSE</div>
+                        <div class="card-desc">Agenda harian & Permit Control.</div>
+                    </div>
+
+
+                    <!-- Gas testing -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-gas')">
+                        <div class="card-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">🔥</div>
+                        <div class="card-title">Gas & Fire Limits</div>
+                        <div class="card-desc">Batas aman LEL, H2S, & O2.</div>
+                    </div>
+
+
+                    <!-- Lifecycle -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-lifecycle')">
+                        <div class="card-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">🔄</div>
+                        <div class="card-title">Sumur Lifecycle</div>
+                        <div class="card-desc">Tahapan eksplorasi hingga penutupan.</div>
+                    </div>
+
+                    <!-- Sequence -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-sequence')">
+                        <div class="card-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">⚙️</div>
+                        <div class="card-title">Operasi Rig</div>
+                        <div class="card-desc">Alur mekanikal & logistik persiapan.</div>
+                    </div>
+
+                    <!-- Parameters -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-parameters')">
+                        <div class="card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">📊</div>
+                        <div class="card-title">Well Parameters</div>
+                        <div class="card-desc">Indikator kritis saat pengeboran.</div>
+                    </div>
+
+                    <!-- Oversight -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-oversight')">
+                        <div class="card-icon" style="background: rgba(107, 114, 128, 0.1); color: #6b7280;">🛡️</div>
+                        <div class="card-title">Supervisor Oversight</div>
+                        <div class="card-desc">Tanggung jawab kepemimpinan K3.</div>
+                    </div>
+
+                </div>
+
+                <!-- Category 4: Learning & Awareness -->
+                <div class="hse-section-title">🎓 Learning & Awareness</div>
+                <div class="hse-grid">
+                    <!-- English Fluency -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('english-fluency')">
+                        <div class="card-icon" style="background: rgba(236, 72, 153, 0.1); color: #ec4899;">🌟</div>
+                        <div class="card-title">English Fluency</div>
+                        <div class="card-desc">Latihan dasar untuk pemula (Basic English).</div>
+                    </div>
+
+                    <!-- HSSE Mastery -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hsse')">
+                        <div class="card-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">🎓</div>
+                        <div class="card-title">HSSE Mastery</div>
+                        <div class="card-desc">Learning path K3 (Levels & Quiz).</div>
+                    </div>
+
+                    <!-- Listening Case -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-listening')">
+                        <div class="card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">🎧</div>
+                        <div class="card-title">Listening Practice</div>
+                        <div class="card-desc">Latih pemahaman insiden bahasa Inggris.</div>
+                    </div>
+
+                    <!-- Safety Roadmap -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-poster')">
+                        <div class="card-icon" style="background: rgba(107, 114, 128, 0.1); color: #6b7280;">🖼️</div>
+                        <div class="card-title">Roadmap Keselamatan</div>
+                        <div class="card-desc">Poster visual 10 CLSR & 9 Perilaku.</div>
+                    </div>
+
+                    <!-- CLSR -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-clsr')">
+                        <div class="card-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">🛡️</div>
+                        <div class="card-title">10 Elemen CLSR</div>
+                        <div class="card-desc">Corporate Life Saving Rules wajib.</div>
+                    </div>
+
+                    <!-- Perilaku -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('hse-perilaku')">
+                        <div class="card-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">📜</div>
+                        <div class="card-title">9 Perilaku Wajib</div>
+                        <div class="card-desc">Sembilan perilaku dasar keselamatan.</div>
+                    </div>
+                </div>
+            </section>
+            </section>
+
+            <!-- HSE Geo-Mapper PRO Subscreen -->
+            <section id="hse-geomapper-screen" class="screen no-padding subscreen">
+                <div class="hse-mapper-container">
+                    <div id="hse-geomapper-map"></div>
+                    
+                    <!-- Navigation HUD -->
+                    <div class="geomapper-hud hidden" id="geomapper-nav-hud">
+                        <div class="hud-stat">
+                            <div class="hud-label">Sinyal GPS</div>
+                            <div class="hud-value" id="hud-accuracy">--<span>m</span></div>
+                        </div>
+                        <div class="hud-stat" style="border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1);">
+                            <div class="hud-label">Navigasi Ke</div>
+                            <div class="hud-value" id="hud-target-name">--</div>
+                        </div>
+                        <div class="hud-stat" style="border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1);">
+                            <div class="hud-label">Jarak Target</div>
+                            <div class="hud-value" id="hud-dist-target">--<span>m</span></div>
+                        </div>
+                        <div class="hud-stat">
+                            <div class="hud-label">Arah (Bearing)</div>
+                            <div class="hud-value" id="hud-bearing">--<span>°</span></div>
+                        </div>
+                    </div>
+
+                    <div class="snapshot-overlay" id="geomapper-snapshot-stats">
+                        <div id="snap-dist">Jarak: 0.00 km</div>
+                        <div id="snap-time">Waktu: 00:00</div>
+                    </div>
+
+                    <!-- Map Actions -->
+                    <div class="mapper-controls">
+                        <button class="mapper-btn" id="btn-map-record" onclick="toggleMappingRecord()">
+                            <i class="fas fa-play"></i>
+                            <span id="txt-map-record">Mulai Rekam</span>
+                        </button>
+                        <button class="mapper-btn" onclick="requestWaypointMark()">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Tandai Lokasi</span>
+                        </button>
+                        <button class="mapper-btn" onclick="toggleSatelliteView()">
+                            <i class="fas fa-satellite"></i>
+                            <span id="txt-map-layer">Satellite View</span>
+                        </button>
+                        <button class="mapper-btn" onclick="centerMapOnUser()">
+                            <i class="fas fa-crosshair"></i>
+                            <span>Pusatkan</span>
+                        </button>
                     </div>
                 </div>
             </section>
@@ -705,7 +948,7 @@
                     <div class="card-header" style="padding: 20px 0 0 0;">
                         <h3 style="display: flex; align-items: center; gap: 8px;">✨ Elite Skill Tree</h3>
                     </div>
-                    <div id="mastery-hexagon-dashboard" style="position: relative; min-height: 600px; margin-top: 20px;">
+                    <div id="mastery-hexagon-dashboard" style="position: relative; min-height: 450px; margin-top: 20px;">
                         <!-- SVG Connection Layer -->
                         <svg id="mastery-tree-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;"></svg>
                         <!-- Hexagons will be rendered here by JS -->
@@ -734,76 +977,36 @@
                     </div>
                 </div>
 
-                <!-- Moving the AI Tutors card from the dashboard to here -->
+                <!-- Guru Privat AI Card -->
                 <div class="card mt-md" id="ai-tutor-card" style="position: relative; overflow: hidden; border-left: 4px solid var(--secondary);">
                     <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">🎓</div>
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
                         <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
                             <span>🎓</span> Guru Privat AI
                         </h3>
-                        <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); text-transform: uppercase;">AI Tutor</span>
                     </div>
-                    <p class="text-muted" style="font-size: 0.85rem; margin-top: 5px; margin-bottom: 12px; position: relative; z-index: 1;">Pilih topik mikro untuk dipelajari hari ini. Beri AI beberapa detik untuk menyusun modul pendek.</p>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-top: 5px; margin-bottom: 12px; position: relative; z-index: 1;">Pilih topik untuk dipelajari hari ini.</p>
 
-                    <div class="tutor-actions" id="tutor-action-btn-group"
-                        style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <button class="btn btn-primary" onclick="requestTutor('AI')" style="flex:1;"><span
-                                class="btn-icon">🧠</span> Belajar AI</button>
-                        <button class="btn btn-secondary" onclick="requestTutor('Fisika')" style="flex:1;"><span
-                                class="btn-icon">⚛️</span> Belajar Fisika</button>
+                    <div class="tutor-actions" id="tutor-action-btn-group" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <button class="btn btn-primary" onclick="requestTutor('AI')" style="flex:1;"><span class="btn-icon">🧠</span> Belajar AI</button>
+                        <button class="btn btn-secondary" onclick="requestTutor('Fisika')" style="flex:1;"><span class="btn-icon">⚛️</span> Belajar Fisika</button>
                     </div>
-
-                    <div id="tutor-content-area" class="hidden"
-                        style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
-                    </div>
+                    <div id="tutor-content-area" class="hidden" style="background: var(--surface-hover); padding: 15px; border-radius: 8px;"></div>
                 </div>
 
                 <div class="hub-grid mt-md">
+                    <!-- English Fluency -->
                     <button class="hub-btn" onclick="navigateToSubscreen('english-fluency')">
-                        <div class="hub-icon" style="background: #f0fdf4; color: #16a34a;">🌟</div>
+                        <div class="hub-icon" style="background: rgba(236, 72, 153, 0.1); color: #ec4899;">🌟</div>
                         <span class="hub-label">English Fluency</span>
-                        <p class="hub-desc">Latihan dasar untuk pemula (Basic English).</p>
+                        <p class="hub-desc">Latihan dasar harian bahasa Inggris.</p>
                     </button>
-                    <button class="hub-btn" onclick="navigateToSubscreen('english-hse')">
-                        <div class="hub-icon" style="background: #eef2ff; color: #4338ca;">🇬🇧</div>
-                        <span class="hub-label">English O&G</span>
-                        <p class="hub-desc">Latihan kosakata & percakapan Migas.</p>
-                    </button>
-                    <button class="hub-btn" onclick="navigateToSubscreen('hse-rig')">
-                        <div class="hub-icon" style="background: #fffbeb; color: #b45309;">🛢️</div>
-                        <span class="hub-label">HSE Rig Basics</span>
-                        <p class="hub-desc">Panduan K3 dasar di area pengeboran.</p>
-                    </button>
-                    <button class="hub-btn" onclick="navigateToRigTab('inspection')">
-                        <div class="hub-icon" style="background: #f0fff4; color: #276749;">✅</div>
-                        <span class="hub-label">Inspeksi Rig</span>
-                        <p class="hub-desc">Checklist inspeksi fasilitas rig & export PDF.</p>
-                    </button>
-                    <button class="hub-btn" onclick="navigateToRigTab('pjsm')">
-                        <div class="hub-icon" style="background: #fffff0; color: #975a16;">📢</div>
-                        <span class="hub-label">PJSM Generator</span>
-                        <p class="hub-desc">Generate Pre-Job Safety Meeting otomatis.</p>
-                    </button>
-                    <button class="hub-btn" onclick="navigateToJMPGenerator()">
-                        <div class="hub-icon" style="background: #fff1f2; color: #e11d48;">🗺️</div>
-                        <span class="hub-label">JMP Generator</span>
-                        <p class="hub-desc">Tabel Hazard Register Journey Management Plan.</p>
-                    </button>
-                    <button class="hub-btn" onclick="navigateToJSAGenerator()">
-                        <div class="hub-icon" style="background: #ebf8ff; color: #2b6cb0;">📑</div>
-                        <span class="hub-label">AI JSA & PTW</span>
-                        <p class="hub-desc">Buat dokumen JSA / Risk Assessment via AI.</p>
-                    </button>
+
+                    <!-- Perpustakaan AI -->
                     <button class="hub-btn" onclick="navigateToSubscreen('library')">
-                        <div class="hub-icon" style="background: #fdf2f2; color: #9b2c2c;">📖</div>
+                        <div class="hub-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">📖</div>
                         <span class="hub-label">Perpustakaan AI</span>
-                        <p class="hub-desc">Simpan & kelola hasil generate AI Anda.</p>
-                    </button>
-                    <!-- New Audio AI Meeting Transcriber -->
-                    <button class="hub-btn" onclick="navigateToSubscreen('audio-ai')" style="border: 1px solid #8b5cf6; background: rgba(139, 92, 246, 0.05);">
-                        <div class="hub-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white;">🎙️</div>
-                        <span class="hub-label">Meeting Transcriber</span>
-                        <p class="hub-desc">Transkrip full-text meeting & voice memo via AI.</p>
+                        <p class="hub-desc">Kelola hasil JSA, JMP, & Lesson Anda.</p>
                     </button>
                 </div>
             </section>
@@ -1212,11 +1415,26 @@
                         </div>
                         <div class="form-group mb-sm">
                             <label class="text-xs text-muted">Weather (Cuaca)</label>
-                            <input type="text" id="wr-weather" class="input" value="cerah" style="width: 100%;">
+                            <select id="wr-weather" class="input" style="width: 100%;" onchange="if(this.value==='custom'){this.style.display='none';document.getElementById('wr-weather-custom').style.display='';document.getElementById('wr-weather-custom').focus();}; saveReportDraft(); generateWAGReport();">
+                                <option value="Cerah">☀️ Cerah</option>
+                                <option value="Berawan">⛅ Berawan</option>
+                                <option value="Hujan">🌧️ Hujan</option>
+                                <option value="custom">✏️ Custom...</option>
+                            </select>
+                            <input type="text" id="wr-weather-custom" class="input" placeholder="Ketik cuaca custom..." style="width: 100%; display: none; margin-top: 5px;">
                         </div>
                         <div class="form-group mb-sm">
                             <label class="text-xs text-muted">Operation (Pekerjaan)</label>
-                            <input type="text" id="wr-ops-desc" class="input" value="well service" style="width: 100%;">
+                            <select id="wr-ops-desc" class="input" style="width: 100%;" onchange="if(this.value==='custom'){this.style.display='none';document.getElementById('wr-ops-custom').style.display='';document.getElementById('wr-ops-custom').focus();}; saveReportDraft(); generateWAGReport();">
+                                <option value="Well Service">🔧 Well Service</option>
+                                <option value="Workover">⚙️ Workover</option>
+                                <option value="Well Intervention">🛠️ Well Intervention</option>
+                                <option value="Moving to next well">🚛 Moving to next well</option>
+                                <option value="Rig Up">🏗️ Rig Up</option>
+                                <option value="Rig Down">📦 Rig Down</option>
+                                <option value="custom">✏️ Custom...</option>
+                            </select>
+                            <input type="text" id="wr-ops-custom" class="input" placeholder="Ketik operasi custom..." style="width: 100%; display: none; margin-top: 5px;">
                         </div>
                         <hr style="opacity: 0.1; margin: 15px 0;">
                         <div class="form-group mb-sm">
@@ -1236,17 +1454,58 @@
                     <!-- C/D. Activity -->
                     <div id="wag-sec-activity" class="card mb-md wag-section hidden">
                         <h3 class="mb-sm">📝 C. Summary Activity (07.00-19.00)</h3>
-                        <textarea id="wr-activity-c" class="input" rows="6" style="width: 100%; font-size: 0.8rem; line-height: 1.4;">- FTT & PJSM crew rig H25
-- Check dan packing peralatan persiapan Move ke lokasi ST-162
-- Moving Rig carrier beserta peralatan 
-Move in: 100 %
-Move out : 100 %
-- set peralatan di Lokasi ST-162
-- R/U menara rig H-25 
-- install guyline 
-- persiapan Function test peralatan
-- Fungtion test peralatan-ok
-- RSCL</textarea>
+                        <p class="text-xs text-muted mb-sm">⚡ Klik tombol untuk menambahkan aktivitas:</p>
+                        <div id="wag-quick-insert" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- FTT &amp; PJSM crew rig ')" style="font-size: 0.7rem;">🤝 FTT &amp; PJSM</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- POOH Rangkaian Tubing')" style="font-size: 0.7rem;">⬆️ POOH Tubing</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- POOH Rangkaian Sucker Rod')" style="font-size: 0.7rem;">⬆️ POOH S.Rod</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- POOH Rangkaian Pompa')" style="font-size: 0.7rem;">⬆️ POOH Pompa</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- POOH Rangkaian Packer')" style="font-size: 0.7rem;">⬆️ POOH Packer</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- RIH Rangkaian ')" style="font-size: 0.7rem;">⬇️ RIH</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- RIH Rangkaian Sucker Rod')" style="font-size: 0.7rem;">⬇️ RIH S.Rod</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- R/U menara rig ')" style="font-size: 0.7rem;">🏗️ R/U Mast</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- R/D mast complete ')" style="font-size: 0.7rem;">📦 R/D Mast</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Install guyline &amp; surface line')" style="font-size: 0.7rem;">🔗 Guyline</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Install Horse Head Pumping Unit')" style="font-size: 0.7rem;">🐴 N/U Horse Head</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Uninstall Horse Head')" style="font-size: 0.7rem;">🐴 Release HH</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Install Polish Rod &amp; Pony Rod')" style="font-size: 0.7rem;">🔧 Polish Rod</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- N/U BOP')" style="font-size: 0.7rem;">🔩 N/U BOP</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- N/D BOP')" style="font-size: 0.7rem;">🔩 N/D BOP</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- N/U Xmastree')" style="font-size: 0.7rem;">🎄 N/U Xmastree</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Set Working Floor')" style="font-size: 0.7rem;">🏗️ Set WF</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Lipat Working Floor')" style="font-size: 0.7rem;">📐 Lipat WF</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Set Packer @ meter')" style="font-size: 0.7rem;">⚙️ Set Packer</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Observasi Produksi')" style="font-size: 0.7rem;">👁️ Observasi</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Start Production ')" style="font-size: 0.7rem;">🛢️ Produksi</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Connect flowline')" style="font-size: 0.7rem;">🔌 Flowline</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Swab job')" style="font-size: 0.7rem;">💧 Swab</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Perforation job')" style="font-size: 0.7rem;">💥 Perforasi</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Pump Job')" style="font-size: 0.7rem;">🔧 Pump Job</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Flushing ')" style="font-size: 0.7rem;">💦 Flushing</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Loading Peralatan di ')" style="font-size: 0.7rem;">📤 Loading</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Unloading Peralatan di ')" style="font-size: 0.7rem;">📥 Unloading</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Moving Rig beserta peralatan\nMove out : %\nMove in : %')" style="font-size: 0.7rem;">🚛 Moving</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Posisikan Rig Carrier di pondasi')" style="font-size: 0.7rem;">📍 Set Pondasi</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Survey jalan &amp; lokasi ')" style="font-size: 0.7rem;">🗺️ Survei Jalan</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Rig Safety Checklist')" style="font-size: 0.7rem;">✅ RSCL</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Function test peralatan')" style="font-size: 0.7rem;">🔧 F/T</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Fire Drill')" style="font-size: 0.7rem;">🔥 Fire Drill</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Unsafe Condition (Hujan)')" style="font-size: 0.7rem;">⚠️ Unsafe</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Housekeeping peralatan')" style="font-size: 0.7rem;">🧹 HK Peralatan</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Housekeeping dan observasi Produksi')" style="font-size: 0.7rem;">🧹 HK &amp; Observasi</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Release guyline prepare Rig down')" style="font-size: 0.7rem;">🔓 Release Guyline</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Release Surface line')" style="font-size: 0.7rem;">🔓 Release S.Line</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Sirkulasi tes kebocoran')" style="font-size: 0.7rem;">🔄 Sirkulasi</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Cementing Job')" style="font-size: 0.7rem;">🧱 Cementing</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Install Pumping Unit')" style="font-size: 0.7rem;">⚙️ Install PU</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Korelasi')" style="font-size: 0.7rem;">📏 Korelasi</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- BOP Job')" style="font-size: 0.7rem;">🔩 BOP Job</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Uninstall Xmas Tree')" style="font-size: 0.7rem;">🎄 N/D Xmastree</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- Install safety valve')" style="font-size: 0.7rem;">🛡️ Safety Valve</button>
+                            <button class="btn btn-small btn-secondary" onclick="insertActivity('- TSK')" style="font-size: 0.7rem;">📋 TSK</button>
+                            <button class="btn btn-small btn-secondary" onclick="clearActivityC()" style="font-size: 0.7rem; background: rgba(239,68,68,0.15); color: #ef4444;">🗑️ Bersihkan</button>
+                        </div>
+                        <textarea id="wr-activity-c" class="input" rows="6" style="width: 100%; font-size: 0.8rem; line-height: 1.4;"></textarea>
 
                         <label class="text-xs text-muted mt-sm" style="display: block;">Plan (Siang):</label>
                         <textarea id="wr-plan-c" class="input" rows="3" style="width: 100%; font-size: 0.8rem;" placeholder="Contoh: • Lanjut function test..."></textarea>
@@ -1270,13 +1529,56 @@ Move out : 100 %
                         <textarea id="wr-plan-night" class="input" rows="3" style="width: 100%; font-size: 0.8rem;" placeholder="- Lanjut pekerjaan malam..."></textarea>
 
                         <h3 class="mt-md mb-sm">📋 D. Summary Activity HSSE</h3>
-                        <textarea id="wr-activity-d" class="input" rows="4" style="width: 100%; font-size: 0.8rem;">- PJSM untuk menyampaikan pesan keselamatan
-- Monitoring FTT crew H-25 
-- Running dan function test fire pump
-- monitoring aspek HSSE di lingkungan kerja Rig H-25</textarea>
+                        <p class="text-xs text-muted mb-sm">Centang aktivitas HSSE yang dilakukan hari ini. Section E otomatis sama.</p>
+                        <div id="wr-hsse-checklist" style="display: flex; flex-direction: column; gap: 8px;">
+                            <label class="wag-check-item" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                <input type="checkbox" class="wr-hsse-chk" value="PJSM untuk menyampaikan pesan keselamatan dan menyampaikan pengisian PEKA online" checked style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>PJSM untuk menyampaikan pesan keselamatan dan pengisian PEKA online</span>
+                            </label>
+                            <label class="wag-check-item" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                <input type="checkbox" class="wr-hsse-chk" value="Monitoring FTT crew {RIG}" checked style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>Monitoring FTT crew <b>[auto: rig name]</b></span>
+                            </label>
+                            <label class="wag-check-item" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                <input type="checkbox" class="wr-hsse-chk" value="Running fire pump" checked style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>Running fire pump</span>
+                            </label>
+                            <label class="wag-check-item" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                <input type="checkbox" class="wr-hsse-chk" value="Running fire truck" style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>Running fire truck</span>
+                            </label>
+                            <label class="wag-check-item" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                <input type="checkbox" class="wr-hsse-chk" value="monitoring aspek HSSE di lingkungan kerja Rig {RIG}" checked style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>Monitoring aspek HSSE di lingkungan kerja <b>[auto: rig name]</b></span>
+                            </label>
+                            <label class="wag-check-item" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                <input type="checkbox" class="wr-hsse-chk" value="Housekeeping limbah domestik dan limbah B3 di area kerja" checked style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>Housekeeping limbah domestik dan limbah B3 di area kerja</span>
+                            </label>
+                            <label class="wag-check-item" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                <input type="checkbox" class="wr-hsse-chk" value="Assessment jalan & survei lokasi" style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>Assessment jalan & survei lokasi</span>
+                            </label>
+                            <label class="wag-check-item" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                <input type="checkbox" class="wr-hsse-chk" value="Rig safety checklist" style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>Rig safety checklist</span>
+                            </label>
+                            <label class="wag-check-item" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                <input type="checkbox" class="wr-hsse-chk" value="Function Test fire Pump, hasil Baik" style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>Function Test fire Pump</span>
+                            </label>
+                        </div>
+                        <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <input type="text" id="wr-hsse-custom-item" class="input" placeholder="+ Tambah item HSSE lainnya..." style="flex: 1; font-size: 0.8rem;">
+                            <button class="btn btn-small btn-secondary" onclick="addCustomHSSEItem()" style="font-size: 0.7rem;">Tambah</button>
+                        </div>
+                        <p class="text-xs text-muted mt-sm" style="opacity: 0.6;">💡 Tip: Klik "Salin dari D" untuk mengisi Section E otomatis.</p>
 
                         <h3 class="mt-md mb-sm">🚀 E. Next HSSE Activity</h3>
-                        <textarea id="wr-next-hsse" class="input" rows="3" style="width: 100%; font-size: 0.8rem;" placeholder="- Rencana kegiatan HSSE besok..."></textarea>
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
+                            <button class="btn btn-small btn-secondary" onclick="copyDtoE()" style="font-size: 0.7rem;">📋 Salin dari D</button>
+                        </div>
+                        <textarea id="wr-next-hsse" class="input" rows="4" style="width: 100%; font-size: 0.8rem;" placeholder="- Rencana kegiatan HSSE besok..."></textarea>
                     </div>
                 </div>
 
@@ -1702,7 +2004,8 @@ Move out : 100 %
                         <h3>📊 Grafik & Analisis</h3>
                         <div class="flex-row gap-sm">
                             <button id="show-bar-chart-btn" class="btn btn-small btn-primary">Tren</button>
-                            <button id="show-pie-chart-btn" class="btn btn-small btn-secondary">Kategori</button>
+                            <button id="show-pie-chart-btn" class="btn btn-small btn-secondary">Pie</button>
+                            <button id="show-cat-bar-btn" class="btn btn-small btn-secondary">Bar</button>
                         </div>
                     </div>
                     <div class="chart-container" id="finance-bar-chart-container">
@@ -1711,6 +2014,11 @@ Move out : 100 %
                     <div class="chart-container hidden" id="finance-pie-chart-container">
                         <div class="category-chart-wrapper">
                             <canvas id="category-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container hidden" id="finance-cat-bar-container">
+                        <div class="category-chart-wrapper">
+                            <canvas id="category-bar-chart"></canvas>
                         </div>
                     </div>
                     
@@ -2076,12 +2384,131 @@ Move out : 100 %
                     <p class="text-muted mt-sm" style="font-size: 0.85rem;">Ubah catatan survei lapangan menjadi Tabel Hazard Register JMP profesional secara otomatis.</p>
                 </div>
 
-                <div class="card mt-md">
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; color: var(--primary);">📝 Catatan Hasil Survei / Kondisi Jalan:</label>
-                    <textarea id="jmp-input" class="form-control" rows="6" placeholder="Contoh: KM 12 amblas, ada tiang listrik miring, jembatan KM 15 sempit..."></textarea>
+                <!-- Advanced Document Settings (Collapsible) -->
+                <details class="mt-md" style="cursor: pointer;">
+                    <summary style="font-size: 0.85rem; font-weight: 600; color: var(--primary); background: var(--surface-hover); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);">⚙️ Pengaturan Dokumen (Opsional - ST-191)</summary>
                     
-                    <button id="generate-jmp-btn" class="btn btn-primary w-100 mt-md" onclick="generateJMP()">
-                        ⚡ Generate Tabel Hazard Register JMP
+                    <div class="card mt-sm">
+                        <div style="border-bottom: 1px solid var(--border); margin-bottom: 12px; padding-bottom: 5px;">
+                            <h3 style="font-size: 0.9rem; margin: 0; color: var(--primary);">📄 Document Metadata</h3>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                            <div class="form-group">
+                                <label class="text-xs text-muted mb-xs">No. Dokumen:</label>
+                                <input type="text" id="jmp-doc-no" class="form-control" value="TKO-B-001/MTN22000/2024-S0">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted mb-xs">No. Revisi:</label>
+                                <input type="text" id="jmp-rev-no" class="form-control" value="00">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                                <label class="text-xs text-muted mb-xs">Tgl. Efektif:</label>
+                                <input type="date" id="jmp-eff-date" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted mb-xs">Halaman:</label>
+                                <input type="text" id="jmp-page-no" class="form-control" value="1 of 1">
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- Travel & Team Info (Easily Editable) -->
+                <div class="card mt-md">
+                    <div style="border-bottom: 1px solid var(--border); margin-bottom: 12px; padding-bottom: 5px;">
+                        <h3 style="font-size: 0.9rem; margin: 0; color: var(--primary);">🚩 Informasi Perjalanan & Tim</h3>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label class="text-xs text-muted mb-xs">🚩 Rute (Dari - Ke):</label>
+                            <input type="text" id="jmp-route" class="form-control" placeholder="Contoh: ST-162 ke ST-191" value="ST-162 ke ST-191">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs text-muted mb-xs">📅 Tanggal Assessment:</label>
+                            <input type="date" id="jmp-date" class="form-control">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label class="text-xs text-muted mb-xs">📏 Jarak & Estimasi:</label>
+                            <input type="text" id="jmp-dist-time" class="form-control" value="9,10 km, ±25 Menit">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs text-muted mb-xs">🛣️ Kondisi Jalan Umum:</label>
+                            <input type="text" id="jmp-general-cond" class="form-control" value="Berbatu, bergelombang, berlubang di beberapa titik">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 5px; border-top: 1px solid var(--border); padding-top: 10px;">
+                        <label class="text-xs font-bold mb-xs" style="display: block; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">👥 Team Assessment:</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <div class="form-group">
+                                <label class="text-tiny text-muted">WOWS:</label>
+                                <input type="text" id="jmp-team-wows" class="form-control text-xs" value="Sumarlin R. dan Darmadi">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-tiny text-muted">HSSE:</label>
+                                <input type="text" id="jmp-team-hsse" class="form-control text-xs" value="Ferdi A. dan M Rafi">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-tiny text-muted">RAM:</label>
+                                <input type="text" id="jmp-team-ram" class="form-control text-xs" value="Syaiku">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-tiny text-muted">SCM:</label>
+                                <input type="text" id="jmp-team-scm" class="form-control text-xs" value="-">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Document Settings (Collapsible - Only Metadata) -->
+                <details class="mt-md" style="cursor: pointer;">
+                    <summary style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); padding: 5px 10px; border-radius: 6px; display: inline-block;">⚙️ Document Metadata (ST-191)</summary>
+                    
+                    <div class="card mt-sm">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                            <div class="form-group">
+                                <label class="text-xs text-muted mb-xs">No. Dokumen:</label>
+                                <input type="text" id="jmp-doc-no" class="form-control" value="TKO-B-001/MTN22000/2024-S0">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted mb-xs">No. Revisi:</label>
+                                <input type="text" id="jmp-rev-no" class="form-control" value="00">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                                <label class="text-xs text-muted mb-xs">Tgl. Efektif:</label>
+                                <input type="date" id="jmp-eff-date" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="text-xs text-muted mb-xs">Halaman:</label>
+                                <input type="text" id="jmp-page-no" class="form-control" value="1 of 1">
+                            </div>
+                        </div>
+                    </div>
+                </details>
+                    
+                <div class="card mt-md">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; color: var(--primary);">📍 List Lokasi & Kondisi Temuan:</label>
+                    <textarea id="jmp-input" class="form-control" rows="8" placeholder="Ketik daftar lokasi Anda di sini (misal 1-5):&#10;1. Setelah ST-135: Jalan berlubang parah pada kiri dan kanan&#10;2. ST-140: Pohon tumbang menutupi sebagian jalan&#10;3. KM 5: Licin karena tumpahan lumpur"></textarea>
+                    
+                    <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center; justify-content: center; background: var(--bg-card); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                        <span style="font-size: 0.8rem; font-weight: 600;">Mode:</span>
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 0.8rem;">
+                            <input type="radio" name="jmp-mode" value="ai" checked> ⚡ AI Expert
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 0.8rem;">
+                            <input type="radio" name="jmp-mode" value="manual"> 📝 Manual
+                        </label>
+                    </div>
+
+                    <button id="generate-jmp-btn" class="btn btn-primary w-100 mt-sm" onclick="generateJMP()">
+                        ⚡ Generate Professional JMP Report
                     </button>
                 </div>
 
@@ -2099,7 +2526,8 @@ Move out : 100 %
                             <!-- AI Result Table Table will go here -->
                         </div>
                         <div class="card-footer" style="padding-top: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
-                            <button class="btn btn-ai w-100" onclick="exportJMPToPDF()">📄 Export PDF Professional</button>
+                            <button class="btn btn-ai w-50" onclick="exportJMPToPDF()" style="background: #e11d48; color: white; border: none;">📄 Export PDF</button>
+                            <button class="btn btn-secondary w-50" onclick="exportJMPToWord()" style="background: #2b5797; color: white; border: none;">📘 Export Word</button>
                         </div>
                     </div>
                 </div>
@@ -2107,6 +2535,32 @@ Move out : 100 %
                 <div id="jmp-loading" class="hidden text-center p-xl">
                     <div class="loading-spinner" style="margin: 0 auto 15px;"></div>
                     <p class="text-muted">Sedang menganalisis 10 Hazard Energy & mitigasi...</p>
+                </div>
+            </section>
+
+            <!-- Screen: Moving Checklist -->
+            <section id="moving-checklist-screen" class="screen">
+                <div class="moving-checklist-header mb-md">
+                    <h2 class="mb-xs">📋 Pre-Moving Checklist</h2>
+                    <p class="text-muted text-sm">Pastikan semua item sudah siap sebelum mobilisasi peralatan.</p>
+                </div>
+
+                <div class="card mb-md" style="background: linear-gradient(135deg, var(--surface), var(--surface-hover)); border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span class="text-sm font-bold">Progress Kesiapan</span>
+                        <span id="moving-progress-text" class="text-xs font-bold badge-ai">0%</span>
+                    </div>
+                    <div class="progress-bar-bg" style="height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; overflow: hidden;">
+                        <div id="moving-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), #10b981); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                    </div>
+                </div>
+
+                <div id="moving-checklist-categories" class="moving-categories">
+                    <!-- Categories and items injected by moving-checklist.js -->
+                </div>
+
+                <div class="mt-xl mb-xl">
+                    <button class="btn btn-secondary btn-full" onclick="resetMovingChecklist()" style="opacity: 0.7;">🗑️ Reset Semua Ceklis</button>
                 </div>
             </section>
         </main>
@@ -2499,21 +2953,17 @@ Move out : 100 %
             </div>
         </div>
 
-        <!-- Screen 7: English HSE -->
-        <section id="english-hse-screen" class="screen">
-            <div class="card">
-                <h2>🇬🇧 English for Migas & HSE</h2>
-                <p class="text-muted">Tingkatkan kefasihan Bahasa Inggris dan kosakata safety Anda.</p>
+        <!-- Screen: AI HSE Regulation Expert -->
+        <section id="hse-regulation-screen" class="screen">
+            <div class="card" style="background: linear-gradient(135deg, #0d9488, #0f766e); color: white; border: none;">
+                <h2>⚖️ AI HSE Regulation Expert</h2>
+                <p style="opacity: 0.9;">Penasihat standar K3 internasional & Pertamina.</p>
             </div>
 
             <!-- AI HSE Regulation Expert (Chatbot) -->
             <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
-                <h3>🤖 AI HSE Regulation Expert</h3>
-                <p class="text-muted" style="font-size: 0.9rem;">Asisten pinter untuk menanyakan standar K3 (PTK 005,
-                    OSHA, API, dll). Anda bisa mengetik atau ngomong langsung.</p>
-
                 <div id="hse-chat-history"
-                    style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 15px; height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                    style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
                     <!-- Initial AI Greeting -->
                     <div
                         style="align-self: flex-start; background: var(--surface-hover); color: var(--text-color); padding: 10px 14px; border-radius: 12px; border-bottom-left-radius: 2px; max-width: 85%; line-height: 1.5; font-size: 0.9rem;">
@@ -2527,7 +2977,7 @@ Move out : 100 %
                 <div class="form-group mt-sm" style="position: relative; margin-top: 15px;">
                     <textarea id="hse-chat-input" class="form-control"
                         placeholder="Ketik pertanyaan atau tekan mic... (Contoh: Apa standar confined space?)"
-                        style="width: 100%; height: 60px; padding: 10px; padding-right: 45px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: none;"></textarea>
+                        style="width: 100%; height: 70px; padding: 10px; padding-right: 45px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: none;"></textarea>
 
                     <button id="hse-chat-mic-btn"
                         style="position: absolute; right: 8px; top: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
@@ -2544,12 +2994,17 @@ Move out : 100 %
                     style="background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); border: none;">Kirim
                     Pertanyaan 💬</button>
             </div>
+        </section>
 
-            <!-- Daily Listening Case -->
+        <!-- Screen: Daily HSE Listening Case -->
+        <section id="hse-listening-screen" class="screen">
+            <div class="card" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;">
+                <h2>🎧 Daily Listening Case</h2>
+                <p style="opacity: 0.9;">Latih pendengaran dan pemahaman insiden K3 Anda.</p>
+            </div>
+
+            <!-- Daily Listening Case Content -->
             <div class="card mt-md" style="border-left: 4px solid var(--primary);">
-                <h3>🎧 Daily Listening Case</h3>
-                <p class="text-muted" style="font-size: 0.9rem;">Dengarkan cerita insiden K3 pendek dan jawab
-                    pertanyaannya. Latih pendengaran Anda!</p>
                 <button id="generate-listening-btn" class="btn btn-ai btn-full mt-sm">🔄 Generate New Case</button>
 
                 <div id="listening-case-area" class="mt-md hidden"
@@ -2571,47 +3026,16 @@ Move out : 100 %
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Daily TBT & P5M Briefing Generator -->
-            <div class="card mt-md" style="border-left: 4px solid #ed8936;">
-                <h3>📢 Daily TBT & P5M Briefing Generator</h3>
-                <p class="text-muted" style="font-size: 0.9rem;">Ketik ringkasan operasi hari ini, dan AI akan meracik
-                    naskah Briefing K3 (Toolbox Talk) yang terstruktur, lengkap dengan bahaya kritikal dan zona
-                    merahnya.</p>
-
-                <div class="form-group mt-sm">
-                    <label style="font-size: 0.9rem; font-weight: 500;">Target Operasi Hari Ini</label>
-                    <textarea id="tbt-operation-desc" class="form-control"
-                        placeholder="Contoh: Tripping in Drill Pipe 5 inch dan maintenance pompa lumpur #2."
-                        style="width: 100%; height: 80px; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
-                </div>
-
-                <button id="generate-tbt-btn" class="btn btn-primary btn-full mt-sm"
-                    style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border: none;">Generate
-                    Toolbox Talk ⚡</button>
-
-                <div id="tbt-result-area" class="mt-md hidden">
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button id="copy-tbt-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy</button>
-                        <button id="translate-tbt-btn" class="btn btn-secondary"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px;">🇮🇩 Trans</button>
-                        <button id="save-tbt-lib-btn" class="btn btn-ai"
-                            style="flex: 1; font-size: 0.85rem; padding: 8px; background: var(--secondary);">💾 Simpan</button>
-                    </div>
-                    <div id="tbt-content"
-                        style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.6; overflow-x: auto;">
-                        <!-- TBT Content Injected Here -->
-                    </div>
-                </div>
+        <!-- Screen: AI JSA & PTW Generator -->
+        <section id="hse-jsa-screen" class="screen">
+            <div class="card" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none;">
+                <h2>📑 AI JSA & PTW Generator</h2>
+                <p style="opacity: 0.9;">Pembuatan draf Job Safety Analysis & Risk Assessment otomatis.</p>
             </div>
 
-            <!-- AI JSA & PTW Generator -->
             <div class="card mt-md" style="border-left: 4px solid var(--secondary);">
-                <h3>📑 AI JSA & PTW Generator</h3>
-                <p class="text-muted" style="font-size: 0.9rem;">Deskripsikan pekerjaan Anda, dan AI akan membuat draf
-                    Job Safety Analysis / Permit to Work standar internasional dalam bahasa Inggris.</p>
-
                 <div class="form-group mt-sm">
                     <label style="font-size: 0.9rem; font-weight: 500;">Tipe Dokumen</label>
                     <select id="jsa-doc-type" class="form-control"
@@ -2644,18 +3068,21 @@ Move out : 100 %
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- AI Incident Investigator (RCA) -->
+        <!-- Screen: AI Incident Investigator (RCA) -->
+        <section id="hse-rca-screen" class="screen">
+            <div class="card" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; border: none;">
+                <h2>🚨 AI Incident Investigator (RCA)</h2>
+                <p style="opacity: 0.9;">Analisis akar masalah insiden via draf Laporan 5-Whys.</p>
+            </div>
+
             <div class="card mt-md" style="border-left: 4px solid #f56565;">
-                <h3>🚨 AI Incident Investigator (RCA)</h3>
-                <p class="text-muted" style="font-size: 0.9rem;">Ceritakan kronologi insiden (bisa via suara), dan AI
-                    akan menyusun Laporan Investigasi lengkap dengan analisis "5-Whys".</p>
-
                 <div class="form-group mt-sm" style="position: relative;">
                     <label style="font-size: 0.9rem; font-weight: 500;">Kronologi Insiden Singkat</label>
                     <textarea id="rca-incident-desc" class="form-control"
                         placeholder="Tekan mic dan ceritakan: 'Pekerja jatuh jam 2 siang karena ceceran oli...'"
-                        style="width: 100%; height: 100px; padding: 10px; padding-right: 40px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
+                        style="width: 100%; height: 120px; padding: 10px; padding-right: 40px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
 
                     <button id="rca-mic-btn"
                         style="position: absolute; right: 10px; top: 40px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
@@ -2685,97 +3112,6 @@ Move out : 100 %
                         style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; overflow-x: auto;">
                         <!-- RCA Content Injected Here -->
                     </div>
-                </div>
-            </div>
-
-            <!-- Daily Vocab -->
-            <div class="card mt-md" style="border-left: 4px solid var(--primary);">
-                <h3>📚 Daily HSE Vocabulary</h3>
-                <div id="hse-vocab-content">
-                    <p class="text-muted">Loading vocabulary...</p>
-                </div>
-                <div class="flex-row mt-sm">
-                    <button id="generate-vocab-btn" class="btn btn-secondary flex-1">🔄 Kosakata Lain</button>
-                    <button id="save-vocab-btn" class="btn btn-primary flex-1 hidden">💾 Simpan ke Flashcard</button>
-                </div>
-            </div>
-
-            <!-- Vocab Bank (Flashcards) -->
-            <div class="card mt-md">
-                <div class="card-header">
-                    <h3>🗃️ Vocab Bank (Flashcards)</h3>
-                    <span id="vocab-bank-count" class="badge-ai">0 Kata</span>
-                </div>
-                <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 12px;">Koleksi kosakata yang Anda simpan
-                    untuk dipelajari kembali.</p>
-                <div id="vocab-bank-list"
-                    style="display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
-                    <!-- Flashcard items injected by JS -->
-                </div>
-                <!-- Mini Quiz Button -->
-                <button id="start-vocab-quiz-btn" class="btn btn-secondary mt-md hidden" style="width: 100%;">🧠 Mulai
-                    Review Kuis</button>
-            </div>
-
-            <!-- Quiz Modal Area -->
-            <div id="vocab-quiz-area" class="mt-md hidden"
-                style="background: var(--surface-hover); padding: 15px; border-radius: 8px; border: 1px solid var(--primary);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h4 style="margin: 0; color: var(--primary);">Quick Review</h4>
-                    <span id="quiz-progress" style="font-size: 0.85rem; color: var(--text-muted);">1/5</span>
-                </div>
-                <div id="quiz-question"
-                    style="font-size: 1.1rem; text-align: center; margin-bottom: 20px; font-weight: 500;">Apa bahasa
-                    Inggris dari 'Sabuk Pengaman'?</div>
-                <div id="quiz-options" style="display: flex; flex-direction: column; gap: 10px;">
-                    <!-- Options injected by JS -->
-                </div>
-                <button id="close-quiz-btn" class="btn btn-danger mt-md" style="width: 100%;">Tutup Kuis</button>
-            </div>
-
-            <!-- Roleplay -->
-            <div class="card mt-md">
-                <h3>🗣️ AI Roleplay Practice</h3>
-                <p class="text-muted" style="font-size: 0.9rem;">Berlatih percakapan dengan peran Supervisor/Rekan
-                    Kerja.</p>
-                <div class="form-row mt-sm">
-                    <select id="roleplay-scenario" class="input">
-                        <option value="toolbox_talk">Toolbox Talk Briefing</option>
-                        <option value="incident_report">Reporting an Incident</option>
-                        <option value="ptw">Permit to Work (PTW) Request</option>
-                        <option value="stop_work">Stop Work Authority Intervention</option>
-                    </select>
-                </div>
-                <button id="start-roleplay-btn" class="btn btn-primary mt-sm">▶️ Mulai Skenario</button>
-                <button id="stop-roleplay-btn" class="btn btn-danger mt-sm hidden">🛑 Hentikan</button>
-
-                <div id="roleplay-chat-area" class="mt-md hidden"
-                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px;">
-                    <div id="roleplay-chat-history"
-                        style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <!-- Chat bubbles -->
-                    </div>
-                    <div class="flex-row">
-                        <input type="text" id="roleplay-input" class="input flex-1" placeholder="Type your message...">
-                        <button id="roleplay-mic-btn" class="btn btn-secondary"
-                            title="Gunakan Suara (Speech-to-Text)">🎙️</button>
-                        <button id="roleplay-send-btn" class="btn btn-primary">Send</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Report Assistant -->
-            <div class="card mt-md">
-                <h3>📝 HSE Report Assistant</h3>
-                <p class="text-muted" style="font-size: 0.9rem;">Masukkan draft laporan (boleh campur Bahasa Indonesia)
-                    untuk diubah ke format HSE baku berbahasa Inggris.</p>
-                <textarea id="hse-report-input" class="input mt-sm" rows="4"
-                    placeholder="Contoh: Ada pekerja yang jatuh karena tidak pakai safety harness di scaffolding..."></textarea>
-                <button id="translate-report-btn" class="btn btn-ai btn-full mt-sm">🧠 Minta AI Perbaiki
-                    Laporan</button>
-
-                <div id="hse-report-result" class="mt-sm hidden"
-                    style="background: var(--surface-hover); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap;">
                 </div>
             </div>
         </section>
@@ -2849,91 +3185,6 @@ Move out : 100 %
             </div>
         </section>
 
-        <!-- Screen: Oxford 3000 Vocabulary Mastery -->
-        <section id="oxford-vocab-screen" class="screen">
-            <div class="card" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border: none; overflow: hidden; position: relative;">
-                <div style="position: absolute; top: -10px; right: -10px; opacity: 0.1; font-size: 5rem; pointer-events: none;">📖</div>
-                <h2>🇬🇧 Oxford 3000™ Mastery</h2>
-                <p class="text-muted" style="color: rgba(255,255,255,0.7) !important;">Kuasai 3000 kosakata paling penting dalam Bahasa Inggris sesuai level CEFR.</p>
-                
-                <div class="oxford-level-grid">
-                    <div class="oxford-level-card active" data-level="A1">
-                        <h4>A1</h4>
-                        <p>Beginner</p>
-                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-A1"></div></div>
-                    </div>
-                    <div class="oxford-level-card" data-level="A2">
-                        <h4>A2</h4>
-                        <p>Elementary</p>
-                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-A2"></div></div>
-                    </div>
-                    <div class="oxford-level-card" data-level="B1">
-                        <h4>B1</h4>
-                        <p>Intermediate</p>
-                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-B1"></div></div>
-                    </div>
-                    <div class="oxford-level-card" data-level="B2">
-                        <h4>B2</h4>
-                        <p>Upper-Int</p>
-                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-B2"></div></div>
-                    </div>
-                    <div class="oxford-level-card" data-level="C1">
-                        <h4>C1</h4>
-                        <p>Advanced</p>
-                        <div class="oxford-progress-mini"><div class="oxford-progress-fill" id="oxford-progress-C1"></div></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mt-md" style="min-height: 400px;">
-                <div class="flex-row" style="justify-content: space-between; align-items: center;">
-                    <h3 id="oxford-current-level-title">Level A1 Words</h3>
-                    <div style="text-align: right;">
-                        <span class="badge-ai" id="oxford-count-badge">0 / 0</span>
-                        <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 2px;">MASTERED / DISCOVERED</div>
-                    </div>
-                </div>
-                
-                <div id="oxford-word-list" class="oxford-word-list">
-                    <!-- Words injected here -->
-                    <div class="loading-spinner" style="margin: 40px auto;"></div>
-                </div>
-
-                <div class="text-center mt-lg">
-                    <button class="btn btn-primary" id="oxford-load-more-btn" style="border-radius: 50px; padding: 12px 25px; font-weight: 700; width: 100%;">🧠 Temukan Kata Baru (AI)</button>
-                    <p class="text-muted mt-sm" style="font-size: 0.75rem;">Setiap klik akan menemukan 10 kata baru dari daftar Oxford 3000™.</p>
-                </div>
-            </div>
-
-            <!-- Detail/Learning Modal (In-Screen) -->
-            <div id="oxford-learning-modal" class="modal hidden">
-                <div class="modal-content card" style="max-width: 400px; border-top: 4px solid var(--primary);">
-                    <div class="modal-header">
-                        <h3 id="oxford-modal-word" style="font-size: 1.5rem; color: var(--primary);">Word</h3>
-                        <button class="icon-btn" id="close-oxford-modal-btn">✕</button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <div style="font-size: 1.1rem; margin-bottom: 20px;">
-                            <span id="oxford-modal-ipa" class="text-muted">/ipa/</span>
-                            <button id="oxford-modal-audio" class="icon-btn" style="font-size: 1.2rem; margin-left: 10px;">🔊</button>
-                        </div>
-                        <div id="oxford-modal-translation" style="font-weight: 600; font-size: 1.2rem; margin-bottom: 15px;">Terjemahan</div>
-                        <p id="oxford-modal-def" class="text-muted" style="font-size: 0.9rem; line-height: 1.5;">Definisi singkat...</p>
-                        
-                        <div id="oxford-ai-example" class="mt-md" style="background: var(--surface-hover); padding: 15px; border-radius: 10px; border-left: 3px solid var(--secondary); text-align: left; display: none;">
-                            <div style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-bottom: 5px;">NATURAL USAGE (AI)</div>
-                            <div id="oxford-ai-phrase" style="font-weight: 600; margin-bottom: 5px;">"Example sentence..."</div>
-                            <div id="oxford-ai-trans" class="text-muted italic" style="font-size: 0.85rem;">"Terjemahan contoh..."</div>
-                        </div>
-
-                        <div class="flex-row mt-lg">
-                            <button id="oxford-ai-gen-btn" class="btn btn-ai flex-1">🧠 Minta Contoh AI</button>
-                            <button id="oxford-mastery-btn" class="btn btn-primary flex-1">✅ Kuasai Kata</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
         <!-- Screen: English Fluency Coach (Beginner) -->
         <section id="english-fluency-screen" class="screen">
             <div class="card" style="background: linear-gradient(135deg, var(--primary), #fbbf24); color: white; border: none;">
@@ -2995,265 +3246,222 @@ Move out : 100 %
             </div>
         </section>
 
-        <!-- Screen 8: HSE Rig -->
-        <section id="hse-rig-screen" class="screen">
-            <div class="card">
-                <h2>🛢️ HSE Rig Learning</h2>
-                <p class="text-muted">Panduan dasar keselamatan dan operasi di Oil Rig untuk pemula dan HSE Officer.</p>
-                
-                <!-- Chapter Navigation -->
-                <div class="brain-tabs mt-sm" style="overflow-x: auto; white-space: nowrap; padding-bottom: 5px; -webkit-overflow-scrolling: touch;">
-                    <button class="brain-tab active rig-tab" onclick="switchRigChapter('intro', this)">🏗️ Intro</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('hazards', this)">⚠️ Hazards</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('ppe', this)">👷 PPE</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('routine', this)">📋 Rutinitas</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('clsr', this)">🛡️ CLSR</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('perilaku', this)">📜 Perilaku</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('poster', this)">🖼️ Poster</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('gas', this)">🔥 Gas & Fire</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('inspection', this)">✅ Inspeksi</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('lifecycle', this)">🔄 Lifecycle</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('sequence', this)">⚙️ Operasi</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('parameters', this)">📊 Parameter</button>
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('oversight', this)">🛡️ Supervisor</button>
+        <!-- STANDALONE RIG SCREENS (Sequential Flow) -->
 
-                    <button class="brain-tab rig-tab" onclick="switchRigChapter('pjsm', this)">📢 PJSM</button>
+        <!-- Screen: Rig Intro -->
+        <section id="hse-intro-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid var(--primary);">
+                <h3>🏗️ Pengenalan Rig</h3>
+                <img src="img/hse-rig/intro.png" alt="Rig Introduction" style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                <p class="text-muted" style="font-size: 0.9rem;">Pahami komponen utama dari onshore rig (rig darat), seperti derrick, drill floor, dan mud pit.</p>
+                <div id="rig-intro-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-center')">🏠 Dashboard</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-hazards')">Berikutnya: Hazards ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig Hazards -->
+        <section id="hse-hazards-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #f56565;">
+                <h3>⚠️ Bahaya Utama (Major Hazards)</h3>
+                <img src="img/hse-rig/hazards.png" alt="Rig Hazards" style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                <p class="text-muted" style="font-size: 0.9rem;">Ketahui risiko tertinggi di area rig seperti H2S, Blowout, dan Dropped Objects.</p>
+                <div id="rig-hazards-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-intro')">⬅️ Intro</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-ppe')">Berikutnya: PPE ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig PPE -->
+        <section id="hse-ppe-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #ed8936;">
+                <h3>👷 Standar APD (PPE)</h3>
+                <img src="img/hse-rig/ppe.png" alt="Rig PPE" style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                <p class="text-muted" style="font-size: 0.9rem;">Alat Pelindung Diri wajib di rig: Coverall, Hard Hat, Safety Glasses, Boots, dll.</p>
+                <div id="rig-ppe-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-hazards')">⬅️ Hazards</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-routine')">Berikutnya: Rutinitas ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig Routine -->
+        <section id="hse-routine-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
+                <h3>📋 Rutinitas HSE Officer</h3>
+                <img src="img/hse-rig/routine.png" alt="HSE Routine" style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
+                <p class="text-muted" style="font-size: 0.9rem;">Agenda harian seorang HSE Officer: Toolbox Talk, Inspection, dan Permit Control.</p>
+                <div id="rig-routine-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-ppe')">⬅️ PPE</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-clsr')">Berikutnya: CLSR ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig CLSR -->
+        <section id="hse-clsr-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #8b5cf6;">
+                <h3>🛡️ 10 Elemen CLSR</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Corporate Life Saving Rules (Aturan Penyelamat Nyawa Perusahaan) yang wajib ditaati tanpa toleransi.</p>
+                <div id="rig-clsr-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-routine')">⬅️ Rutinitas</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-perilaku')">Berikutnya: Perilaku ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig Perilaku -->
+        <section id="hse-perilaku-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #f59e0b;">
+                <h3>📜 9 Perilaku Wajib</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Sembilan perilaku dasar wajib (Life Saving Rules) untuk menjamin keselamatan selama bekerja.</p>
+                <div id="rig-perilaku-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-clsr')">⬅️ CLSR</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-poster')">Berikutnya: Poster ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig Poster -->
+        <section id="hse-poster-screen" class="screen">
+            <div class="card mt-lg" style="text-align: center; background: var(--surface-hover);">
+                <h3>🖼️ Peta Jalan Keselamatan (Safety Roadmap)</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 20px;">Rangkuman visual terpadu untuk menghafal 9 Perilaku Wajib dan 10 Elemen CLSR.</p>
+                <img src="img/hse-rig/clsr_roadmap_poster.png" alt="Peta Jalan Keselamatan" style="width:100%; border-radius:8px; border:1px solid var(--border); margin-bottom: 20px;">
+                <div style="text-align: left; padding: 15px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary); border-radius: 8px;">
+                    <h4 style="color: var(--primary); margin-top:0;">💡 Cara Menghafal:</h4>
+                    <p style="font-size: 0.85rem;">Ikuti pil hijau (1-9) untuk Perilaku Wajib, dan grid kanan untuk 10 Elemen CLSR.</p>
                 </div>
             </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-perilaku')">⬅️ Perilaku</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-gas')">Berikutnya: Gas ➡️</button>
+            </div>
+        </section>
 
-            <!-- Chapter 1: Introduction -->
-            <div id="rig-chapter-intro" class="rig-chapter">
-                <div class="card mt-md" style="border-left: 4px solid var(--primary);">
-                    <h3>🏗️ Pengenalan Rig</h3>
-                    <img src="img/hse-rig/intro.png" alt="Rig Introduction"
-                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
-                    <p class="text-muted" style="font-size: 0.9rem;">Pahami komponen utama dari onshore rig (rig darat),
-                        seperti
-                        derrick, drill floor, dan mud pit.</p>
-                    <div id="rig-intro-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                        <!-- Cards will be injected by JS -->
+        <!-- Screen: Rig Gas -->
+        <section id="hse-gas-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #f56565;">
+                <h3>🔥 Gas Testing & Fire Limits</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Pahami batas aman konsentrasi gas berbahaya sebelum memulai izin Pekerjaan Panas.</p>
+                <div id="rig-gas-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-poster')">⬅️ Poster</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-inspection')">Berikutnya: Inspeksi ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig Inspection -->
+        <section id="hse-inspection-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h3 style="margin: 0;">✅ Form Inspeksi Rig</h3>
+                        <div id="inspection-overall-progress" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Progress: Loading...</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="generateInspectionPDF()" class="btn btn-secondary btn-xs">📄 PDF</button>
+                        <button onclick="if(confirm('Reset inspeksi?')) { db.rig_inspection_state.clear(); initHseRig(); }" class="btn btn-secondary btn-xs">🔄 Reset</button>
                     </div>
                 </div>
+                <div id="rig-inspection-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;"></div>
             </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-gas')">⬅️ Gas</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-lifecycle')">Berikutnya: Lifecycle ➡️</button>
+            </div>
+        </section>
 
-            <!-- Chapter 2: Main Hazards -->
-            <div id="rig-chapter-hazards" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #f56565;">
-                    <h3>⚠️ Bahaya Utama (Major Hazards)</h3>
-                    <img src="img/hse-rig/hazards.png" alt="Rig Hazards"
-                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
-                    <p class="text-muted" style="font-size: 0.9rem;">Ketahui risiko tetinggi di area rig seperti H2S,
-                        Blowout, dan Dropped Objects.</p>
-                    <div id="rig-hazards-modules"
-                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+        <!-- Screen: Rig Lifecycle -->
+        <section id="hse-lifecycle-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #3b82f6;">
+                <h3>🔄 Siklus Hidup Sumur Migas</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Memahami tahapan sumur dari pencarian awal hingga penutupan permanen.</p>
+                <div id="rig-lifecycle-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-inspection')">⬅️ Inspeksi</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-sequence')">Berikutnya: Operasi ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig Sequence -->
+        <section id="hse-sequence-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #f59e0b;">
+                <h3>⚙️ Urutan Operasional Rig</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Alur kerja logistik dan mekanikal dari persiapan hingga pembongkaran rig.</p>
+                <div id="rig-sequence-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-lifecycle')">⬅️ Lifecycle</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-parameters')">Berikutnya: Parameter ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig Parameters -->
+        <section id="hse-parameters-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #10b981;">
+                <h3>📊 Parameter Kritis Sumur</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Data teknis dan kondisi bawah tanah yang wajib dipantau selama pengeboran.</p>
+                <div id="rig-parameters-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-sequence')">⬅️ Operasi</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-oversight')">Berikutnya: Supervisor ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig Oversight -->
+        <section id="hse-oversight-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #e5e7eb;">
+                <h3>🛡️ HSSE Supervisor Oversight</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Tanggung jawab kepemimpinan keselamatan dan pengawasan area drill floor.</p>
+                <div id="rig-oversight-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+            </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-parameters')">⬅️ Parameter</button>
+                <button class="btn btn-primary flex-1" onclick="navigateToSubscreen('hse-pjsm')">Berikutnya: PJSM ➡️</button>
+            </div>
+        </section>
+
+        <!-- Screen: Rig PJSM -->
+        <section id="hse-pjsm-screen" class="screen">
+            <div class="card mt-md" style="border-left: 4px solid #e53e3e;">
+                <h3>📢 AI PJSM Generator</h3>
+                <p class="text-muted" style="font-size: 0.85rem;">AI akan menyusun naskah <b>Pre-Job Safety Meeting</b> lengkap dengan bahaya, CLSR, dan mitigasi!</p>
+                <div class="form-group mt-sm">
+                    <label style="font-size: 0.85rem; font-weight:600;">📋 Daftar Pekerjaan</label>
+                    <textarea id="pjsm-work-input" class="form-control" placeholder="Contoh:&#10;1. Tripping in Drill Pipe&#10;2. Pengelasan pipa" style="width: 100%; height: 80px; padding: 10px; margin-top: 5px; border-radius: 8px; background: var(--bg-color); color: var(--text-color);"></textarea>
+                </div>
+                <button id="generate-pjsm-btn" class="btn btn-primary btn-full mt-sm">📢 Generate Naskah ⚡</button>
+                <div id="pjsm-loading" class="hidden mt-md text-center">
+                    <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+                    <p class="text-muted text-xs">Menyusun naskah briefing...</p>
+                </div>
+                <div id="pjsm-result-area" class="mt-md hidden">
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <button id="copy-pjsm-btn" class="btn btn-secondary btn-xs">📋 Copy</button>
+                        <button id="speak-pjsm-btn" class="btn btn-secondary btn-xs">🔊 Baca</button>
+                        <button id="stop-speak-pjsm-btn" class="btn btn-danger btn-xs hidden">⏹️ Stop</button>
+                        <button id="export-pjsm-pdf-btn" class="btn btn-secondary btn-xs">📄 PDF</button>
+                    </div>
+                    <div id="pjsm-content" class="pjsm-generated-content" style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.9rem; line-height: 1.6;"></div>
                 </div>
             </div>
-
-            <!-- Chapter 3: PPE requirements -->
-            <div id="rig-chapter-ppe" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #ed8936;">
-                    <h3>👷 Standar APD (PPE)</h3>
-                    <img src="img/hse-rig/ppe.png" alt="Rig PPE"
-                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
-                    <p class="text-muted" style="font-size: 0.9rem;">Alat Pelindung Diri wajib di rig: Coverall, Hard Hat,
-                        Safety Glasses, Boots, dll.</p>
-                    <div id="rig-ppe-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    </div>
-                </div>
+            <div class="flex-row mt-lg" style="gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-oversight')">⬅️ Supervisor</button>
+                <button class="btn btn-secondary flex-1" onclick="navigateToSubscreen('hse-center')">🏠 Dashboard</button>
             </div>
-
-            <!-- Chapter 4: Daily Routine -->
-            <div id="rig-chapter-routine" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
-                    <h3>📋 Rutinitas HSE Officer</h3>
-                    <img src="img/hse-rig/routine.png" alt="HSE Routine"
-                        style="width:100%; border-radius:8px; margin-top:10px; margin-bottom:15px;">
-                    <p class="text-muted" style="font-size: 0.9rem;">Agenda harian seorang HSE Officer: Toolbox Talk,
-                        Inspection, dan Permit Control.</p>
-                    <div id="rig-routine-modules"
-                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
-                </div>
-            </div>
-
-            <!-- Chapter 5: 10 Elemen CLSR -->
-            <div id="rig-chapter-clsr" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #8b5cf6;">
-                    <h3>🛡️ 10 Elemen CLSR</h3>
-                    <p class="text-muted" style="font-size: 0.9rem;">Corporate Life Saving Rules (Aturan Penyelamat Nyawa
-                        Perusahaan) yang wajib ditaati tanpa toleransi di area operasi.</p>
-                    <div id="rig-clsr-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chapter 6: 9 Perilaku Wajib -->
-            <div id="rig-chapter-perilaku" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #f59e0b;">
-                    <h3>📜 9 Perilaku Wajib</h3>
-                    <p class="text-muted" style="font-size: 0.9rem;">Sembilan perilaku dasar wajib (Life Saving Rules) untuk
-                        menjamin keselamatan selama bekerja.</p>
-                    <div id="rig-perilaku-modules"
-                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
-                </div>
-            </div>
-
-            <!-- Chapter 7: Poster Print Area -->
-            <div id="rig-chapter-poster" class="rig-chapter hidden">
-                <div class="card mt-lg" style="text-align: center; background: var(--surface-hover);">
-                    <h3>🖼️ Peta Jalan Keselamatan (Safety Roadmap)</h3>
-                    <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 20px;">Rangkuman visual terpadu untuk
-                        memudahkan Anda menghafal 9 Perilaku Wajib dan 10 Elemen CLSR.</p>
-                    <img src="img/hse-rig/clsr_roadmap_poster.png" alt="Peta Jalan Keselamatan Pertamina"
-                        style="width:100%; border-radius:8px; border:1px solid var(--border); margin-bottom: 20px;">
-    
-                    <div
-                        style="text-align: left; padding: 15px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary); border-radius: 8px;">
-                        <h4 style="margin-top: 0; color: var(--primary);">💡 Cara Menggunakan Peta Ini untuk Menghafal:</h4>
-                        <p style="font-size: 0.9rem; margin-bottom: 15px;">Gambar ini dirancang sebagai "Peta Jalan
-                            Keselamatan Pertamina" yang kohesif. Ikuti panduan visual ini:</p>
-    
-                        <h5 style="color: #10b981; margin-bottom: 5px;">Sisi Kiri (Hijau): Alur 9 Perilaku Wajib</h5>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0;">Ikuti pil bernomor (1-9)
-                            yang mengalir seperti jalur.</p>
-                        <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-color);">
-                            <li><strong>P-I-P (1):</strong> Terapkan Patuh-Intervensi-Peduli.</li>
-                            <li><strong>Kompeten (2):</strong> Punya kemampuan dan wewenang.</li>
-                            <li><strong>Sehat & Fit (3):</strong> Sehat secara fisik dan mental.</li>
-                            <li><strong>APD (4):</strong> Gunakan APD yang sesuai.</li>
-                            <li><strong>LMRA (5):</strong> Lakukan Last Minute Risk Assessment.</li>
-                            <li><strong>Lapor (6):</strong> Laporkan kondisi abnormal/berbahaya.</li>
-                            <li><strong>Permit SIKA (7):</strong> Pastikan SIKA tersedia.</li>
-                            <li><strong>Housekeeping (8):</strong> Jaga kebersihan dan kerapihan.</li>
-                            <li><strong>Laksanakan 10 CLSR (9):</strong> Terapkan perilaku kunci pada 10 Elemen CLSR. Garis
-                                besar dari poin 9 ini secara visual menunjuk ke arah 10 Elemen CLSR di kanan.</li>
-                        </ul>
-    
-                        <h5 style="color: #3b82f6; margin-top: 15px; margin-bottom: 5px;">Sisi Kanan (Warna): Grid 10 Elemen
-                            CLSR</h5>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0;">Ini adalah 10 kategori
-                            risiko yang harus Anda waspadai.</p>
-                        <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-color);">
-                            <li><strong>Baris Atas (01-05):</strong> Tools & Equipment, Line of Fire, Hot Work, Confined
-                                Space, Isolation of Energy (LOTO).</li>
-                            <li><strong>Baris Bawah (06-10):</strong> Lifting Operation, Working at Height, Ground
-                                Disturbance, Water-Based Work, Land Transportation.</li>
-                        </ul>
-                    </div>
-                </div>
-                <div id="rig-poster-container" class="poster-hide-on-screen" style="margin-top: 20px;"></div>
-            </div>
-
-            <!-- Chapter 8: Gas Testing & Fire -->
-            <div id="rig-chapter-gas" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #f56565;">
-                    <h3>🔥 Gas Testing & Fire Limits</h3>
-                    <p class="text-muted" style="font-size: 0.9rem;">Pahami batas aman konsentrasi gas berbahaya sebelum memulai izin Pekerjaan Panas (Hot Work) atau Memasuki Ruang Terbatas (Confined Space).</p>
-                    <div id="rig-gas-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chapter 9: Inspection Checklist -->
-            <div id="rig-chapter-inspection" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #38b2ac;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div style="display: flex; flex-direction: column;">
-                            <h3 style="margin: 0;">✅ Form Inspeksi Rig</h3>
-                            <div id="inspection-overall-progress" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Progress: 0 / 0 Poin</div>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button onclick="generateInspectionPDF()" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
-                                <span>📄</span> Download PDF
-                            </button>
-                            <button onclick="if(confirm('Reset semua centang inspeksi?')) { localStorage.removeItem('rigInspectionState'); initHseRig(); }" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
-                                <span>🔄</span> Reset
-                            </button>
-                        </div>
-                    </div>
-                    <p class="text-muted" style="font-size: 0.9rem;">Gunakan daftar periksa interaktif ini saat melakukan Audit Keselamatan. Status Anda akan tersimpan otomatis.</p>
-                    <div id="rig-inspection-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chapter 11: Well Lifecycle -->
-            <div id="rig-chapter-lifecycle" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #3b82f6;">
-                    <h3>🔄 Siklus Hidup Sumur Migas</h3>
-                    <p class="text-muted" style="font-size: 0.9rem;">Memahami tahapan sumur dari pencarian awal hingga penutupan permanen.</p>
-                    <div id="rig-lifecycle-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chapter 12: Rig Operational Sequence -->
-            <div id="rig-chapter-sequence" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #f59e0b;">
-                    <h3>⚙️ Urutan Operasional Rig</h3>
-                    <p class="text-muted" style="font-size: 0.9rem;">Alur kerja logistik dan mekanikal dari persiapan hingga pembongkaran rig.</p>
-                    <div id="rig-sequence-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chapter 13: Critical Well Parameters -->
-            <div id="rig-chapter-parameters" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #10b981;">
-                    <h3>📊 Parameter Kritis Sumur</h3>
-                    <p class="text-muted" style="font-size: 0.9rem;">Data teknis dan kondisi bawah tanah yang wajib dipantau selama pengeboran.</p>
-                    <div id="rig-parameters-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chapter 14: HSSE Supervisor Oversight -->
-            <div id="rig-chapter-oversight" class="rig-chapter hidden">
-                <div class="card mt-md" style="border-left: 4px solid #e5e7eb;">
-                    <h3>🛡️ HSSE Supervisor Oversight</h3>
-                    <p class="text-muted" style="font-size: 0.9rem;">Tanggung jawab kepemimpinan keselamatan dan pengawasan area drill floor.</p>
-                    <div id="rig-oversight-modules" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chapter 10: PJSM Generator -->
-            <div id="rig-chapter-pjsm" class="rig-chapter hidden">
-
-                <div class="card mt-md" style="border-left: 4px solid #e53e3e;">
-                    <h3>📢 AI PJSM Generator</h3>
-                    <p class="text-muted" style="font-size: 0.9rem;">Masukkan daftar pekerjaan hari ini, dan AI akan menyusun naskah <b>Pre-Job Safety Meeting (PJSM) / Toolbox Talk</b> gaya lisan lapangan, lengkap dengan bahaya, CLSR, mitigasi, dan yel-yel!</p>
-
-                    <div class="form-group mt-sm">
-                        <label style="font-size: 0.9rem; font-weight: 600;">📋 Daftar Pekerjaan Hari Ini</label>
-                        <textarea id="pjsm-work-input" class="form-control"
-                            placeholder="Contoh:&#10;1. Tripping in Drill Pipe 5 inch&#10;2. Maintenance pompa lumpur #2&#10;3. Pengelasan pipa di area terbatas&#10;4. Inspeksi scaffolding derrick"
-                            style="width: 100%; height: 120px; padding: 10px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-color); resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
-                    </div>
-
-                    <button id="generate-pjsm-btn" class="btn btn-primary btn-full mt-sm"
-                        style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); border: none; font-size: 1rem;">
-                        📢 Generate Naskah PJSM ⚡
-                    </button>
-
-                    <div id="pjsm-loading" class="hidden mt-md" style="text-align: center; padding: 20px;">
-                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
-                        <p class="text-muted">Senior HSSE Officer sedang menyusun naskah briefing...</p>
-                    </div>
-
-                    <div id="pjsm-result-area" class="mt-md hidden">
-                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                            <button id="copy-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📋 Copy Naskah</button>
-                            <button id="speak-pjsm-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">🔊 Baca (TTS)</button>
-                            <button id="stop-speak-pjsm-btn" class="btn btn-secondary hidden" style="flex: 1; font-size: 0.85rem; padding: 8px; background: #e53e3e; color: white;">⏹️ Stop</button>
-                            <button id="export-pjsm-pdf-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem; padding: 8px;">📄 PDF</button>
-                            <button id="save-pjsm-btn" class="btn btn-ai" style="flex: 1; font-size: 0.85rem; padding: 8px; background: var(--secondary);">💾 Simpan</button>
-                        </div>
-                        <div id="pjsm-content" class="pjsm-generated-content"
-                            style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 0.95rem; line-height: 1.7; white-space: normal; overflow-x: auto;">
-                        </div>
-                    </div>
-                </div>
-            </div>
+        </section>
 
             <!-- JSA Builder removed - now accessed via Learning Hub > AI JSA & PTW -->
 
@@ -3498,7 +3706,9 @@ Move out : 100 %
     <script src="js/english-hse.js"></script>
     <script src="js/english-fluency.js"></script>
     <script src="js/hse-rig.js"></script>
+    <script src="js/jmp-template-b64.js"></script>
     <script src="js/jmp-generator.js"></script>
+    <script src="js/moving-checklist.js"></script>
     <script src="js/epls.js"></script>
     <script src="js/lesson-tools.js"></script>
     <script src="js/workout-tracker.js"></script>
@@ -3512,7 +3722,6 @@ Move out : 100 %
     <script src="js/learn-coding.js"></script>
     <script src="js/learn-pertamina.js"></script>
     <script src="js/nutrition-tracker.js"></script>
-    <script src="js/oxford-3000.js"></script>
 
     <!-- HSE Rig Photo Full Viewer Modal -->
     <div id="rig-photo-modal" class="modal hidden" style="z-index: 99999; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
@@ -3524,6 +3733,7 @@ Move out : 100 %
     <script src="js/report-collage.js"></script>
     <script src="js/pro-collage.js"></script>
     <script src="js/hse-daily-report.js"></script>
+    <script src="js/hse-favorites.js"></script>
     <script src="js/rig-3d-viewer.js"></script>
     <script src="js/dashboard-widgets.js"></script>
     <script src="js/notifications.js"></script>
@@ -3545,6 +3755,45 @@ Move out : 100 %
     </script>
     <!-- Global Jarvis FAB -->
     <button id="jarvis-global-fab" title="Hold Jarvis anytime">✨</button>
+
+    <!-- Emergency Speed-Dial FAB -->
+    <div class="emergency-fab" id="emergency-fab" onclick="openHSEEmergencyModal()">
+        🚑
+    </div>
+
+    <!-- Emergency Modal -->
+    <div id="emergency-modal" class="modal hidden" style="z-index: 10001;">
+        <div class="modal-content" style="border: 2px solid #ef4444; background: #0f172a;">
+            <div class="modal-header" style="background: rgba(239, 68, 68, 0.1); border-bottom: 1px solid rgba(239, 68, 68, 0.2);">
+                <h3 style="color: #ef4444;">🚨 Emergency Speed-Dial</h3>
+                <span class="close-modal" onclick="closeHSEEmergencyModal()">&times;</span>
+            </div>
+            <div class="emergency-modal-body">
+                <div class="emergency-list" id="emergency-procedure-list">
+                    <!-- Procedures will be injected here -->
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 15px; text-align: center; font-size: 0.7rem; opacity: 0.7;">
+                PROSEDUR DARURAT STANDARD INDUSTRI MIGAS
+            </div>
+        </div>
+    </div>
+
+    <!-- Waypoint Name Modal -->
+    <div id="waypoint-modal" class="modal hidden">
+        <div class="modal-content" id="waypoint-modal-content">
+            <h3 style="color: #fff; text-align: center;">📍 Beri Nama Lokasi</h3>
+            <input type="text" id="waypoint-name-input" class="waypoint-input" placeholder="Contoh: ST-123" maxlength="15">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary flex-1" onclick="closeWaypointModal()">Batal</button>
+                <button class="btn btn-primary flex-1" onclick="confirmWaypointMark()">Simpan Titik</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/hse-geomapper.js"></script>
+    <script src="js/hse-analytics.js"></script>
+    <script src="js/hse-emergency.js"></script>
 
 </body>
 

@@ -21,5 +21,21 @@
             "type": "image/png",
             "purpose": "any maskable"
         }
+    ],
+    "shortcuts": [
+        {
+            "name": "Geo-Mapper PRO",
+            "short_name": "Mapping",
+            "description": "Buka peta satelit & navigasi waypoint",
+            "url": "./index.html?screen=hse-geomapper",
+            "icons": [{ "src": "./icons/icon-512.png", "sizes": "512x512" }]
+        },
+        {
+            "name": "Emergency Assistant",
+            "short_name": "Emergency",
+            "description": "Prosedur darurat rig (H2S, Fire, dll)",
+            "url": "./index.html?action=emergency",
+            "icons": [{ "src": "./icons/icon-512.png", "sizes": "512x512" }]
+        }
     ]
 }

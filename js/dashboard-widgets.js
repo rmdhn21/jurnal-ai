@@ -36,27 +36,7 @@ const WIDGET_REGISTRY = {
                </div>`,
         init: () => { if (typeof updateDashboardStats === 'function') updateDashboardStats(); }
     },
-    'jarvis-wisdom': {
-        id: 'jarvis-wisdom',
-        title: 'Jarvis Daily Wisdom',
-        icon: '✨',
-        html: `<div class="card premium-wisdom-card animate-pulse-border" id="jarvis-wisdom-card" style="border: 1px solid var(--primary); background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(0,0,0,0.3)); position: relative; overflow: hidden; cursor: pointer;">
-                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">✨</div>
-                    <div style="display: flex; align-items: flex-start; gap: 12px; position: relative; z-index: 1;">
-                        <div class="wisdom-icon-container" style="background: var(--gradient-primary); border-radius: 12px; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
-                            <span style="font-size: 1.5rem;">🤖</span>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <h4 style="margin: 0; font-size: 0.8rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">Jarvis Insight</h4>
-                                <span style="font-size: 0.6rem; color: #4ade80; background: rgba(74, 222, 128, 0.1); padding: 2px 6px; border-radius: 10px;">PROACTIVE</span>
-                            </div>
-                            <p id="jarvis-wisdom-text" style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); font-style: italic;">"Memindai data Anda, Boss..."</p>
-                        </div>
-                    </div>
-               </div>`,
-        init: () => { if (typeof updateJarvisWisdom === 'function') updateJarvisWisdom(); }
-    },
+
     'prayer': {
         id: 'prayer',
         title: 'Jadwal Sholat',
@@ -173,6 +153,26 @@ const WIDGET_REGISTRY = {
         init: () => { if (typeof updateDashboardReminders === 'function') updateDashboardReminders(); }
     },
 
+    'hsse-center': {
+        id: 'hsse-center',
+        title: 'HSE Performance Center',
+        icon: '🛡️',
+        html: `<div class="card mt-md" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2); position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -20px; right: -20px; opacity: 0.05; font-size: 8rem; pointer-events: none;">🛡️</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🛡️</span> HSE Performance Center
+                        </h3>
+                        <span style="font-size: 0.6rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.2); text-transform: uppercase;">OFFICIAL</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; position: relative; z-index: 1; line-height: 1.4;">Kelola Laporan WAG, JMP ST-191, Kolase Foto, dan Checklist Demobilisasi dalam satu hub.</p>
+                    <button class="btn btn-primary" onclick="navigateToSubscreen('hse-center')" style="width: 100%; border-radius: 12px; font-weight: 700; background: var(--success); border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
+                        🚀 Masuk Pusat HSE
+                    </button>
+               </div>`,
+        init: () => {}
+    },
+
     'calendar': {
         id: 'calendar',
         title: 'Kalender & Event',
@@ -263,7 +263,7 @@ const WIDGET_REGISTRY = {
 };
 
 const DEFAULT_WIDGET_ORDER = [
-    'profile', 'jarvis-wisdom', 'overview', 'life-balance', 'prayer', 'daily-schedule', 'motivation', 
+    'profile', 'hsse-center', 'overview', 'life-balance', 'prayer', 'daily-schedule', 'motivation', 
     'brain-boost', 'hadith', 'finance-budget', 
     'reminders', 'calendar', 'weekly-report'
 ];

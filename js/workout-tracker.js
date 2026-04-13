@@ -359,7 +359,7 @@ async function askAiCoach(taskId, exerciseName) {
     workoutState.loadingAi = taskId;
     renderWorkoutTab(workoutState.activeTab);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`;
     const systemPrompt = "Kamu adalah pelatih fisik ahli sepak bola dan bola voli. User sedang berlatih di rumah (kamar) atau gym dengan alat terbatas. User butuh bantuan terkait latihan spesifik. Berikan jawaban berupa TIPS KEAMANAN atau ALTERNATIF GERAKAN yang ringkas, jelas, bahasa santai, maksimal 3 kalimat saja.";
     const fullPrompt = `Saya sedang di menu latihan: ${exerciseName}. Kendala/Pertanyaan saya: ${userQuery}. Bantu saya Coach!`;
 

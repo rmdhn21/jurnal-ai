@@ -1,5 +1,5 @@
-// ===== AI MODULE =====
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
+window.GEMINI_API_URL = GEMINI_API_URL; // Global access
 
 const SYSTEM_PROMPT = `Kamu adalah AI pendamping produktivitas yang tenang, non-judgmental, dan ringkas.
 Tujuanmu: membantu pengguna melihat situasi dengan jernih dan memberi 1–2 saran kecil yang bisa langsung diubah menjadi tindakan (jadwal atau to-do).
@@ -34,12 +34,15 @@ async function getAIResponse(journalText) {
     }
 
     const requestBody = {
+        systemInstruction: {
+            parts: [{ text: SYSTEM_PROMPT }]
+        },
         contents: [
             {
                 role: "user",
                 parts: [
                     {
-                        text: `${SYSTEM_PROMPT}\n\nBerikut adalah jurnal saya:\n${journalText}\n\nBerikan respons dalam format JSON.`
+                        text: `Berikut adalah jurnal saya:\n${journalText}\n\nBerikan respons dalam format JSON.`
                     }
                 ]
             }
@@ -54,7 +57,7 @@ async function getAIResponse(journalText) {
     };
 
     try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

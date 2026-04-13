@@ -229,7 +229,7 @@ async function askNutritionAi(category, taskId, foodName) {
     workoutState.loadingAi = taskId;
     renderWorkoutTab('nutrisi');
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`;
     const systemPrompt = "Kamu adalah Sports Nutritionist ahli bulking/otot. Memberikan saran makanan pengganti/tips masak sehat yang ringkas (maks 3 kalimat). Fokus: Protein tinggi & hidrasi ginjal.";
     const fullPrompt = `Menu: ${foodName}. Pertanyaan: ${query}`;
 

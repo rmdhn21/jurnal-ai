@@ -2,6 +2,8 @@
 let financeChart = null;
 let habitsChart = null;
 let moodChart = null;
+let categoryChart = null;
+let categoryBarChart = null;
 
 const MOOD_VALUES = {
     'great': 5,
@@ -156,9 +158,12 @@ async function initFinanceChart(period) {
     const transactions = await getTransactions();
     const chartData = getFinanceDataByPeriod(transactions, currentChartPeriod);
 
-    // Also update category chart if it's currently showing
-    if (categoryChart && document.getElementById('finance-pie-chart-container') && !document.getElementById('finance-pie-chart-container').classList.contains('hidden')) {
+    // Also update category charts if they are currently showing
+    if (document.getElementById('finance-pie-chart-container') && !document.getElementById('finance-pie-chart-container').classList.contains('hidden')) {
          await initCategoryChart(currentChartPeriod);
+    }
+    if (document.getElementById('finance-cat-bar-container') && !document.getElementById('finance-cat-bar-container').classList.contains('hidden')) {
+         await initCategoryBarChart(currentChartPeriod);
     }
 
     if (financeChart) { financeChart.destroy(); }
@@ -340,7 +345,118 @@ function getWeeklyHabitData(habits) {
 
     return { labels, completions };
 }
-let categoryChart = null;
+
+async function initCategoryBarChart(period) {
+    if (period) currentChartPeriod = period;
+    const ctx = document.getElementById('category-bar-chart');
+    const wrapper = ctx ? ctx.closest('.category-chart-wrapper') : null;
+    if (!ctx || !wrapper) return;
+
+    const transactions = await getTransactions();
+    
+    // Filtering logic (same as initCategoryChart)
+    const filteredTransactions = transactions.filter(t => {
+         if (currentChartPeriod === 'week') {
+              const now = new Date();
+              const weekAgo = new Date(now);
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              return parseLocalDate(t.date) >= weekAgo;
+         } else if (currentChartPeriod === 'month') {
+              const now = new Date();
+              const startOfMonth = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+              return parseLocalDate(t.date) >= startOfMonth;
+         } else if (currentChartPeriod === 'year') {
+              return parseLocalDate(t.date).getFullYear() >= (new Date().getFullYear() - 2);
+         }
+         return true;
+    });
+
+    const expenseData = filteredTransactions.filter(t => t.type === 'expense');
+    
+    // Group by category
+    const categoryTotals = {};
+    expenseData.forEach(t => {
+        const cat = t.category || 'Lainnya';
+        categoryTotals[cat] = (categoryTotals[cat] || 0) + t.amount;
+    });
+
+    // Sort by amount descending
+    const sortedCategories = Object.entries(categoryTotals)
+        .sort((a, b) => b[1] - a[1]);
+
+    const labels = sortedCategories.map(item => item[0]);
+    const data = sortedCategories.map(item => item[1]);
+
+    if (categoryBarChart) { 
+        categoryBarChart.destroy(); 
+        categoryBarChart = null;
+    }
+
+    const existingMsg = wrapper.querySelector('.no-data-msg');
+    if (existingMsg) existingMsg.remove();
+
+    if (labels.length === 0) {
+        const noDataMsg = document.createElement('div');
+        noDataMsg.className = 'no-data-msg';
+        noDataMsg.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted);">
+                <span style="font-size: 3rem; margin-bottom: 10px;">📉</span>
+                <p>Belum ada data pengeluaran</p>
+                <small>Periode: ${period || 'Bulan Ini'}</small>
+            </div>
+        `;
+        wrapper.appendChild(noDataMsg);
+        return;
+    }
+
+    categoryBarChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Pengeluaran',
+                data: data,
+                backgroundColor: [
+                    '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', 
+                    '#ec4899', '#06b6d4', '#4ade80', '#f43f5e', '#6366f1'
+                ],
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed.x !== null) {
+                                label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.x);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    beginAtZero: true, 
+                    ticks: { color: '#a0a0b0', maxRotation: 0, autoSkip: true },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                y: { 
+                    ticks: { color: '#a0a0b0', font: { size: 11 } },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
 
 async function initCategoryChart(period) {
     if (period) currentChartPeriod = period;
@@ -438,37 +554,57 @@ async function initCategoryChart(period) {
 function setupChartToggle() {
     const barBtn = document.getElementById('show-bar-chart-btn');
     const pieBtn = document.getElementById('show-pie-chart-btn');
+    const catBarBtn = document.getElementById('show-cat-bar-btn');
     const barContainer = document.getElementById('finance-bar-chart-container');
     const pieContainer = document.getElementById('finance-pie-chart-container');
+    const catBarContainer = document.getElementById('finance-cat-bar-container');
 
-    if (!barBtn || !pieBtn) return;
+    if (!barBtn || !pieBtn || !catBarBtn) return;
+
+    const resetButtons = () => {
+        [barBtn, pieBtn, catBarBtn].forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+        });
+    };
+
+    const hideContainers = () => {
+        [barContainer, pieContainer, catBarContainer].forEach(c => c.classList.add('hidden'));
+    };
 
     barBtn.addEventListener('click', async () => {
+        resetButtons();
         barBtn.classList.add('btn-primary');
         barBtn.classList.remove('btn-secondary');
-        pieBtn.classList.add('btn-secondary');
-        pieBtn.classList.remove('btn-primary');
+        hideContainers();
         barContainer.classList.remove('hidden');
-        pieContainer.classList.add('hidden');
         await initFinanceChart();
     });
 
     pieBtn.addEventListener('click', async () => {
+        resetButtons();
         pieBtn.classList.add('btn-primary');
         pieBtn.classList.remove('btn-secondary');
-        barBtn.classList.add('btn-secondary');
-        barBtn.classList.remove('btn-primary');
+        hideContainers();
         pieContainer.classList.remove('hidden');
-        barContainer.classList.add('hidden');
         await initCategoryChart();
+    });
+
+    catBarBtn.addEventListener('click', async () => {
+        resetButtons();
+        catBarBtn.classList.add('btn-primary');
+        catBarBtn.classList.remove('btn-secondary');
+        hideContainers();
+        catBarContainer.classList.remove('hidden');
+        await initCategoryBarChart();
     });
 }
 
 // Expose to window
 window.initFinanceChart = initFinanceChart;
 window.initCategoryChart = initCategoryChart;
+window.initCategoryBarChart = initCategoryBarChart;
 window.initMoodChart = initMoodChart;
 window.initHabitsChart = initHabitsChart;
 window.setupChartToggle = setupChartToggle;
 window.parseLocalDate = parseLocalDate;
-window.initCategoryChart = initCategoryChart;

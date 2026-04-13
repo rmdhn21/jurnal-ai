@@ -1,6 +1,7 @@
 /**
  * JS/HSE-DAILY-REPORT.JS
  * Generator teks laporan Daily HSSE untuk dikirim ke WhatsApp.
+ * Enhanced with smart defaults from HSSE Sangatta chat patterns.
  */
 
 // Storage constant
@@ -35,6 +36,31 @@ function initHSEDailyReport() {
         });
     });
 
+    // Watch checklist changes
+    const checkboxes = document.querySelectorAll('.wr-hsse-chk');
+    checkboxes.forEach(chk => {
+        chk.addEventListener('change', () => {
+            saveReportDraft();
+            generateWAGReport();
+        });
+    });
+
+    // Custom weather/ops input listeners
+    const weatherCustom = document.getElementById('wr-weather-custom');
+    if (weatherCustom) {
+        weatherCustom.addEventListener('input', () => {
+            saveReportDraft();
+            generateWAGReport();
+        });
+    }
+    const opsCustom = document.getElementById('wr-ops-custom');
+    if (opsCustom) {
+        opsCustom.addEventListener('input', () => {
+            saveReportDraft();
+            generateWAGReport();
+        });
+    }
+
     // Initial generate
     generateWAGReport();
 }
@@ -62,36 +88,144 @@ function switchWAGSection(sectionId) {
 }
 
 /**
+ * Quick insert activity item into Section C textarea
+ */
+function insertActivity(text) {
+    const textarea = document.getElementById('wr-activity-c');
+    if (!textarea) return;
+
+    const current = textarea.value.trim();
+    if (current) {
+        textarea.value = current + '\n' + text;
+    } else {
+        textarea.value = text;
+    }
+
+    // Focus and scroll to end
+    textarea.focus();
+    textarea.scrollTop = textarea.scrollHeight;
+
+    saveReportDraft();
+    generateWAGReport();
+}
+
+/**
+ * Clear Section C textarea
+ */
+function clearActivityC() {
+    const textarea = document.getElementById('wr-activity-c');
+    if (textarea) {
+        textarea.value = '';
+        saveReportDraft();
+        generateWAGReport();
+    }
+}
+
+/**
+ * Add custom HSSE checklist item
+ */
+function addCustomHSSEItem() {
+    const input = document.getElementById('wr-hsse-custom-item');
+    if (!input || !input.value.trim()) return;
+
+    const checklist = document.getElementById('wr-hsse-checklist');
+    const label = document.createElement('label');
+    label.className = 'wag-check-item';
+    label.style.cssText = 'display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;';
+    label.innerHTML = `
+        <input type="checkbox" class="wr-hsse-chk" value="${input.value.trim()}" checked style="margin-top: 2px; accent-color: var(--primary);">
+        <span>${input.value.trim()}</span>
+    `;
+
+    checklist.appendChild(label);
+
+    // Add event listener
+    label.querySelector('input').addEventListener('change', () => {
+        saveReportDraft();
+        generateWAGReport();
+    });
+
+    input.value = '';
+    saveReportDraft();
+    generateWAGReport();
+}
+
+/**
+ * Get weather value (handles custom input)
+ */
+function getWeatherValue() {
+    const select = document.getElementById('wr-weather');
+    if (select && select.value === 'custom') {
+        const custom = document.getElementById('wr-weather-custom');
+        return custom ? custom.value || 'Cerah' : 'Cerah';
+    }
+    return select ? select.value : 'Cerah';
+}
+
+/**
+ * Get operation value (handles custom input)
+ */
+function getOpsValue() {
+    const select = document.getElementById('wr-ops-desc');
+    if (select && select.value === 'custom') {
+        const custom = document.getElementById('wr-ops-custom');
+        return custom ? custom.value || 'Well Service' : 'Well Service';
+    }
+    return select ? select.value : 'Well Service';
+}
+
+/**
+ * Build Section D text from checklist
+ */
+function buildSectionDText() {
+    const rig = document.getElementById('wr-rig-name')?.value || 'H-25';
+    const checkboxes = document.querySelectorAll('.wr-hsse-chk:checked');
+    const items = [];
+
+    checkboxes.forEach(chk => {
+        let text = chk.value;
+        // Replace {RIG} placeholder with actual rig name
+        text = text.replace(/\{RIG\}/g, rig);
+        items.push('- ' + text);
+    });
+
+    return items.join('\n');
+}
+
+/**
  * Core Text Generation Logic
  */
 function generateWAGReport() {
     // Get all values
     const data = {
-        recipient: document.getElementById('wr-recipient').value,
-        location: document.getElementById('wr-location').value,
-        zona: document.getElementById('wr-zona').value,
-        date: formatDate(document.getElementById('wr-date').value),
-        pob: document.getElementById('wr-pob').value,
-        visitor: document.getElementById('wr-visitor').value || '-',
-        smh: document.getElementById('wr-smh').value,
-        smc: document.getElementById('wr-smc').value,
-        cum: document.getElementById('wr-cum').value,
-        jsaCum: document.getElementById('wr-jsa-cum').value,
-        rig: document.getElementById('wr-rig-name').value,
-        weather: document.getElementById('wr-weather').value,
-        ops: document.getElementById('wr-ops-desc').value,
-        coord: document.getElementById('wr-coord').value,
-        spv: document.getElementById('wr-spv').value,
-        officers: document.getElementById('wr-officers').value,
-        activityC: document.getElementById('wr-activity-c').value,
-        bbmStart: document.getElementById('wr-bbm-start').value,
-        bbmUsed: document.getElementById('wr-bbm-used').value,
-        activityD: document.getElementById('wr-activity-d').value,
-        planC: document.getElementById('wr-plan-c').value || '• ',
-        activityNight: document.getElementById('wr-activity-night').value || '-',
-        planNight: document.getElementById('wr-plan-night').value || '-',
-        nextHsse: document.getElementById('wr-next-hsse').value || '-'
+        recipient: document.getElementById('wr-recipient')?.value || '',
+        location: document.getElementById('wr-location')?.value || '',
+        zona: document.getElementById('wr-zona')?.value || '',
+        date: formatDate(document.getElementById('wr-date')?.value),
+        pob: document.getElementById('wr-pob')?.value || '',
+        visitor: document.getElementById('wr-visitor')?.value || '-',
+        smh: document.getElementById('wr-smh')?.value || '',
+        smc: document.getElementById('wr-smc')?.value || '-',
+        cum: document.getElementById('wr-cum')?.value || '-',
+        jsaCum: document.getElementById('wr-jsa-cum')?.value || '',
+        rig: document.getElementById('wr-rig-name')?.value || 'H-25',
+        weather: getWeatherValue(),
+        ops: getOpsValue(),
+        coord: document.getElementById('wr-coord')?.value || defaultCoordName,
+        spv: document.getElementById('wr-spv')?.value || '',
+        officers: document.getElementById('wr-officers')?.value || defaultOfficerNames,
+        activityC: document.getElementById('wr-activity-c')?.value || '',
+        bbmStart: document.getElementById('wr-bbm-start')?.value || '-',
+        bbmUsed: document.getElementById('wr-bbm-used')?.value || '0',
+        planC: document.getElementById('wr-plan-c')?.value || '• ',
+        activityNight: document.getElementById('wr-activity-night')?.value || '-',
+        planNight: document.getElementById('wr-plan-night')?.value || '-',
     };
+
+    // Build Section D from checklist
+    const activityD = buildSectionDText();
+    // Section E from its own textarea
+    const nextHsse = document.getElementById('wr-next-hsse')?.value || '-';
 
     // Auto-calculate BBM End
     const bbmUsedVal = parseFloat(data.bbmUsed) || 0;
@@ -148,17 +282,18 @@ ${data.planNight}
 Weather : 
 
 D. Summary Activity HSSE:
-${data.activityD}
+${activityD}
 
 
 E. Next HSSE Activity:
-${data.nextHsse}
+${nextHsse}
 F. Dokumentasi terlampir
 
 ${data.officers} 
 HSSE Officer Rig`;
 
-    document.getElementById('wr-final-output').value = reportText;
+    const output = document.getElementById('wr-final-output');
+    if (output) output.value = reportText;
 }
 
 /**
@@ -190,20 +325,33 @@ function copyWAGReport() {
  * Draft local storage
  */
 function saveReportDraft() {
+    const weatherSelect = document.getElementById('wr-weather');
+    const opsSelect = document.getElementById('wr-ops-desc');
+
     const draft = {
-        recipient: document.getElementById('wr-recipient').value,
-        location: document.getElementById('wr-location').value,
-        zona: document.getElementById('wr-zona').value,
-        pob: document.getElementById('wr-pob').value,
-        smh: document.getElementById('wr-smh').value,
-        rig: document.getElementById('wr-rig-name').value,
-        coord: document.getElementById('wr-coord').value,
-        spv: document.getElementById('wr-spv').value,
-        officers: document.getElementById('wr-officers').value,
-        'plan-c': document.getElementById('wr-plan-c').value,
-        'activity-night': document.getElementById('wr-activity-night').value,
-        'plan-night': document.getElementById('wr-plan-night').value,
-        'next-hsse': document.getElementById('wr-next-hsse').value
+        recipient: document.getElementById('wr-recipient')?.value || '',
+        location: document.getElementById('wr-location')?.value || '',
+        zona: document.getElementById('wr-zona')?.value || '',
+        pob: document.getElementById('wr-pob')?.value || '',
+        smh: document.getElementById('wr-smh')?.value || '',
+        rig: document.getElementById('wr-rig-name')?.value || 'H-25',
+        coord: document.getElementById('wr-coord')?.value || '',
+        spv: document.getElementById('wr-spv')?.value || '',
+        officers: document.getElementById('wr-officers')?.value || '',
+        weather: weatherSelect?.value || 'Cerah',
+        weatherCustom: document.getElementById('wr-weather-custom')?.value || '',
+        ops: opsSelect?.value || 'Well Service',
+        opsCustom: document.getElementById('wr-ops-custom')?.value || '',
+        activityC: document.getElementById('wr-activity-c')?.value || '',
+        'plan-c': document.getElementById('wr-plan-c')?.value || '',
+        'activity-night': document.getElementById('wr-activity-night')?.value || '',
+        'plan-night': document.getElementById('wr-plan-night')?.value || '',
+        'next-hsse': document.getElementById('wr-next-hsse')?.value || '',
+        // Save checklist states
+        hsseChecks: Array.from(document.querySelectorAll('.wr-hsse-chk')).map(chk => ({
+            value: chk.value,
+            checked: chk.checked
+        }))
     };
     localStorage.setItem(HSE_REPORT_DRAFT_KEY, JSON.stringify(draft));
 }
@@ -213,11 +361,95 @@ function loadReportDraft() {
     if (saved) {
         try {
             const draft = JSON.parse(saved);
-            Object.keys(draft).forEach(key => {
+            
+            // Restore simple fields
+            const simpleFields = ['recipient', 'location', 'zona', 'pob', 'smh', 'coord', 'spv', 'officers'];
+            simpleFields.forEach(key => {
                 const el = document.getElementById(`wr-${key}`);
-                if (el) el.value = draft[key];
+                if (el && draft[key] !== undefined) el.value = draft[key];
             });
-        } catch (e) {}
+
+            // Restore rig select
+            const rigSelect = document.getElementById('wr-rig-name');
+            if (rigSelect && draft.rig) rigSelect.value = draft.rig;
+
+            // Restore weather
+            const weatherSelect = document.getElementById('wr-weather');
+            if (weatherSelect && draft.weather) {
+                weatherSelect.value = draft.weather;
+                if (draft.weather === 'custom') {
+                    weatherSelect.style.display = 'none';
+                    const customInput = document.getElementById('wr-weather-custom');
+                    if (customInput) {
+                        customInput.style.display = '';
+                        customInput.value = draft.weatherCustom || '';
+                    }
+                }
+            }
+
+            // Restore operation
+            const opsSelect = document.getElementById('wr-ops-desc');
+            if (opsSelect && draft.ops) {
+                opsSelect.value = draft.ops;
+                if (draft.ops === 'custom') {
+                    opsSelect.style.display = 'none';
+                    const customInput = document.getElementById('wr-ops-custom');
+                    if (customInput) {
+                        customInput.style.display = '';
+                        customInput.value = draft.opsCustom || '';
+                    }
+                }
+            }
+
+            // Restore activity C
+            const actC = document.getElementById('wr-activity-c');
+            if (actC && draft.activityC !== undefined) actC.value = draft.activityC;
+
+            // Restore textareas
+            ['plan-c', 'activity-night', 'plan-night', 'next-hsse'].forEach(key => {
+                const el = document.getElementById(`wr-${key}`);
+                if (el && draft[key] !== undefined) el.value = draft[key];
+            });
+
+            // Restore checklist
+            if (draft.hsseChecks && Array.isArray(draft.hsseChecks)) {
+                const existing = document.querySelectorAll('.wr-hsse-chk');
+                const existingValues = new Set();
+                existing.forEach(chk => existingValues.add(chk.value));
+
+                // Update existing checkboxes
+                existing.forEach(chk => {
+                    const saved = draft.hsseChecks.find(s => s.value === chk.value);
+                    if (saved !== undefined) {
+                        chk.checked = saved.checked;
+                    }
+                });
+
+                // Add custom items that were saved but don't exist in HTML
+                draft.hsseChecks.forEach(item => {
+                    if (!existingValues.has(item.value)) {
+                        const checklist = document.getElementById('wr-hsse-checklist');
+                        if (checklist) {
+                            const label = document.createElement('label');
+                            label.className = 'wag-check-item';
+                            label.style.cssText = 'display: flex; align-items: flex-start; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; font-size: 0.8rem;';
+                            label.innerHTML = `
+                                <input type="checkbox" class="wr-hsse-chk" value="${item.value}" ${item.checked ? 'checked' : ''} style="margin-top: 2px; accent-color: var(--primary);">
+                                <span>${item.value}</span>
+                            `;
+                            checklist.appendChild(label);
+                            label.querySelector('input').addEventListener('change', () => {
+                                saveReportDraft();
+                                generateWAGReport();
+                            });
+                        }
+                    }
+                });
+            }
+
+        } catch (e) {
+            console.error('Failed to load WAG draft:', e);
+        }
     }
 }
 
@@ -233,3 +465,26 @@ function formatDate(dateStr) {
     ];
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
+
+/**
+ * Copy Section D checklist text into Section E textarea
+ */
+function copyDtoE() {
+    const dText = buildSectionDText();
+    const eTextarea = document.getElementById('wr-next-hsse');
+    if (eTextarea) {
+        eTextarea.value = dText;
+        saveReportDraft();
+        generateWAGReport();
+    }
+}
+
+// Expose functions to window
+window.insertActivity = insertActivity;
+window.clearActivityC = clearActivityC;
+window.addCustomHSSEItem = addCustomHSSEItem;
+window.switchWAGSection = switchWAGSection;
+window.generateWAGReport = generateWAGReport;
+window.copyWAGReport = copyWAGReport;
+window.copyDtoE = copyDtoE;
+window.initHSEDailyReport = initHSEDailyReport;
