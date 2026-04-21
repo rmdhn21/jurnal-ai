@@ -133,10 +133,11 @@ async function renderProfessionalReport() {
     document.getElementById('report-net-cash').textContent = formatCurrency(income - expense);
     document.getElementById('report-savings-rate').textContent = `${Math.round(savingsRate)}%`;
 
-    // Top Expenses
+    // Top Expenses - Normalized
     const categories = {};
     monthTransactions.filter(t => t.type === 'expense').forEach(t => {
-        categories[t.category] = (categories[t.category] || 0) + t.amount;
+        const cat = typeof normalizeCategory === 'function' ? normalizeCategory(t) : (t.category || 'Lain-lain');
+        categories[cat] = (categories[cat] || 0) + t.amount;
     });
 
     const topCats = Object.entries(categories).sort((a, b) => b[1] - a[1]).slice(0, 5);

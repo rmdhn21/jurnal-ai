@@ -19,6 +19,7 @@ let supabaseRealtimeChannel = null;
 
 function refreshAllUIs() {
     console.log('🖼️ Refreshing all UI components...');
+    if (typeof resetAllCharts === 'function') resetAllCharts();
     if (typeof initJournalUI === 'function') initJournalUI();
     if (typeof initPlannerUI === 'function') initPlannerUI();
     if (typeof initFinanceUI === 'function') initFinanceUI();

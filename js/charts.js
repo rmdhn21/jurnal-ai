@@ -23,8 +23,11 @@ const STANDARD_CATEGORIES = [
  */
 function normalizeCategory(transaction) {
     const cat = (transaction.category || '').trim();
+    const desc = (transaction.description || '').toLowerCase();
+    
     // If it exactly matches a standard category, keep it
     if (STANDARD_CATEGORIES.includes(cat)) return cat;
+    
     // Fuzzy match: check if the standard category is contained in the value or vice-versa (case-insensitive)
     const lower = cat.toLowerCase();
     for (const std of STANDARD_CATEGORIES) {
@@ -32,19 +35,48 @@ function normalizeCategory(transaction) {
             return std;
         }
     }
-    // Keyword heuristics
-    if (/makan|minum|kopi|bakso|nasi|jajan|snack|food|resto|warung|cafe/i.test(lower)) return 'Makan & Minum';
-    if (/transport|bensin|grab|gojek|ojek|bus|taxi|parkir|tol/i.test(lower)) return 'Transportasi';
-    if (/tagihan|listrik|air|internet|pulsa|token|pdam/i.test(lower)) return 'Tagihan & Utilitas';
-    if (/gaji|salary|upah|honor/i.test(lower)) return 'Gaji';
-    if (/tabung|nikah|saving/i.test(lower)) return 'Tabungan Nikah';
-    if (/sedekah|infaq|donasi|zakat|sosial|amal/i.test(lower)) return 'Sosial & Sedekah';
-    if (/hiburan|nongkrong|game|film|bioskop|langganan|spotify|netflix/i.test(lower)) return 'Hiburan & Nongkrong';
-    if (/belajar|kursus|buku|edukasi|udemy|course/i.test(lower)) return 'Edukasi & Pengembangan';
-    if (/kos|kontrakan|sewa|tinggal|rumah/i.test(lower)) return 'Tempat Tinggal';
-    if (/belanja|kebutuhan|sabun|shampoo|bulanan|harian/i.test(lower)) return 'Kebutuhan Harian/Bulanan';
-    if (/invest|trading|saham|crypto|profit|dividen/i.test(lower)) return 'Profit Trading/Investasi';
-    // Fallback
+    
+    // Combine cat and desc for better heuristic detection
+    const context = (lower + ' ' + desc).trim();
+
+    // 1. MAKAN & MINUM
+    if (/makan|minum|kopi|bakso|nasi|jajan|snack|food|resto|warung|cafe|telur|telor|ayam|mie|sate|jus|minuman|haus|lapar/i.test(context)) return 'Makan & Minum';
+    
+    // 2. TRANSPORTASI
+    if (/transport|bensin|grab|gojek|ojek|bus|taxi|parkir|tol|pertalite|pertamax|solar|dex|oli|service|bengkel/i.test(context)) return 'Transportasi';
+    
+    // 3. TAGIHAN & UTILITAS
+    if (/tagihan|listrik|air|internet|pulsa|token|pdam|wifi|indihome|pajak|bpjs/i.test(context)) return 'Tagihan & Utilitas';
+    
+    // 4. GAJI
+    if (/gaji|salary|upah|honor|bonus|incentive|tpp/i.test(context)) return 'Gaji';
+    
+    // 5. TABUNGAN NIKAH
+    if (/tabung|nikah|saving|mas kawin|mahar/i.test(context)) return 'Tabungan Nikah';
+    
+    // 6. SOSIAL & SEDEKAH
+    if (/sedekah|infaq|donasi|zakat|sosial|amal|ortu|ibu|mama|bapak|ayah|keluarga|titip|kasih|gift|hadiah/i.test(context)) return 'Sosial & Sedekah';
+    
+    // 7. HIBURAN & NONGKRONG
+    if (/hiburan|nongkrong|game|film|bioskop|langganan|spotify|netflix|disney|steam|topup|chill/i.test(context)) return 'Hiburan & Nongkrong';
+    
+    // 8. EDUKASI & PENGEMBANGAN
+    if (/belajar|kursus|buku|edukasi|udemy|course|seminal|training|diklat|skripsi|kuliah/i.test(context)) return 'Edukasi & Pengembangan';
+    
+    // 9. TEMPAT TINGGAL
+    if (/kos|kontrakan|sewa|tinggal|rumah|apartemen|cicilan rmh|pbb/i.test(context)) return 'Tempat Tinggal';
+    
+    // 10. KEBUTUHAN HARIAN/BULANAN
+    if (/belanja|kebutuhan|sabun|shampoo|bulanan|harian|pasar|supermarket|alfamart|indomaret|toko|warung|sembako|pakaian|baju|celana/i.test(context)) return 'Kebutuhan Harian/Bulanan';
+    
+    // 11. PROFIT TRADING/INVESTASI
+    if (/invest|trading|saham|crypto|profit|dividen|reksadana|binance|ajaib|bibit/i.test(context)) return 'Profit Trading/Investasi';
+
+    // 12. FALLBACK/PEMBERSIH (Special rules for common messy labels)
+    if (/tarik|tunai|atm|transfer|tf|cash|kirim/i.test(context)) return 'Lain-lain / Tak Terduga';
+    if (context.length > 20 || context.split(' ').length > 3) return 'Lain-lain / Tak Terduga'; // Likely a description
+
+    // Fallback to original or "Lain-lain"
     return cat || 'Lain-lain / Tak Terduga';
 }
 
@@ -643,7 +675,14 @@ function setupChartToggle() {
     });
 }
 
-// Expose to window
+window.resetAllCharts = function() {
+    if (financeChart) { financeChart.destroy(); financeChart = null; }
+    if (habitsChart) { habitsChart.destroy(); habitsChart = null; }
+    if (moodChart) { moodChart.destroy(); moodChart = null; }
+    if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
+    if (categoryBarChart) { categoryBarChart.destroy(); categoryBarChart = null; }
+};
+
 window.initFinanceChart = initFinanceChart;
 window.initCategoryChart = initCategoryChart;
 window.initCategoryBarChart = initCategoryBarChart;
