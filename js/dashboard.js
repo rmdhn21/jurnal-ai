@@ -313,22 +313,14 @@ async function getDailyInsight() {
 Tulis TEPAT 2 kalimat motivasi singkat dalam bahasa Indonesia. Maksimal 50 kata total. Langsung tulis kalimatnya tanpa pembuka.`;
 
     try {
-        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.8, maxOutputTokens: 2048 }
-            })
-        });
+        const payload = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.8, maxOutputTokens: 2048 }
+        };
+        const text = await unifiedGeminiCall(payload);
+        const finalText = text || 'Tidak ada insight';
 
-        if (!response.ok) throw new Error('Gagal mendapatkan insight');
-
-        const result = await response.json();
-        const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Tidak ada insight';
-
-        insightBox.innerHTML = `<p>${text}</p>`;
+        insightBox.innerHTML = `<p>${finalText}</p>`;
     } catch (error) {
         insightBox.innerHTML = '<p class="text-muted">Gagal mengambil insight. Coba lagi nanti.</p>';
     }
@@ -454,23 +446,15 @@ Gunakan bahasa Indonesia yang memotivasi.`;
     showAnalysisModal(title);
 
     try {
-        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 1024
-                }
-            })
-        });
-
-        if (!response.ok) throw new Error('Gagal mendapatkan analisis');
-
-        const result = await response.json();
-        let text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Tidak ada hasil';
+        const payload = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 1024
+            }
+        };
+        let text = await unifiedGeminiCall(payload);
+        if (!text) text = 'Tidak ada hasil';
         text = text.replace(/```html/gi, '').replace(/```/g, '');
 
         document.getElementById('analysis-loading').classList.add('hidden');
@@ -778,20 +762,12 @@ async function generateWeeklyExecutiveReport() {
     Jangan berikan kata pembuka/penutup seperti "Tentu,". Hanya kembalikan elemen HTML murni (tanpa tag \`\`\`html).`;
 
     try {
-        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-            })
-        });
-
-        if (!response.ok) throw new Error('API Error');
-
-        const result = await response.json();
-        let text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal memproses.';
+        const payload = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+        };
+        let text = await unifiedGeminiCall(payload);
+        if (!text) text = 'Gagal memproses.';
         text = text.replace(/```html/gi, '').replace(/```/g, '');
 
         const contentDiv = document.getElementById('analysis-content');
@@ -917,25 +893,14 @@ async function callJarvisMinimal(prompt) {
     if (!apiKey) return null;
 
     try {
-        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.8, maxOutputTokens: 60 }
-            })
-        });
-
-        if (response.status === 429) {
-            console.warn('Gemini API Rate Limit Hit (429). Waiting for reset...');
-            return null;
-        }
-
-        const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.8, maxOutputTokens: 60 }
+        };
+        const responseText = await unifiedGeminiCall(payload);
+        return responseText?.trim() || null;
     } catch (e) {
-        console.error('Jarvis API Fetch Error:', e);
+        console.error('Jarvis API Error:', e);
         return null;
     }
 }

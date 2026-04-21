@@ -436,66 +436,63 @@ function initGlobalBudgetUI() {
 }
 
 async function updateGlobalBudgetUI() {
-    const card = document.getElementById('global-budget-card');
-    const text = document.getElementById('global-budget-text');
-    const progressBar = document.getElementById('global-budget-progress');
+    const cards = document.querySelectorAll('[id="global-budget-card"]');
+    if (cards.length === 0) return;
 
-    // Get Settings directly
-    const settings = getSettings();
-    const globalLimit = parseFloat(settings.globalBudget) || 0;
+    // Auto-calculate global limit based on remaining balance / days remaining
+    const wallets = await getWallets();
+    const totalBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
 
-    if (!card || !text || !progressBar) return;
+    const now = new Date();
+    // Days in current month
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    // Days remaining including today
+    const daysRemaining = daysInMonth - now.getDate() + 1;
 
-    if (globalLimit <= 0) {
-        card.classList.add('hidden');
-        return;
-    }
-
-    card.classList.remove('hidden');
-
-    // Make editable
-    const editBtn = document.createElement('button');
-    editBtn.className = 'btn-icon btn-small absolute-top-right';
-    editBtn.innerHTML = '✏️';
-    editBtn.onclick = async () => {
-        const current = settings.globalBudget || 0;
-        const newLimit = prompt('Masukkan batasan budget harian (Rp):', current);
-        if (newLimit !== null) {
-            const val = parseFloat(newLimit);
-            if (!isNaN(val)) {
-                localStorage.setItem(STORAGE_KEYS.GLOBAL_BUDGET, val);
-                await updateGlobalBudgetUI();
-            }
-        }
-    };
-
-    // Ensure we don't duplicate the button if it exists
-    const header = card.querySelector('.card-header');
-    if (header && !header.querySelector('button')) {
-        header.appendChild(editBtn);
-    }
+    // Safe daily limit
+    const globalLimit = totalBalance > 0 ? (totalBalance / daysRemaining) : 0;
 
     const transactions = await getTransactions();
     const today = getTodayString();
-
     const todayExpenses = transactions
         .filter(t => t.type === 'expense' && t.date === today)
         .reduce((sum, t) => sum + t.amount, 0);
 
-    const percentage = Math.min((todayExpenses / globalLimit) * 100, 100);
+    const percentage = globalLimit > 0 ? Math.min((todayExpenses / globalLimit) * 100, 100) : 100;
 
-    text.textContent = `${formatCurrency(todayExpenses)} / ${formatCurrency(globalLimit)}`;
-    progressBar.style.width = `${percentage}%`;
+    cards.forEach(card => {
+        const text = card.querySelector('[id="global-budget-text"]');
+        const progressBar = card.querySelector('[id="global-budget-progress"]');
+        const headerTitle = card.querySelector('#budget-title, .card-header h3, .budget-card-header h3');
+        const hintText = card.querySelector('#budget-hint-text, .budget-card-hint');
 
-    // Color coding
-    progressBar.className = 'budget-progress-bar'; // Reset
-    if (percentage >= 100) {
-        progressBar.classList.add('bg-danger');
-    } else if (percentage >= 75) {
-        progressBar.classList.add('bg-warning');
-    } else {
-        progressBar.classList.add('bg-success');
-    }
+        if (totalBalance <= 0) {
+            card.classList.add('hidden');
+            return;
+        }
+
+        card.classList.remove('hidden');
+
+        // Update title with days remaining info
+        if (headerTitle) {
+            headerTitle.innerHTML = '🛡️ Batas Aman Harian <span style="font-size:0.65rem;opacity:0.7;font-weight:normal;">(Sisa ' + daysRemaining + ' hari)</span>';
+        }
+
+        // Update hint text
+        if (hintText) {
+            hintText.textContent = `Saldo ${formatCurrency(totalBalance)} ÷ ${daysRemaining} hari = ${formatCurrency(globalLimit)}/hari`;
+        }
+
+        if (text) text.innerHTML = `${formatCurrency(todayExpenses)} / ${formatCurrency(globalLimit)}`;
+        if (progressBar) {
+            progressBar.style.width = `${percentage}%`;
+            // Use inline color to work with both progress-fill and budget-progress-bar classes
+            let color = '#10b981'; // green
+            if (percentage >= 100) color = '#ef4444'; // red
+            else if (percentage >= 75) color = '#f59e0b'; // yellow
+            progressBar.style.background = color;
+        }
+    });
 }
 
 function filterCategoriesByType() {

@@ -54,26 +54,14 @@ async function generateFluencyDaily() {
     }`;
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                contents: [{ role: "user", parts: [{ text: prompt }] }], 
-                generationConfig: { 
-                    temperature: 1.0,
-                    responseMimeType: "application/json" 
-                } 
-            })
-        });
-
-        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || 'API Error');
-        }
-
-        const data = await response.json();
-        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const payload = { 
+            contents: [{ role: "user", parts: [{ text: prompt }] }], 
+            generationConfig: { 
+                temperature: 1.0,
+                responseMimeType: "application/json" 
+            } 
+        };
+        const responseText = await unifiedGeminiCall(payload);
 
         if (responseText) {
             const content = JSON.parse(responseText.replace(/```json/g, '').replace(/```/g, '').trim());
@@ -146,25 +134,14 @@ async function buildSimpleSentence() {
     JANGAN TAMBAHKAN TEKS LAIN.`;
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                contents: [{ role: "user", parts: [{ text: prompt }] }], 
-                generationConfig: { 
-                    temperature: 0.7,
-                    responseMimeType: "application/json" 
-                } 
-            })
-        });
-
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || 'API Error');
-        }
-
-        const data = await response.json();
-        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const payload = { 
+            contents: [{ role: "user", parts: [{ text: prompt }] }], 
+            generationConfig: { 
+                temperature: 0.7,
+                responseMimeType: "application/json" 
+            } 
+        };
+        const responseText = await unifiedGeminiCall(payload);
 
         if (responseText) {
             const content = JSON.parse(responseText.replace(/```json/g, '').replace(/```/g, '').trim());

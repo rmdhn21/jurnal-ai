@@ -1162,39 +1162,21 @@ async function generatePJSM(workDescOverride = null) {
     btn.textContent = '⏳ Generating...';
 
     try {
-        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
-        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                systemInstruction: { parts: [{ text: PJSM_SYSTEM_PROMPT }] },
-                contents: [{
-                    role: "user",
-                    parts: [{
-                        text: `DAFTAR PEKERJAAN HARI INI:\n${workList}\n\nBuatkan naskah PJSM lengkap sesuai struktur 6 bagian.`
-                    }]
-                }],
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 2048
-                }
-            })
-        });
+        const payload = {
+            systemInstruction: { parts: [{ text: PJSM_SYSTEM_PROMPT }] },
+            contents: [{
+                role: "user",
+                parts: [{
+                    text: `DAFTAR PEKERJAAN HARI INI:\n${workList}\n\nBuatkan naskah PJSM lengkap sesuai struktur 6 bagian.`
+                }]
+            }],
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 2048
+            }
+        };
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('Gemini API Error details:', errorData);
-            throw new Error(errorData.error?.message || `Gagal menghubungi AI (${response.status})`);
-        }
-
-        const data = await response.json();
-        const candidate = data.candidates?.[0];
-        let text = candidate?.content?.parts?.[0]?.text;
-
-        if (candidate?.finishReason === 'MAX_TOKENS') {
-            console.warn('PJSM Truncated: Reached max tokens limit.');
-            text += '\n\n... (Terpotong karena naskah terlalu panjang, silakan generate ulang atau hubungi admin) ...';
-        }
+        let text = await unifiedGeminiCall(payload);
 
         if (!text) throw new Error('Respon AI kosong');
 

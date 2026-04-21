@@ -229,22 +229,16 @@ async function askNutritionAi(category, taskId, foodName) {
     workoutState.loadingAi = taskId;
     renderWorkoutTab('nutrisi');
 
-    const url = `${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`;
-    const systemPrompt = "Kamu adalah Sports Nutritionist ahli bulking/otot. Memberikan saran makanan pengganti/tips masak sehat yang ringkas (maks 3 kalimat). Fokus: Protein tinggi & hidrasi ginjal.";
-    const fullPrompt = `Menu: ${foodName}. Pertanyaan: ${query}`;
-
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: fullPrompt }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] }
-            })
-        });
+        const systemPrompt = "Kamu adalah Sports Nutritionist ahli bulking/otot. Memberikan saran makanan pengganti/tips masak sehat yang ringkas (maks 3 kalimat). Fokus: Protein tinggi & hidrasi ginjal.";
+        const fullPrompt = `Menu: ${foodName}. Pertanyaan: ${query}`;
 
-        const data = await response.json();
-        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const payload = {
+            contents: [{ parts: [{ text: fullPrompt }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+        };
+
+        const aiText = await unifiedGeminiCall(payload);
         
         if (aiText) {
             if (!workoutState.nutritionAiResponses) workoutState.nutritionAiResponses = {};
@@ -253,6 +247,8 @@ async function askNutritionAi(category, taskId, foodName) {
         }
     } catch (e) {
         console.error(e);
+        if (!workoutState.nutritionAiResponses) workoutState.nutritionAiResponses = {};
+        workoutState.nutritionAiResponses[taskId] = "Maaf, AI Nutritionist sedang tidak bertugas. Coba lagi nanti!";
     }
 
     workoutState.loadingAi = null;

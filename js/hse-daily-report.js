@@ -10,6 +10,10 @@ const HSE_REPORT_DRAFT_KEY = 'hse-daily-report-draft';
 const defaultOfficerNames = "Ferdi A, M Rafi";
 const defaultCoordName = "Denny Wicaksana";
 
+// Tracker for which activity textarea was last focused
+let lastFocusedActivityId = 'wr-activity-c';
+
+
 function initHSEDailyReport() {
     // Set default date to today
     const dateInput = document.getElementById('wr-date');
@@ -45,7 +49,18 @@ function initHSEDailyReport() {
         });
     });
 
+    // Track last focused activity textarea (Activity C, Plan C, Activity Night, Plan Night)
+    const tAs = ['wr-activity-c', 'wr-plan-c', 'wr-activity-night', 'wr-plan-night'];
+    tAs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('focus', () => lastFocusedActivityId = id);
+            el.addEventListener('click', () => lastFocusedActivityId = id);
+        }
+    });
+
     // Custom weather/ops input listeners
+
     const weatherCustom = document.getElementById('wr-weather-custom');
     if (weatherCustom) {
         weatherCustom.addEventListener('input', () => {
@@ -91,7 +106,7 @@ function switchWAGSection(sectionId) {
  * Quick insert activity item into Section C textarea
  */
 function insertActivity(text) {
-    const textarea = document.getElementById('wr-activity-c');
+    const textarea = document.getElementById(lastFocusedActivityId);
     if (!textarea) return;
 
     const current = textarea.value.trim();
@@ -100,6 +115,7 @@ function insertActivity(text) {
     } else {
         textarea.value = text;
     }
+
 
     // Focus and scroll to end
     textarea.focus();
@@ -200,6 +216,7 @@ function generateWAGReport() {
     const data = {
         recipient: document.getElementById('wr-recipient')?.value || '',
         location: document.getElementById('wr-location')?.value || '',
+        wellName: document.getElementById('wr-well-name')?.value || '',
         zona: document.getElementById('wr-zona')?.value || '',
         date: formatDate(document.getElementById('wr-date')?.value),
         pob: document.getElementById('wr-pob')?.value || '',
@@ -236,7 +253,7 @@ function generateWAGReport() {
     const reportText = `Assalamualaikum Warahmatullahi Wabarakatuh,
 
 Dengan Hormat, ${data.recipient} 
-Berikut terlampir Daily HSSE Report Lokasi / Sumur: ${data.location} ${data.zona} , tanggal ${data.date} :
+Berikut terlampir Daily HSSE Report (Rig ${data.rig}) Lokasi ${data.location} / Sumur ${data.wellName} ${data.zona} , tanggal ${data.date} :
 
 A. Safety Performance (Rig ${data.rig}) 
 - POB  : ${data.pob} Person
@@ -247,8 +264,9 @@ A. Safety Performance (Rig ${data.rig})
 - JSA/PTW :  Cum  : ${data.jsaCum}
 
 B. Current operation: 
-- Location/ Well   : ${data.location}
+- Location/ Well   : ${data.location} / ${data.wellName || '-'}
 - Name Rig          : ${data.rig}
+
 - Date                  : ${data.date}
 - Weather           : ${data.weather}
 - Operation         : ${data.ops}
@@ -331,6 +349,7 @@ function saveReportDraft() {
     const draft = {
         recipient: document.getElementById('wr-recipient')?.value || '',
         location: document.getElementById('wr-location')?.value || '',
+        'well-name': document.getElementById('wr-well-name')?.value || '',
         zona: document.getElementById('wr-zona')?.value || '',
         pob: document.getElementById('wr-pob')?.value || '',
         smh: document.getElementById('wr-smh')?.value || '',
@@ -363,7 +382,8 @@ function loadReportDraft() {
             const draft = JSON.parse(saved);
             
             // Restore simple fields
-            const simpleFields = ['recipient', 'location', 'zona', 'pob', 'smh', 'coord', 'spv', 'officers'];
+            const simpleFields = ['recipient', 'location', 'well-name', 'zona', 'pob', 'smh', 'coord', 'spv', 'officers'];
+
             simpleFields.forEach(key => {
                 const el = document.getElementById(`wr-${key}`);
                 if (el && draft[key] !== undefined) el.value = draft[key];

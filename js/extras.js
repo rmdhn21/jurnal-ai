@@ -131,46 +131,54 @@ async function initFinanceUpgrades() {
 }
 
 async function updateGlobalBudgetUI() {
-    const budgetCard = document.getElementById('global-budget-card');
-    const budgetText = document.getElementById('global-budget-text');
-    const budgetProgress = document.getElementById('global-budget-progress');
+    const cards = document.querySelectorAll('[id="global-budget-card"]');
+    if (cards.length === 0) return;
 
-    const limit = parseInt(localStorage.getItem(STORAGE_KEYS.GLOBAL_BUDGET) || 0);
-    if (!budgetCard) return;
+    // Auto-calculate: remaining wallet balance / days until payday (1st of next month)
+    const wallets = await getWallets();
+    const totalBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
 
-    if (limit <= 0) {
-        budgetCard.classList.remove('hidden');
-        budgetText.textContent = "(Atur di Settings)";
-        budgetProgress.style.width = '0%';
-        return;
-    }
-
-    budgetCard.classList.remove('hidden');
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysRemaining = daysInMonth - now.getDate() + 1;
+    const globalLimit = totalBalance > 0 ? (totalBalance / daysRemaining) : 0;
 
     const transactions = await getTransactions();
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
-
-    const todayExpense = transactions
-        .filter(t => t.type === 'expense' && t.date === todayStr)
+    const today = getTodayString();
+    const todayExpenses = transactions
+        .filter(t => t.type === 'expense' && t.date === today)
         .reduce((sum, t) => sum + t.amount, 0);
 
-    const percentage = Math.min((todayExpense / limit) * 100, 100);
+    const percentage = globalLimit > 0 ? Math.min((todayExpenses / globalLimit) * 100, 100) : 100;
 
-    budgetText.textContent = `${formatCurrency(todayExpense)} / ${formatCurrency(limit)}`;
-    budgetProgress.style.width = `${percentage}%`;
+    cards.forEach(card => {
+        const text = card.querySelector('[id="global-budget-text"]');
+        const progressBar = card.querySelector('[id="global-budget-progress"]');
+        const headerTitle = card.querySelector('#budget-title, .card-header h3, .budget-card-header h3');
+        const hintText = card.querySelector('#budget-hint-text, .budget-card-hint');
 
-    budgetProgress.className = 'progress-fill';
-    if (percentage < 50) {
-        budgetProgress.classList.add('bg-success');
-    } else if (percentage < 80) {
-        budgetProgress.classList.add('bg-warning');
-    } else {
-        budgetProgress.classList.add('bg-danger');
-    }
+        if (totalBalance <= 0) {
+            card.classList.add('hidden');
+            return;
+        }
+
+        card.classList.remove('hidden');
+
+        if (headerTitle) {
+            headerTitle.innerHTML = '🛡️ Batas Aman Harian <span style="font-size:0.65rem;opacity:0.7;font-weight:normal;">(Sisa ' + daysRemaining + ' hari)</span>';
+        }
+        if (hintText) {
+            hintText.textContent = `Saldo ${formatCurrency(totalBalance)} ÷ ${daysRemaining} hari = ${formatCurrency(globalLimit)}/hari`;
+        }
+        if (text) text.innerHTML = `${formatCurrency(todayExpenses)} / ${formatCurrency(globalLimit)}`;
+        if (progressBar) {
+            progressBar.style.width = `${percentage}%`;
+            let color = '#10b981';
+            if (percentage >= 100) color = '#ef4444';
+            else if (percentage >= 75) color = '#f59e0b';
+            progressBar.style.background = color;
+        }
+    });
 }
 
 async function checkRecurringTransactions() {

@@ -119,20 +119,20 @@ const WIDGET_REGISTRY = {
     },
     'finance-budget': {
         id: 'finance-budget',
-        title: 'Budget & Arus Kas',
-        icon: '📉',
+        title: 'Batas Aman Harian',
+        icon: '🛡️',
         html: `<div class="card mt-md" id="global-budget-card" style="position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">📉</div>
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.03; font-size: 6rem; pointer-events: none;">🛡️</div>
                     <div class="budget-card-header" style="position: relative; z-index: 1; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px;">
-                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                            <span>📉</span> Budget Harian
+                        <h3 id="budget-title" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🛡️</span> Batas Aman Harian
                         </h3>
                         <span id="global-budget-text" class="text-muted" style="font-weight:bold; font-size: 0.9rem;">...</span>
                     </div>
                     <div class="progress-bar" style="position: relative; z-index: 1; margin: 15px 0;">
                         <div id="global-budget-progress" class="progress-fill" style="width: 0%"></div>
                     </div>
-                    <small class="text-muted budget-card-hint" style="position: relative; z-index: 1;">Total pengeluaran hari ini dari semua wallet.</small>
+                    <small id="budget-hint-text" class="text-muted budget-card-hint" style="position: relative; z-index: 1;">Sisa saldo dibagi hari tersisa sampai gajian tgl 1.</small>
                </div>`,
         init: () => { if (typeof initGlobalBudgetUI === 'function') initGlobalBudgetUI(); }
     },

@@ -44,18 +44,8 @@ ATURAN KETAT:
     };
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
-        if (!response.ok) throw new Error('Gagal menghubungi Gemini.');
-
-        const data = await response.json();
-        let tutorText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
+        const tutorText = await unifiedGeminiCall(requestBody);
+        
         if (!tutorText) throw new Error('Pakar sedang sibuk, tidak ada respons.');
 
         // Render result with "Mark as Learned" button

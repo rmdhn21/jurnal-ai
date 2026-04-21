@@ -365,7 +365,7 @@ ATURAN PENTING:
 - Maksimal 250 kata.`;
 
     try {
-        const requestBody = {
+        const payload = {
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: {
                 temperature: 0.8,
@@ -375,20 +375,7 @@ ATURAN PENTING:
             }
         };
 
-        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error?.message || 'Gagal menghubungi Gemini AI.');
-        }
-
-        const data = await response.json();
-        let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const aiText = await unifiedGeminiCall(payload);
 
         if (!aiText) throw new Error('Respon AI kosong.');
 

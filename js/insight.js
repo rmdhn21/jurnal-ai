@@ -173,27 +173,25 @@ async function getInsightFromAI(userData) {
 
     const API_URL = '$';
 
-    const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-    const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    try {
+        const payload = {
             contents: [{
                 role: "user",
                 parts: [{ text: `${INSIGHT_SYSTEM_PROMPT}\n\nDATA PENGGUNA:\n${userData}` }]
             }],
             generationConfig: { responseMimeType: "application/json" }
-        })
-    });
+        };
 
-    if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
-    if (!response.ok) throw new Error("Gagal menghubungkan ke Gemini AI");
+        const text = await unifiedGeminiCall(payload);
+        if (!text) throw new Error("Respon AI kosong");
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("Respon AI kosong");
-
-    return JSON.parse(text);
+        return JSON.parse(text);
+    } catch (error) {
+        if (error.message.includes('Quota')) {
+            throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
+        }
+        throw error;
+    }
 }
 
 function createInsightModalDOM() {

@@ -359,44 +359,23 @@ async function askAiCoach(taskId, exerciseName) {
     workoutState.loadingAi = taskId;
     renderWorkoutTab(workoutState.activeTab);
 
-    const url = `${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`;
-    const systemPrompt = "Kamu adalah pelatih fisik ahli sepak bola dan bola voli. User sedang berlatih di rumah (kamar) atau gym dengan alat terbatas. User butuh bantuan terkait latihan spesifik. Berikan jawaban berupa TIPS KEAMANAN atau ALTERNATIF GERAKAN yang ringkas, jelas, bahasa santai, maksimal 3 kalimat saja.";
-    const fullPrompt = `Saya sedang di menu latihan: ${exerciseName}. Kendala/Pertanyaan saya: ${userQuery}. Bantu saya Coach!`;
+    try {
+        const systemPrompt = "Kamu adalah pelatih fisik ahli sepak bola dan bola voli. User sedang berlatih di rumah (kamar) atau gym dengan alat terbatas. User butuh bantuan terkait latihan spesifik. Berikan jawaban berupa TIPS KEAMANAN atau ALTERNATIF GERAKAN yang ringkas, jelas, bahasa santai, maksimal 3 kalimat saja.";
+        const fullPrompt = `Saya sedang di menu latihan: ${exerciseName}. Kendala/Pertanyaan saya: ${userQuery}. Bantu saya Coach!`;
 
-    const delays = [1000, 2000, 4000];
-    let success = false;
+        const payload = {
+            contents: [{ parts: [{ text: fullPrompt }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+        };
 
-    for (let i = 0; i <= delays.length; i++) {
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: fullPrompt }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] }
-                })
-            });
+        const aiText = await unifiedGeminiCall(payload);
 
-            if (!response.ok) throw new Error('API request failed');
-
-            const data = await response.json();
-            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-            if (aiText) {
-                workoutState.aiResponses[taskId] = aiText.trim();
-                workoutState.aiQueries[taskId] = ''; // Clear input on success
-                success = true;
-                break;
-            }
-        } catch (error) {
-            console.warn(`Attempt ${i + 1} failed:`, error);
-            if (i < delays.length) {
-                await new Promise(res => setTimeout(res, delays[i]));
-            }
+        if (aiText) {
+            workoutState.aiResponses[taskId] = aiText.trim();
+            workoutState.aiQueries[taskId] = ''; // Clear input on success
         }
-    }
-
-    if (!success) {
+    } catch (error) {
+        console.error('Workout AI Error:', error);
         workoutState.aiResponses[taskId] = "Maaf Coach AI sedang gangguan. Coba lagi nanti ya!";
     }
 

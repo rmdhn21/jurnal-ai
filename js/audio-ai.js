@@ -182,27 +182,20 @@ const AudioAI = {
         const prompt = "Please provide an accurate, high-fidelity FULL TEXT transcription of this HSE (Health, Safety, and Environment) meeting or voice memo. Focus on technical terms relevant to Oil & Gas operations in Indonesia/English mix. If there are multiple speakers, try to distinguish them. Do not summarize, I need the FULL transcript.";
 
         try {
-            const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { text: prompt },
-                            { inline_data: { mime_type: mimeType, data: base64Data } }
-                        ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.1, // Low temperature for high factual accuracy
-                        topP: 0.95
-                    }
-                })
-            });
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inline_data: { mime_type: mimeType, data: base64Data } }
+                    ]
+                }],
+                generationConfig: {
+                    temperature: 0.1, // Low temperature for high factual accuracy
+                    topP: 0.95
+                }
+            };
 
-            if (!response.ok) throw new Error('AI API Error');
-
-            const data = await response.json();
-            const transcript = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const transcript = await unifiedGeminiCall(payload);
 
             if (transcript) {
                 textElement.innerText = transcript;

@@ -57,26 +57,10 @@ async function getAIResponse(journalText) {
     };
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (response.status === 429) throw new Error('Quota Exceeded: Terlalu banyak permintaan. Mohon tunggu sejenak.');
-        if (!response.ok) {
-            const error = await response.json();
-            console.error('API Error:', error);
-            throw new Error(error.error?.message || 'Gagal mendapatkan respon dari AI');
-        }
-
-        const data = await response.json();
-        let textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        let textResponse = await unifiedGeminiCall(requestBody);
 
         if (!textResponse) {
-            console.error('Empty response from AI:', data);
+            console.error('Empty response from AI');
             throw new Error('Respon AI kosong');
         }
 

@@ -68,18 +68,12 @@ window.showAiLessonScreen = async function(screenId, moduleName, prompt, onCompl
     }
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
-            })
-        });
+        const payload = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
+        };
 
-        if (!response.ok) throw new Error('API Error');
-        const result = await response.json();
-        const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal menghasilkan materi.';
+        const text = await unifiedGeminiCall(payload);
 
         // Save to cache
         if (cacheKey) await saveLearningData(cacheKey, text);
@@ -89,7 +83,10 @@ window.showAiLessonScreen = async function(screenId, moduleName, prompt, onCompl
     } catch (err) {
         console.error('AI Lesson Error:', err);
         document.getElementById('lesson-content-area').innerHTML = `<p style="color:#e53e3e;">❌ Gagal memuat materi. Coba lagi nanti.</p>
-        <button class="btn btn-secondary mt-sm" onclick="showAiLessonScreen('${screenId}', '${moduleName}', '${prompt.replace(/'/g, "\\'")}', ${onComplete}, '${moduleId}', true, ${onBack})">🔄 Coba Lagi</button>`;
+        <button class="btn btn-secondary mt-sm" id="lesson-retry-btn">🔄 Coba Lagi</button>`;
+        document.getElementById('lesson-retry-btn').onclick = () => {
+            showAiLessonScreen(screenId, moduleName, prompt, onComplete, moduleId, true, onBack);
+        };
     }
 }
 

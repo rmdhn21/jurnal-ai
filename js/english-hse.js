@@ -119,17 +119,8 @@ Format HANYA berupa JSON valid dengan struktur:
 }`;
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8 } })
-        });
-
-        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
-        if (!response.ok) throw new Error('API Error');
-
-        const data = await response.json();
-        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8 } };
+        let responseText = await unifiedGeminiCall(payload);
 
         if (responseText) {
             responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -386,21 +377,11 @@ DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code.`
     }
 
     try {
-        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                contents: [{ role: "user", parts: [{ text: prompt }] }], 
-                generationConfig: { temperature: 0.5, maxOutputTokens: 4096 } 
-            })
-        });
-
-        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu sejenak.');
-        if (!response.ok) throw new Error('API Error');
-
-        const data = await response.json();
-        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const payload = { 
+            contents: [{ role: "user", parts: [{ text: prompt }] }], 
+            generationConfig: { temperature: 0.5, maxOutputTokens: 4096 } 
+        };
+        let responseText = await unifiedGeminiCall(payload);
 
         if (responseText) {
             // Clean up backticks if model still sends them
@@ -471,17 +452,8 @@ Here is the HTML:
 ${currentJsaContentEn}`;
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
-        });
-
-        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
-        if (!response.ok) throw new Error('API Error');
-
-        const data = await response.json();
-        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } };
+        let responseText = await unifiedGeminiCall(payload);
 
         if (responseText) {
             responseText = responseText.replace(/```html/g, '').replace(/```/g, '').trim();
@@ -853,17 +825,8 @@ CRITICAL UI/CSS RULES: The output will be displayed on a dark-themed app. You MU
 DO NOT use markdown backticks (e.g. \`\`\`html). Output strictly the HTML code starting directly with the heading or first table.`;
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5 } })
-        });
-
-        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
-        if (!response.ok) throw new Error('API Error');
-
-        const data = await response.json();
-        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5 } };
+        let responseText = await unifiedGeminiCall(payload);
 
         if (responseText) {
             responseText = responseText.replace(/```html/g, '').replace(/```/g, '').trim();
@@ -916,17 +879,8 @@ Here is the HTML:
 ${currentRcaContentEn}`;
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
-        });
-
-        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
-        if (!response.ok) throw new Error('API Error');
-
-        const data = await response.json();
-        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } };
+        let responseText = await unifiedGeminiCall(payload);
 
         if (responseText) {
             responseText = responseText.replace(/```html/g, '').replace(/```/g, '').trim();
@@ -1106,20 +1060,11 @@ async function sendHseChatMessage() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: hseChatHistory,
-                generationConfig: { temperature: 0.3 } // Low temp for regulatory accuracy
-            })
-        });
-
-        if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu.');
-        if (!response.ok) throw new Error('API Error');
-
-        const data = await response.json();
-        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const payload = {
+            contents: hseChatHistory,
+            generationConfig: { temperature: 0.3 } // Low temp for regulatory accuracy
+        };
+        let responseText = await unifiedGeminiCall(payload);
 
         loadingBubble.remove();
 

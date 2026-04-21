@@ -85,14 +85,8 @@ window.lessonTools = {
         ${lessonText}`;
 
         try {
-            const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
-            });
-            if (response.status === 429) throw new Error('Quota Exceeded: Mohon tunggu sejenak.');
-            if (!response.ok) throw new Error('API Error');
-            const result = await response.json();
-            const summary = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal merangkum.';
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const summary = await unifiedGeminiCall(payload);
             targetEl.innerHTML = `<div style="background:var(--surface-hover);padding:15px;border-radius:10px;border-left:4px solid var(--primary);"><h4 style="margin-top:0;">📋 Rangkuman Cepat</h4>${window.formatAIText(summary)}</div>`;
         } catch(e) { targetEl.innerHTML = '<p class="text-danger">❌ Gagal merangkum.</p>'; }
     },
@@ -186,12 +180,8 @@ window.lessonTools = {
         ${lessonText}`;
 
         try {
-            const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
-            });
-            const result = await response.json();
-            const markdown = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const markdown = await unifiedGeminiCall(payload);
             
             localStorage.setItem(cacheKey, markdown);
             document.getElementById('mindmap-loading')?.remove();
@@ -288,12 +278,9 @@ window.lessonTools = {
         ${lessonText}`;
 
         try {
-            const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
-            });
-            const result = await response.json();
-            const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text.replace(/```json|```/g, '').trim();
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const jsonTextRaw = await unifiedGeminiCall(payload);
+            const jsonText = jsonTextRaw.replace(/```json|```/g, '').trim();
             const cards = JSON.parse(jsonText);
             
             localStorage.setItem(cacheKey, jsonText);

@@ -248,14 +248,6 @@ ATURAN KOMUNIKASI:
         }
     };
 
-    const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-    const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) throw new Error('API Error');
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.[1]?.text || data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, coba lagi.";
+    const text = await unifiedGeminiCall(requestBody);
+    return text || "Maaf, coba lagi.";
 }

@@ -146,23 +146,15 @@ PENTING:
     if (typeof setJarvisNeuralStatus === 'function') setJarvisNeuralStatus('✨ Merumuskan Respon Neural...', true);
 
     try {
-        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.2,
-                    responseMimeType: "application/json"
-                }
-            })
-        });
+        const payload = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.2,
+                responseMimeType: "application/json"
+            }
+        };
 
-        if (!response.ok) throw new Error('Gagal memproses ke intelijen Jarvis');
-
-        const result = await response.json();
-        const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        const jsonText = await unifiedGeminiCall(payload);
         const resultData = JSON.parse(jsonText);
         
         handleUnifiedJarvisResponse(resultData);

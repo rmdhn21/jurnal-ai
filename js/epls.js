@@ -399,20 +399,12 @@ Penjelasan: (jelaskan mengapa jawaban tersebut benar)
 Pastikan seluruh materi sangat detail, padat, and berkualitas tinggi setara buku Cambridge atau Oxford!`;
 
     try {
-        const response = await fetch(`${window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
-            })
-        });
+        const payload = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
+        };
 
-        if (response.status === 429) throw new Error('Quota Exceeded');
-        if (!response.ok) throw new Error('API Error');
-
-        const result = await response.json();
-        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal.';
+        const rawText = await unifiedGeminiCall(payload);
         
         // Save to cache
         localStorage.setItem(cacheKey, rawText);

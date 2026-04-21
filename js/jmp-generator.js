@@ -64,8 +64,8 @@ async function generateJMP() {
     loading.classList.remove('hidden');
     resultArea.classList.add('hidden');
 
-    // STRUCTURED PROMPT FOR 7-COLUMN OFFICIAL FORMAT
-    const systemPrompt = `Anda adalah Asisten Ahli K3 (HSSE Rig Officer) yang sangat teliti.
+    try {
+        const systemPrompt = `Anda adalah Asisten Ahli K3 (HSSE Rig Officer) yang sangat teliti.
 TUGAS: Buat Laporan Hazard Register JMP dlm format TABEL MARKDOWN dengan PERSIS 7 KOLOM (NO, LOKASI, DOKUMENTASI / FOTO, IDENTIFIKASI BAHAYA (HAZARD), RISK LEVEL, PENGENDALIAN RESIKO (MITIGASI), PIC).
 
 WAJIB GUNAKAN 10 KATEGORI ENERGI BAHAYA INI (JANGAN GUNAKAN KATEGORI LAIN):
@@ -92,39 +92,16 @@ ATURAN KONTEN:
 7. LARANGAN: JANGAN MENAMBAHKAN KOLOM LAIN SEPERTI "STATUS". JANGAN GUNAKAN KATEGORI BAHAYA SELAIN 10 DI ATAS.
 8. HANYA KELUARKAN TABEL SAJA.`;
 
-    const userPrompt = `Rute: ${route}\nTanggal: ${date}\nJarak: ${distTime}\nKondisi: ${genCond}\nTemuan Lapangan:\n${findings}`;
+        const userPrompt = `Rute: ${route}\nTanggal: ${date}\nJarak: ${distTime}\nKondisi: ${genCond}\nTemuan Lapangan:\n${findings}`;
 
-    const performAiCall = async () => {
-        const apiUrl = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
-        const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-                generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
-            })
-        });
+        const payload = {
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+        };
 
-        if (!response.ok) {
-            if (response.status === 429) throw new Error('Batas kuota tercapai. Tunggu sejenak.');
-            throw new Error(`Server Sibuk (${response.status})`);
-        }
-
-        return await response.json();
-    };
-
-    try {
-        let data;
-        try {
-            data = await performAiCall();
-        } catch (err) {
-            console.warn('Retrying AI call due to:', err.message);
-            await new Promise(r => setTimeout(r, 2000));
-            data = await performAiCall();
-        }
-
-        let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const text = await unifiedGeminiCall(payload);
+        
         if (!text) throw new Error('Respon AI kosong');
 
         // Render the official view instead of just raw Markdown
