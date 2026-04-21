@@ -96,7 +96,7 @@ function clearPDCForm() {
 async function stitchVerticalPDC(dataUrls, task, location) {
     const loadedImgs = await Promise.all(dataUrls.map(url => loadImagePDC(url)));
     const targetW = Math.max(...loadedImgs.map(img => img.width));
-    const borderWeight = 12;
+    const borderWeight = 6; // Thinner separator
     const heights = loadedImgs.map(img => (targetW / img.width) * img.height);
     const totalH = heights.reduce((a, b) => a + b, 0) + (borderWeight * (dataUrls.length - 1));
 
@@ -114,7 +114,7 @@ async function stitchVerticalPDC(dataUrls, task, location) {
         
         currentY += heights[i];
         if (i < loadedImgs.length - 1) {
-            ctx.fillStyle = '#111827';
+            ctx.fillStyle = '#ffffff'; // White separator (thick gap type)
             ctx.fillRect(0, currentY, targetW, borderWeight);
             currentY += borderWeight;
         }
@@ -127,7 +127,7 @@ function drawPDCWatermark(ctx, x, y, w, h) {
     const now = new Date();
     const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} - ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth()+1).padStart(2, '0')}/${now.getFullYear()}`;
     
-    ctx.font = `${Math.max(20, w/50)}px Inter, sans-serif`;
+    ctx.font = `${Math.max(20, w/50)}px "Times New Roman", serif`;
     ctx.textAlign = 'right';
     ctx.shadowColor = 'rgba(0,0,0,1)';
     ctx.shadowBlur = 8;
@@ -157,17 +157,17 @@ async function generatePDC() {
         const canvas = document.getElementById('pdc-canvas');
         const ctx = canvas.getContext('2d');
         const W = 2000;
-        const outerPadding = 12; 
-        const innerGap = 12;
+        const outerPadding = 45; // Bold outer frame
+        const innerGap = 10; // Clean thin gap
 
         // 1. Prepare Caption Text & Calculate Dynamic Height
         const ts = new Date();
         const dateFormatted = `${String(ts.getDate()).padStart(2, '0')}/${String(ts.getMonth() + 1).padStart(2, '0')}/${ts.getFullYear()}`;
         const finalCaption = `${task} - Rig ${unit} - ${location} (${dateFormatted})`;
         
-        const fontSize = Math.max(30, Math.min(60, W / 35));
-        const lineHeight = fontSize + 20;
-        ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+        const fontSize = Math.max(25, Math.min(48, W / 45)); // Reduced from 30/60
+        const lineHeight = fontSize + 15;
+        ctx.font = `700 ${fontSize}px "Times New Roman", serif`;
         
         // Measure lines to determine captionHeight
         const words = finalCaption.split(' ');
@@ -258,8 +258,8 @@ async function generatePDC() {
             canvas.height = H;
         }
 
-        // Fill background with Dark Color
-        ctx.fillStyle = '#111827';
+        // Fill background with Pure White
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, W, H);
 
         if (count === 1) {
@@ -306,10 +306,11 @@ async function generatePDC() {
         const captionDisplay = document.getElementById('pdc-caption-text');
         if (captionDisplay) captionDisplay.innerText = finalCaption;
         
-        ctx.fillStyle = '#111827';
-        ctx.fillRect(0, H - captionHeight - outerPadding, W, captionHeight + outerPadding);
+        // Fill final white caption bar
         ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+        ctx.fillRect(0, H - captionHeight - outerPadding, W, captionHeight + outerPadding);
+        ctx.fillStyle = '#000000';
+        ctx.font = `700 ${fontSize + 4}px "Times New Roman", serif`; // Reduced from +10
         ctx.textAlign = 'center';
         
         // Centered Multiline Wrapping (dynamic Y)
@@ -329,8 +330,14 @@ async function generatePDC() {
 }
 
 function drawPDCSlot(ctx, img, x, y, w, h, label) {
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(x, y, w, h);
+    
+    // Minimal Label Badge (Gallery Style)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillRect(x + 20, y + 20, label.length * 12 + 40, 40); // Reduced
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 14px "Times New Roman", serif'; // Reduced from 18px-ish
     
     // Maintain aspect ratio (Object-Fit Contain)
     const imgRatio = img.width / img.height;

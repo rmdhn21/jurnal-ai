@@ -5,6 +5,49 @@ let moodChart = null;
 let categoryChart = null;
 let categoryBarChart = null;
 
+// Standard categories used in the transaction form
+const STANDARD_CATEGORIES = [
+    'Gaji', 'Profit Trading/Investasi', 'Pemasukan Lainnya',
+    'Makan & Minum', 'Kebutuhan Harian/Bulanan', 'Transportasi',
+    'Tagihan & Utilitas', 'Tempat Tinggal', 'Tabungan Nikah',
+    'Edukasi & Pengembangan', 'Hiburan & Nongkrong',
+    'Sosial & Sedekah', 'Lain-lain / Tak Terduga'
+];
+
+/**
+ * Normalize a transaction's category value.
+ * If the category is not one of the standard categories, use the
+ * transaction's `category` field first; if that is also non-standard
+ * (e.g. equals the description or is free-form text), bucket it
+ * under 'Lain-lain / Tak Terduga'.
+ */
+function normalizeCategory(transaction) {
+    const cat = (transaction.category || '').trim();
+    // If it exactly matches a standard category, keep it
+    if (STANDARD_CATEGORIES.includes(cat)) return cat;
+    // Fuzzy match: check if the standard category is contained in the value or vice-versa (case-insensitive)
+    const lower = cat.toLowerCase();
+    for (const std of STANDARD_CATEGORIES) {
+        if (std.toLowerCase().includes(lower) || lower.includes(std.toLowerCase())) {
+            return std;
+        }
+    }
+    // Keyword heuristics
+    if (/makan|minum|kopi|bakso|nasi|jajan|snack|food|resto|warung|cafe/i.test(lower)) return 'Makan & Minum';
+    if (/transport|bensin|grab|gojek|ojek|bus|taxi|parkir|tol/i.test(lower)) return 'Transportasi';
+    if (/tagihan|listrik|air|internet|pulsa|token|pdam/i.test(lower)) return 'Tagihan & Utilitas';
+    if (/gaji|salary|upah|honor/i.test(lower)) return 'Gaji';
+    if (/tabung|nikah|saving/i.test(lower)) return 'Tabungan Nikah';
+    if (/sedekah|infaq|donasi|zakat|sosial|amal/i.test(lower)) return 'Sosial & Sedekah';
+    if (/hiburan|nongkrong|game|film|bioskop|langganan|spotify|netflix/i.test(lower)) return 'Hiburan & Nongkrong';
+    if (/belajar|kursus|buku|edukasi|udemy|course/i.test(lower)) return 'Edukasi & Pengembangan';
+    if (/kos|kontrakan|sewa|tinggal|rumah/i.test(lower)) return 'Tempat Tinggal';
+    if (/belanja|kebutuhan|sabun|shampoo|bulanan|harian/i.test(lower)) return 'Kebutuhan Harian/Bulanan';
+    if (/invest|trading|saham|crypto|profit|dividen/i.test(lower)) return 'Profit Trading/Investasi';
+    // Fallback
+    return cat || 'Lain-lain / Tak Terduga';
+}
+
 const MOOD_VALUES = {
     'great': 5,
     'good': 4,
@@ -373,10 +416,10 @@ async function initCategoryBarChart(period) {
 
     const expenseData = filteredTransactions.filter(t => t.type === 'expense');
     
-    // Group by category
+    // Group by NORMALIZED category (prevents descriptions leaking into chart labels)
     const categoryTotals = {};
     expenseData.forEach(t => {
-        const cat = t.category || 'Lainnya';
+        const cat = normalizeCategory(t);
         categoryTotals[cat] = (categoryTotals[cat] || 0) + t.amount;
     });
 
@@ -490,10 +533,10 @@ async function initCategoryChart(period) {
 
     const expenseData = filteredTransactions.filter(t => t.type === 'expense');
     
-    // Group by category
+    // Group by NORMALIZED category (prevents descriptions leaking into chart labels)
     const categoryTotals = {};
     expenseData.forEach(t => {
-        const cat = t.category || 'Lainnya';
+        const cat = normalizeCategory(t);
         categoryTotals[cat] = (categoryTotals[cat] || 0) + t.amount;
     });
 

@@ -1073,61 +1073,65 @@ function renderInteractiveFlashcards(containerId, dataArray) {
 
 // ===== PJSM (PRE-JOB SAFETY MEETING) GENERATOR =====
 
-const PJSM_SYSTEM_PROMPT = `Kamu adalah Senior HSSE Officer di Rig Pengeboran Pertamina yang sangat dihormati dan berpengalaman. Tugasmu adalah menyusun naskah lisan Pre-Job Safety Meeting (PJSM) atau Toolbox Talk untuk dibacakan di depan pekerja lapangan, termasuk kru yang lebih senior (orang tua).
+const PJSM_SYSTEM_PROMPT = `Kamu adalah Senior HSSE Officer di Rig Pengeboran Pertamina. Tugasmu menyusun naskah lisan PJSM yang REALISTIK dan PROFESIONAL.
 
-PENTING: Gunakan bahasa yang SOPAN, FORMAL, dan BERWIBAWA. JANGAN gunakan bahasa yang "sok asik" atau bahasa gaul anak muda. JANGAN melakukan improvisasi pada bagian yang sudah ditentukan templatenya.
+PENTING: Gunakan bahasa SOPAN dan TEGAS. Ikuti struktur persis di bawah ini.
 
-===== DATABASE KESELAMATAN (REFERENSI UTAMA) =====
+===== DATABASE KESELAMATAN (REFERENSI WAJIB) =====
 10 POTENSI BAHAYA: 1. GERAKAN, 2. ELEKTRIKAL, 3. BIOLOGI, 4. RADIASI, 5. SUARA, 6. TEMPERATUR, 7. ZAT KIMIA, 8. MEKANIKAL, 9. TEKANAN, 10. GAYA BERAT.
-10 ELEMEN CLSR: 01. Tools, 02. Line of Fire, 03. Hot Work, 04. Confined Space, 05. Powered System/LOTO, 06. Lifting, 07. Working at Height, 08. Ground Disturbance, 09. Water-Based, 10. Land Transport.
+10 ELEMEN CLSR: 01. Tools, 02. Line of Fire, 03. Hot Work, 04. Confined Space, 05. Powered System, 06. Lifting, 07. Working at Height, 08. Ground Disturbance, 09. Water-Based, 10. Land Transport.
 9 PERILAKU WAJIB: 1. PIP, 2. Kompeten, 3. Fit to Work, 4. APD Sesuai, 5. LMRA, 6. Lapor Anomali, 7. Permit SIKA, 8. Housekeeping, 9. Patuh CLSR.
 
-STRUKTUR NASKAH WAJIB (IKUTI TEMPLATE INI):
-1. PEMBUKAAN (Wajib Seperti Ini):
-"Assalamualaikum wr wb, dan Selamat pagi rekan rekan sekalian, Gimana kabarnya pagi ini? apakah sudah dilakukan DCUnya? Jika rekan rekan ada yang merasa kurang fit atau ada keluhan bisa langsung konfirmasi ke medis yang bertugas."
+STRUKTUR NASKAH (WAJIB):
+1. PEMBUKAAN & APRESIASI:
+"Assalamualaikum Warahmatullahi Wabarakatuh dan selamat [pagi/sore] bapak-bapak sekalian.
+Pertama-tama, mari kita panjatkan puji syukur kehadirat Allah SWT, Tuhan Yang Maha Esa, karena atas rahmat-Nya kita senantiasa diberikan kelancaran dan keselamatan dalam pekerjaan kita sehari hari.
+Tak lupa ucapan terima kasih kepada bapak-bapak semua untuk 12 jam sebelumnya sudah bekerja dengan aman, sudah bekerja dengan selamat, dan insyaallah akan terus terlanjut sampai 12 jam ke depan."
 
-2. FOKUS PEKERJAAN (Wajib Seperti Ini):
-"Sebelumnya saya izin meminta waktunya sebentar. pekerjaan kita hari ini adalah [SEBUTKAN DAFTAR PEKERJAAN]."
+2. TRANSISI & HANDOVER:
+"Selanjutnya mohon kesediannya kepada Pak Darmadi selaku PA untuk menyampaikan apabila ada handover atau serah terima dari kru sebelumnya atau shift pagi/malam, dan juga kepada Pak Faruq selaku AA atau area authority untuk penyampaian program kerja kita selama 12 jam ke depan. Kepada Pak Darmadi atau Pak Faruq saya persilakan."
 
-3. BAHAYA & CLSR:
-"ada [JUMLAH] bahaya utama pada pekerjaan kita hari ini:"
-- Gunakan format: * Bahaya Nomor X: [NAMA BAHAYA]! [EMOJI]
-- Pastikan nama bahaya SESUAI dengan 10 POTENSI BAHAYA di atas.
-- Jelaskan hubungan bahaya tsb dengan elemen CLSR yang relevan secara singkat dan teknis.
-- Gunakan instruksi tegas (Visualisasi): **STOP!**, **CEK!**, **PASTIKAN!**, **JAUHI!**.
+3. TERIMA KASIH & PROGRAM KERJA:
+"Terima kasih atas penyampaian dari Pak Faruq dan masukan dari bapak-bapak sekalian. Izin bapak-bapak, program kerja kita hari ini adalah [SEBUTKAN DAFTAR PEKERJAAN]."
+- Tekankan kembali agar SIKA (Surat Izin Kerja Aman) sudah ditandatangani dan divalidasi sesuai 9 Perilaku Wajib poin ke-7.
 
-4. MNEMONIK (Wajib Seperti Ini):
-"selalu Ingat 3T kita: Tahu Pekerjaan, Tahu Bahaya, dan Tahu Mitigasinya! serta 3M."
+4. ANALISIS BAHAYA & PESAN KUSTOM:
+- Identifikasi bahaya pekerjaan dari 10 POTENSI BAHAYA.
+- Hubungkan mitigasi dengan elemen CLSR yang relevan.
+- SISIPKAN "Pesan Tambahan Kustom" jika ada. Gunaan Highlight (==teks==) untuk bagian ini agar menonjol.
+- Gunakan instruksi: **PASTIKAN!**, **CEK!**, **JAUHI!**.
 
-5. ZERO TOLERANCE:
-"4. ZERO TOLERANCE 🚫🛑
-'Untuk pekerjaan [PEKERJAAN] ini, ada satu hal yang harus diperhatikan yaitu [SEBUTKAN HAL PALING KRITIS].'"
+5. PESAN/SLOGAN SAFETY DYNAMIS:
+"Rekan-rekan sekalian, mari kita selalu terapkan [PILIH SALAH SATU SETIAP GENERATE: HSSE Golden Rules (Patuh, Intervensi, Peduli), Slogan 3T3M (Tahu Pekerjaan, Bahaya, Mitigasi & Mengetahui, Memahami, Melaksanakan), atau Prinsip TEMAN KARIB (Teman Kita Ingatkan Risiko)]."
+- Jelaskan singkat makna slogan tersebut dalam konteks pekerjaan hari ini.
+- Ingat poin 9 Perilaku Wajib: Patuh pada aturan.
 
-6. 9 PERILAKU WAJIB (Fokus Hari Ini):
-"5. 9 PERILAKU WAJIB (Fokus Hari Ini) 🦺🧤
-adapun dari 9 Perilaku Wajib yang ingin saya garis bawahi yaitu [PILIH SALAH SATU DARI 9 POIN].
-- Tambahkan instruksi APD spesifik untuk pekerjaan tersebut menggunakan kata aksi **PASTIKAN!** dan **CEK!**."
+6. PENUTUP & DOA (Wajib Seperti Ini):
+"Sebelum kita mulai pekerjaan kita hari ini ada baiknya, kita berdoa menurut agama dan kepercayaan masing-masing agar pekerjaan hari ini berjalan lancar, selamat, dan berkah. Berdoa dipersilahkan.
 
-7. PENUTUP & DOA (Wajib Seperti Ini):
-"6. PENUTUP & DOA 🙏✨
-'Baik, mungkin itu saja dari saya, waktu dan tempat saya kembalikan kepada bapak mandor'"
+(Berdoa)
+
+Berdoa selesai. Wabillahi taufik walhidayah wassalamualaikum warahmatullahi wabarakatuh."
 
 ATURAN OUTPUT:
-- Gunakan Bold (**) untuk istilah teknis, bahaya, dan perintah kritis.
-- Gunakan bullet points (-) untuk list bahaya.
+- Gunakan Bold (**) untuk poin penting.
+- Gunakan Highlight (==teks==) untuk poin-poin kunci yang perlu DIHAFAL atau DIBACA DENGAN PENEKANAN agar bapak lebih mudah menghafalnya.
 - JANGAN gunakan heading (#).
-- Naskah harus terasa wajar jika dibacakan secara lisan.`;
+- Naskah harus mengalir alami secara lisan.`;
 
 function formatPJSMContent(text) {
     if (!text) return '';
     
     // 1. Basic Markdown Bold: **text** -> <strong>text</strong>
-    // We add a specific color to make it pop but still readable
     let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #e53e3e;">$1</strong>');
     
-    // 2. Preserve newlines by turning them into <br> 
-    // This allows us to use innerHTML while keeping the "oral script" spacing
-    formatted = formatted.replace(/\n/g, '<br>');
+    // 2. Highlight text for memorization: ==text== -> <mark>text</mark>
+    // We use a specific vivid yellow with dark text for high visibility
+    formatted = formatted.replace(/==(.*?)==/g, '<mark style="background-color: #fef08a; color: #1a202c; padding: 2px 4px; border-radius: 4px; font-weight: bold;">$1</mark>');
+    
+    // 3. Preserve newlines by turning them into double <br> for breathing space
+    formatted = formatted.replace(/\n\n/g, '<br><br><div style="height:10px;"></div>');
+    formatted = formatted.replace(/\n/g, '<br><br>');
     
     return formatted;
 }
@@ -1162,12 +1166,26 @@ async function generatePJSM(workDescOverride = null) {
     btn.textContent = '⏳ Generating...';
 
     try {
+        const aaName = document.getElementById('pjsm-aa-input')?.value || 'Pak Faruq';
+        const paName = document.getElementById('pjsm-pa-input')?.value || 'Pak Darmadi';
+        const customMsg = document.getElementById('pjsm-custom-msg')?.value?.trim() || '';
+        const shiftInput = document.querySelector('input[name="pjsm-shift-input"]:checked');
+        const shiftName = shiftInput ? shiftInput.value : 'Siang';
+
         const payload = {
             systemInstruction: { parts: [{ text: PJSM_SYSTEM_PROMPT }] },
             contents: [{
                 role: "user",
                 parts: [{
-                    text: `DAFTAR PEKERJAAN HARI INI:\n${workList}\n\nBuatkan naskah PJSM lengkap sesuai struktur 6 bagian.`
+                    text: `DATA INPUT:
+- DAFTAR PEKERJAAN: ${workList}
+- NAMA AA: ${aaName}
+- NAMA PA: ${paName}
+- SHIFT KERJA: ${shiftName}
+- PESAN TAMBAHAN KUSTOM: ${customMsg}
+
+Buatkan naskah PJSM lengkap untuk shift ${shiftName}. Wajib masukkan nama ${aaName} dan ${paName}. 
+Jika ada PESAN TAMBAHAN KUSTOM, sisipkan di bagian Analisis Bahaya dengan format highlight ==teks==.`
                 }]
             }],
             generationConfig: {
@@ -1266,133 +1284,141 @@ function stopSpeakPJSM() {
 
 function exportPJSMToPDF() {
     const content = document.getElementById('pjsm-content');
-    if (!content || !content.textContent || typeof html2pdf === 'undefined') {
-        alert('Gagal mengekspor: Naskah kosong atau library PDF belum termuat.');
+    if (!content || !content.innerText) {
+        alert('Naskah PJSM belum digenerate.');
         return;
     }
 
-    // Create a temporary wrapper element for the PDF layout
-    const wrapper = document.createElement('div');
-    wrapper.style.padding = '0px'; // Set to 0 because we will rely on jsPDF margins instead
-    wrapper.style.fontFamily = 'Arial, sans-serif';
-    wrapper.style.color = '#2d3748';
-    wrapper.style.lineHeight = '1.6';
+    const workInput = document.getElementById('pjsm-work-input')?.value || 'Daily Operation';
+    const firstLine = workInput.split('\n')[0].substring(0, 40);
+    const title = `PJSM: ${firstLine}`;
     
-    // Add Company Logo / Header
-    const header = document.createElement('div');
-    header.style.borderBottom = '3px solid #3182ce';
-    header.style.marginBottom = '20px';
-    header.style.paddingBottom = '10px';
-    header.style.textAlign = 'center';
-    header.innerHTML = `
-        <h2 style="margin: 0; color: #3182ce; font-size: 24px;">HSE DEPARTMENT</h2>
-        <h3 style="margin: 5px 0 0 0; color: #4a5568; font-size: 16px;">Pre-Job Safety Meeting (PJSM) / Toolbox Talk Document</h3>
-    `;
-    wrapper.appendChild(header);
+    const printWindow = window.open('', '_blank', 'height=900,width=1100');
+    if (!printWindow) {
+        alert('Pop-up terblokir! Silakan izinkan pop-up.');
+        return;
+    }
 
-    // Add Metadata (Date and Time)
-    const dateSection = document.createElement('div');
-    dateSection.style.marginBottom = '25px';
-    dateSection.style.fontSize = '14px';
-    dateSection.style.color = '#718096';
-    
     const now = new Date();
     const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    
-    dateSection.innerHTML = `
-        <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td style="width: 150px; font-weight: bold;">Tanggal</td>
-                <td>: ${dateStr}</td>
-            </tr>
-            <tr>
-                <td style="font-weight: bold;">Waktu Terbit</td>
-                <td>: ${timeStr} WIB</td>
-            </tr>
-        </table>
-    `;
-    wrapper.appendChild(dateSection);
 
-    // Add Content Box
-    const bodyContainer = document.createElement('div');
-    
-    // Use innerHTML and handle the bolding properly for the PDF
-    // We split by line breaks to maintain page break logic
-    const lines = content.innerHTML.split(/<br\s*\/?>/i);
-    lines.forEach(line => {
-        const trimmedLine = line.trim();
-        if (trimmedLine === '') {
-            const spacer = document.createElement('div');
-            spacer.style.height = '8px';
-            bodyContainer.appendChild(spacer);
-        } else {
-            const p = document.createElement('p');
-            p.style.fontSize = '12pt';
-            p.style.margin = '0 0 6pt 0';
-            p.style.pageBreakInside = 'avoid';
-            
-            // Re-apply the innerHTML to keep bolding
-            p.innerHTML = line; 
-            
-            // Adjust the bold color for PDF printing clarity (using a professional dark blue/black)
-            const strongs = p.querySelectorAll('strong');
-            strongs.forEach(s => s.style.setProperty('color', '#2c5282', 'important'));
-            
-            bodyContainer.appendChild(p);
-        }
-    });
-    
-    wrapper.appendChild(bodyContainer);
-    
-    // Add Footer Signature Line (Optional)
-    const footer = document.createElement('div');
-    footer.style.marginTop = '40px';
-    footer.innerHTML = `
-        <table style="width: 100%; text-align: center; margin-top: 50px;">
-            <tr>
-                <td style="width: 50%;">
-                    <p style="margin-bottom: 60px;">Disiapkan Oleh,</p>
-                    <p style="text-decoration: underline; font-weight: bold;">HSSE Officer / Supervisor</p>
-                </td>
-                <td style="width: 50%;">
-                    <p style="margin-bottom: 60px;">Diketahui Oleh,</p>
-                    <p style="text-decoration: underline; font-weight: bold;">Company Man / Rig Manager</p>
-                </td>
-            </tr>
-        </table>
-    `;
-    wrapper.appendChild(footer);
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>${title}</title>
+            <style>
+                @page { size: A4 portrait; margin: 15mm; }
+                body {
+                    font-family: 'Times New Roman', Times, serif;
+                    color: #000;
+                    background: #fff;
+                    margin: 0; padding: 0;
+                    line-height: 1.6;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .document-wrapper { max-width: 100%; margin: 0 auto; }
+                .header {
+                    background: #fff;
+                    padding: 20px 0;
+                    text-align: center;
+                    margin-bottom: 25px;
+                    border-bottom: 3px solid #000;
+                    color: #000;
+                }
+                .header h2 { font-size: 20pt; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 1px; }
+                .header h3 { font-size: 12pt; font-weight: 400; color: #000; margin: 5px 0 0 0; opacity: 1; }
+                
+                .meta-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 25px;
+                    border: 1.2px solid #000;
+                    background: #fff;
+                }
+                .meta-table td { padding: 8px 15px; border: 1.2px solid #000; vertical-align: top; }
+                .meta-label { font-size: 8pt; color: #444; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+                .meta-value { font-size: 10.5pt; font-weight: 700; color: #000; }
+                
+                .content-body { font-size: 11pt; color: #000; padding: 0 10px; }
+                .content-body strong { color: #000; text-decoration: underline; font-weight: 700; }
+                
+                .footer-table {
+                    width: 100%;
+                    text-align: center;
+                    font-size: 10.5pt;
+                    margin-top: 70px;
+                    border-collapse: collapse;
+                    page-break-inside: avoid;
+                }
+                .footer-table td { border: 1px solid #000; padding: 20px 10px; }
+                
+                .watermark {
+                    margin-top: 70px; text-align: center; font-size: 8.5pt; color: #000; 
+                    font-weight: 600;
+                    border-top: 2px solid #000; padding-top: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="document-wrapper">
+                <div class="header">
+                    <h2>HSE DEPARTMENT</h2>
+                    <h3>PRE-JOB SAFETY MEETING (PJSM) / TOOLBOX TALK</h3>
+                </div>
 
-    // html2pdf Options
-    const opt = {
-        margin:       [0.5, 0.5, 0.5, 0.5], // Top, Left, Bottom, Right margins (in inches)
-        filename:     `PJSM_Rig_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] }
-    };
+                <table class="meta-table">
+                    <tr>
+                        <td style="width: 60%;">
+                            <div class="meta-label">Topic / Work Description</div>
+                            <div class="meta-value">${workInput}</div>
+                        </td>
+                        <td style="width: 40%;">
+                            <div class="meta-label">Date & Time</div>
+                            <div class="meta-value">${dateStr}, ${timeStr} WITA</div>
+                        </td>
+                    </tr>
+                </table>
 
-    // Change Button State during PDF Generation
-    const btn = document.getElementById('export-pjsm-pdf-btn');
-    const originalText = btn.textContent;
-    btn.textContent = '⏳ Mengekspor...';
-    btn.disabled = true;
+                <div class="content-body">
+                    ${content.innerHTML}
+                </div>
 
-    // Trigger PDF Export
-    html2pdf().set(opt).from(wrapper).save().then(() => {
-        btn.textContent = '✅ Berhasil!';
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }, 3000);
-    }).catch(err => {
-        console.error('PDF Export Error:', err);
-        alert('Gagal memproses file PDF.');
-        btn.textContent = originalText;
-        btn.disabled = false;
-    });
+                <table class="footer-table">
+                    <tr>
+                        <td style="width: 50%;">
+                            <p>Disiapkan Oleh,</p>
+                            <div style="height: 100px;"></div>
+                            <p><strong>(..................................)</strong></p>
+                            <p>HSSE Officer / Supervisor</p>
+                        </td>
+                        <td style="width: 50%;">
+                            <p>Diketahui Oleh,</p>
+                            <div style="height: 100px;"></div>
+                            <p><strong>(..................................)</strong></p>
+                            <p>Company Man / Rig Manager</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="watermark">
+                    Generated via Jurnal AI - Professional Field Systems<br>
+                    Official HSE Professional Documentation - Certified System.
+                </div>
+            </div>
+            <script>
+                window.onload = () => {
+                    setTimeout(() => {
+                        window.print();
+                        window.close();
+                    }, 800);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 
 async function savePJSMToLibrary() {
@@ -1458,9 +1484,700 @@ document.addEventListener('DOMContentLoaded', () => {
     if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportPJSMToPDF);
     if (saveBtn) saveBtn.addEventListener('click', savePJSMToLibrary);
 
-    // Preload voices for TTS
-    if (window.speechSynthesis) {
-        window.speechSynthesis.getVoices();
-    }
+    // Rig Checklist
+    const generateCbBtn = document.getElementById('generate-checklist-btn');
+    if (generateCbBtn) generateCbBtn.addEventListener('click', generateRigChecklist);
+    
+    const copyCbBtn = document.getElementById('copy-checklist-btn');
+    if (copyCbBtn) copyCbBtn.addEventListener('click', copyRigChecklist);
+    
+    const exportCbBtn = document.getElementById('export-checklist-pdf-btn');
+    if (exportCbBtn) exportCbBtn.addEventListener('click', exportRigChecklistPDF);
 });
+
+// ===== RIG SAFETY CHECKLIST GENERATOR (V4 - SMART TEMPLATE) =====
+
+const RIG_TEMPLATES = {
+    'Hoist H-25': {
+        items: [
+            { type: 'bop', label: 'Function Test BOP (Open-Close)', bopType: 'Pipe Ram', time: '3' },
+            { type: 'acc', label: 'Pressure Test Accumulator', psi: '3000', hold: '13' },
+            { type: 'simple', label: 'Function Test Crown O Matic' },
+            { type: 'surface', label: 'Pressure Test Surface Line & BPM', psi: '1100', hold: '10' },
+            { type: 'grounding', label: 'Pengukuran Grounding', hoist: '0.15', equip: '0.94', genset: '0.24', porta: '1.0' },
+            { type: 'simple', label: 'Instrument Driller Console' },
+            { type: 'simple', label: 'Function Test Fire Pump' },
+            { type: 'simple', label: 'Grating Mud Tank' }
+        ],
+        notes: [
+             { type: 'aa', label: 'AA SG Tersedia', sg: '1.01', vol: '200', loc: 'mud tank' }
+        ]
+    },
+    'Hoist L-350': {
+        items: [
+            { type: 'bop', label: 'Function Double ram BOP (Open-Close)', bopType: 'Double Ram', time: '3' },
+            { type: 'acc', label: 'Pressure Test Accumulator', psi: '3000', hold: '9' },
+            { type: 'simple', label: 'Function Test Crown O Matic' },
+            { type: 'simple', label: 'Instrumen Driller Console' },
+            { type: 'surface', label: 'Pressure Test Surface Line', psi: '1000', hold: '5' },
+            { type: 'grounding', label: 'Pengukuran Grounding', hoist: '0.26', equip: '0.37', genset: '0.44', porta: '0.46' },
+            { type: 'simple', label: 'Terpasang Pagar di Area Working Floor' },
+            { type: 'simple', label: 'Grating Mud tank' },
+            { type: 'simple', label: 'Tersedia Fix Gas Detector' },
+            { type: 'simple', label: 'Tersedia Fire Truck' }
+        ],
+        notes: [
+            { type: 'aa', label: 'AA SG Tersedia', sg: '1.01', vol: '120', loc: 'mud tank' },
+            { type: 'tb', label: 'Travelling Block Check', dist: '2' }
+        ]
+    }
+};
+
+let checklistRawResult = ''; 
+let rigChecklistPhotos = {}; // itemKey -> [base64]
+
+// Dynamic Badge & UI logic
+document.addEventListener('DOMContentLoaded', () => {
+    const screen = document.getElementById('hse-rig-checklist-screen');
+    if (!screen) return;
+
+    const rigSelect = document.getElementById('checklist-rig-name');
+    const saveLibBtn = document.getElementById('save-rig-lib-btn');
+
+    if (rigSelect) {
+        rigSelect.addEventListener('change', () => {
+            rigChecklistPhotos = {}; // Reset photos when rig changes
+            renderRigChecklistItems(rigSelect.value);
+        });
+        // Initial render
+        renderRigChecklistItems(rigSelect.value);
+    }
+
+    if (saveLibBtn) saveLibBtn.addEventListener('click', saveRigChecklistToLibrary);
+
+    // Set default date to today
+    const dateInput = document.getElementById('checklist-date');
+    if (dateInput) dateInput.value = getTodayString();
+});
+
+function renderRigChecklistItems(rigName) {
+    const container = document.getElementById('rig-checklist-items-container');
+    const notesContainer = document.getElementById('rig-notes-section-container');
+    if (!container || !notesContainer) return;
+
+    const template = RIG_TEMPLATES[rigName] || RIG_TEMPLATES['Hoist L-350'];
+    
+    // 1. Render Main Items
+    let itemsHtml = '';
+    template.items.forEach((item, idx) => {
+        itemsHtml += `
+            <div class="rig-check-item" data-type="${item.type}" data-key="main-${idx}">
+                <div class="rig-check-header">
+                    <label class="rig-check-label">
+                        <input type="checkbox" class="rig-cb" data-idx="${idx}" checked> 
+                        <strong>${idx+1}.</strong> ${item.label}
+                    </label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="rig-photo-btn" onclick="triggerRigPhotoUpload('main-${idx}')">📷</button>
+                        <span class="rig-badge rig-badge-ok" id="badge-${idx}">✅ Baik</span>
+                    </div>
+                </div>
+                ${renderItemInputs(item, idx)}
+                <div id="preview-main-${idx}" class="rig-photo-preview"></div>
+                <input type="file" id="input-main-${idx}" class="hidden" accept="image/*" onchange="handleRigPhotoUpload(this, 'main-${idx}')">
+            </div>
+        `;
+    });
+    container.innerHTML = itemsHtml;
+
+    // 2. Render Notes Section
+    let notesHtml = '<div class="card" style="border-left: 4px solid #10b981;"><h4 style="margin: 0 0 12px 0; font-size: 0.95rem;">📝 Notes / Catatan Standar</h4>';
+    template.notes.forEach((note, idx) => {
+        notesHtml += renderNoteInputs(note, idx);
+    });
+    notesHtml += '</div>';
+    notesContainer.innerHTML = notesHtml;
+
+    // Attach listeners to new checkboxes
+    container.querySelectorAll('.rig-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const idx = cb.dataset.idx;
+            const badge = document.getElementById(`badge-${idx}`);
+            if (badge) {
+                if (cb.checked) {
+                    badge.textContent = '✅ Baik';
+                    badge.className = 'rig-badge rig-badge-ok';
+                } else {
+                    badge.textContent = '⚠️ Temuan';
+                    badge.className = 'rig-badge rig-badge-fail';
+                }
+            }
+        });
+    });
+}
+
+function renderItemInputs(item, idx) {
+    if (item.type === 'bop') {
+        return `
+            <div class="rig-check-inputs">
+                <select class="input input-sm rsc-bop-type">
+                    <option value="Pipe Ram" ${item.bopType === 'Pipe Ram' ? 'selected' : ''}>Pipe Ram</option>
+                    <option value="Double Ram" ${item.bopType === 'Double Ram' ? 'selected' : ''}>Double Ram</option>
+                </select>
+                <input type="text" class="input input-sm rsc-bop-time" value="${item.time}" style="width:60px;"> <span class="input-unit">detik</span>
+            </div>
+        `;
+    }
+    if (item.type === 'acc') {
+        return `
+            <div class="rig-check-inputs">
+                <input type="text" class="input input-sm rsc-acc-psi" value="${item.psi}" style="width:70px;"> <span class="input-unit">psi /</span>
+                <input type="text" class="input input-sm rsc-acc-hold" value="${item.hold}" style="width:50px;"> <span class="input-unit">menit</span>
+            </div>
+        `;
+    }
+    if (item.type === 'surface') {
+        return `
+            <div class="rig-check-inputs">
+                <input type="text" class="input input-sm rsc-surface-psi" value="${item.psi}" style="width:70px;"> <span class="input-unit">psig /</span>
+                <input type="text" class="input input-sm rsc-surface-hold" value="${item.hold}" style="width:50px;"> <span class="input-unit">menit</span>
+            </div>
+        `;
+    }
+    if (item.type === 'grounding') {
+        return `
+            <div class="rig-check-inputs" style="flex-wrap: wrap;">
+                <span class="input-unit">Hoist</span> <input type="text" class="input input-sm rsc-gnd-hoist" value="${item.hoist}" style="width:55px;"> <span class="input-unit">Ω</span>
+                <span class="input-unit" style="margin-left:5px;">Equip</span> <input type="text" class="input input-sm rsc-gnd-equip" value="${item.equip}" style="width:55px;"> <span class="input-unit">Ω</span>
+            </div>
+            <div class="rig-check-inputs" style="margin-top: 4px; flex-wrap: wrap;">
+                <span class="input-unit">Genset</span> <input type="text" class="input input-sm rsc-gnd-genset" value="${item.genset}" style="width:55px;"> <span class="input-unit">Ω</span>
+                <span class="input-unit" style="margin-left:5px;">Portacamp</span> <input type="text" class="input input-sm rsc-gnd-porta" value="${item.porta}" style="width:55px;"> <span class="input-unit">Ω</span>
+            </div>
+        `;
+    }
+    return ''; 
+}
+
+function renderNoteInputs(note, idx) {
+    const key = `note-${idx}`;
+    if (note.type === 'aa') {
+        return `
+            <div class="rig-check-item" data-key="${key}">
+                <div class="rig-check-header">
+                    <label class="rig-check-label"><input type="checkbox" class="rsc-aa-toggle" checked> ${note.label}</label>
+                    <button class="rig-photo-btn" onclick="triggerRigPhotoUpload('${key}')">📷</button>
+                </div>
+                <div class="rig-check-inputs">
+                    <select class="input input-sm rsc-aa-type" style="width: 80px;">
+                        <option value="1.01" ${note.sg === '1.01' ? 'selected' : ''}>SG 1.01</option>
+                        <option value="1.05" ${note.sg === '1.05' ? 'selected' : ''}>SG 1.05</option>
+                        <option value="1.10" ${note.sg === '1.10' ? 'selected' : ''}>SG 1.10</option>
+                    </select>
+                    <input type="text" class="input input-sm rsc-aa-vol" value="${note.vol}" style="width:60px;"> <span class="input-unit">bbls</span>
+                    <span class="input-unit" style="margin-left:5px;">di</span>
+                    <input type="text" class="input input-sm rsc-aa-loc" value="${note.loc}" style="width:90px;">
+                </div>
+                <div id="preview-${key}" class="rig-photo-preview"></div>
+                <input type="file" id="input-${key}" class="hidden" accept="image/*" onchange="handleRigPhotoUpload(this, '${key}')">
+            </div>
+        `;
+    }
+    if (note.type === 'tb') {
+        return `
+            <div class="rig-check-item" data-key="${key}">
+                <div class="rig-check-header">
+                    <label class="rig-check-label"><input type="checkbox" class="rsc-tb-toggle" checked> ${note.label}</label>
+                    <button class="rig-photo-btn" onclick="triggerRigPhotoUpload('${key}')">📷</button>
+                </div>
+                <div class="rig-check-inputs">
+                    <span class="input-unit">Berhenti</span>
+                    <input type="text" class="input input-sm rsc-tb-dist" value="${note.dist}" style="width:50px;"> <span class="input-unit">meter di bawah crown block</span>
+                </div>
+                <div id="preview-${key}" class="rig-photo-preview"></div>
+                <input type="file" id="input-${key}" class="hidden" accept="image/*" onchange="handleRigPhotoUpload(this, '${key}')">
+            </div>
+        `;
+    }
+    return '';
+}
+
+// Photo Handlers
+function triggerRigPhotoUpload(key) {
+    document.getElementById(`input-${key}`).click();
+}
+
+function handleRigPhotoUpload(input, key) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (!rigChecklistPhotos[key]) rigChecklistPhotos[key] = [];
+            rigChecklistPhotos[key].push(e.target.result);
+            renderRigPhotoPreviews(key);
+            input.value = ''; // Reset input
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function renderRigPhotoPreviews(key) {
+    const list = rigChecklistPhotos[key] || [];
+    const container = document.getElementById(`preview-${key}`);
+    if (!container) return;
+
+    container.innerHTML = list.map((src, idx) => `
+        <div class="rig-thumb-container">
+            <img src="${src}">
+            <div class="rig-thumb-remove" onclick="removeRigPhoto('${key}', ${idx})">✕</div>
+        </div>
+    `).join('');
+}
+
+function removeRigPhoto(key, idx) {
+    if (rigChecklistPhotos[key]) {
+        rigChecklistPhotos[key].splice(idx, 1);
+        renderRigPhotoPreviews(key);
+    }
+}
+
+async function generateRigChecklist() {
+    const rigName = document.getElementById('checklist-rig-name')?.value || 'Hoist L-350';
+    const location = document.getElementById('checklist-location')?.value || 'ST-223';
+    const dateVal = document.getElementById('checklist-date')?.value || getTodayString();
+    const timeStr = document.getElementById('checklist-time')?.value || '20.00 s/d 23.00 WITA';
+    const program = document.getElementById('checklist-program')?.value || 'Daily Activity';
+    
+    let dateStr = dateVal;
+    try {
+        const d = new Date(dateVal);
+        dateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch(e) {}
+
+    const resultArea = document.getElementById('checklist-result-area');
+    const content = document.getElementById('checklist-content');
+    const btn = document.getElementById('generate-checklist-btn');
+
+    const reports = [];
+    const items = document.querySelectorAll('#rig-checklist-items-container .rig-check-item');
+    
+    items.forEach((itemEl, idx) => {
+        const cb = itemEl.querySelector('.rig-cb');
+        if (cb && cb.checked) {
+            const type = itemEl.dataset.type;
+            const key = itemEl.dataset.key;
+            const label = cb.parentElement.textContent.replace(/^\s*\d+\.\s*/, '').trim();
+            const hasPhoto = rigChecklistPhotos[key] && rigChecklistPhotos[key].length > 0;
+            const photoIndicator = hasPhoto ? " [Terlampir Foto]" : "";
+
+            if (type === 'bop') {
+                const bopType = itemEl.querySelector('.rsc-bop-type')?.value;
+                const time = itemEl.querySelector('.rsc-bop-time')?.value;
+                reports.push(`${label} (${bopType}) ${time} Detik, Hasil Baik${photoIndicator}`);
+            } else if (type === 'acc') {
+                const psi = itemEl.querySelector('.rsc-acc-psi')?.value;
+                const hold = itemEl.querySelector('.rsc-acc-hold')?.value;
+                reports.push(`${label} ${psi} psi/${hold} menit, hasil baik${photoIndicator}`);
+            } else if (type === 'surface') {
+                const psi = itemEl.querySelector('.rsc-surface-psi')?.value;
+                const hold = itemEl.querySelector('.rsc-surface-hold')?.value;
+                reports.push(`${label} ${psi} psig/${hold} menit, hasil baik${photoIndicator}`);
+            } else if (type === 'grounding') {
+                const h = itemEl.querySelector('.rsc-gnd-hoist')?.value;
+                const e = itemEl.querySelector('.rsc-gnd-equip')?.value;
+                const g = itemEl.querySelector('.rsc-gnd-genset')?.value;
+                const p = itemEl.querySelector('.rsc-gnd-porta')?.value;
+                reports.push(`${label} hoist ${h} ohm, Equipment ${e} ohm, Genset ${g} ohm & Portacamp ${p} ohm, Hasil Baik${photoIndicator}`);
+            } else {
+                reports.push(`${label}, hasil baik${photoIndicator}`);
+            }
+        }
+    });
+
+    const notes = [];
+    const aaToggle = document.querySelector('.rsc-aa-toggle');
+    if (aaToggle && aaToggle.checked) {
+        const parent = aaToggle.closest('.rig-check-item');
+        const key = parent.dataset.key;
+        const type = parent.querySelector('.rsc-aa-type')?.value;
+        const vol = parent.querySelector('.rsc-aa-vol')?.value;
+        const loc = parent.querySelector('.rsc-aa-loc')?.value;
+        const hasPhoto = rigChecklistPhotos[key] && rigChecklistPhotos[key].length > 0;
+        notes.push(`- Tersedia AA SG ${type} di ${loc} : ${vol} bbls${hasPhoto ? " (Dok. Foto Ada)" : ""}`);
+    }
+
+    const tbToggle = document.querySelector('.rsc-tb-toggle');
+    if (tbToggle && tbToggle.checked) {
+        const parent = tbToggle.closest('.rig-check-item');
+        const key = parent.dataset.key;
+        const dist = parent.querySelector('.rsc-tb-dist')?.value;
+        const hasPhoto = rigChecklistPhotos[key] && rigChecklistPhotos[key].length > 0;
+        notes.push(`- Travelling block berhenti ${dist} meter di bawah crown block${hasPhoto ? " (Dok. Foto Ada)" : ""}`);
+    }
+
+    const extraFindings = document.getElementById('checklist-findings-input')?.value?.trim();
+    if (extraFindings) {
+        notes.push(extraFindings);
+    }
+
+    const greeting = getGreetingTime();
+    let reportText = `Selamat ${greeting},
+Dengan Hormat,
+
+Berikut disampaikan hasil temuan dari Rig Safety Checklist ${rigName} di lokasi sumur ${location} pada tanggal ${dateStr} pukul ${timeStr}, untuk program ${program} sebagai berikut:
+
+`;
+
+    reports.forEach((line, i) => {
+        reportText += `${i+1}. ${line}\n`;
+    });
+
+    if (notes.length > 0) {
+        reportText += `\nNotes:\n${notes.join('\n')}\n`;
+    }
+
+    reportText += `\nDemikian disampaikan, atas perhatiannya diucapkan, Terima Kasih.
+Salam,
+Team Operational Rig Safety Checklist`;
+
+    checklistRawResult = reportText;
+
+    content.innerHTML = reportText.replace(/\n/g, '<br>').replace(/Baik/g, '<strong style="color: #10b981;">Baik</strong>');
+    resultArea.classList.remove('hidden');
+    resultArea.scrollIntoView({ behavior: 'smooth' });
+}
+
+function getGreetingTime() {
+    const hour = new Date().getHours();
+    if (hour < 11) return 'Pagi';
+    if (hour < 15) return 'Siang';
+    if (hour < 19) return 'Sore';
+    return 'Malam';
+}
+
+async function saveRigChecklistToLibrary() {
+    if (!checklistRawResult) {
+        alert('Silakan generate checklist terlebih dahulu!');
+        return;
+    }
+
+    const rigName = document.getElementById('checklist-rig-name')?.value || 'Rig';
+    const location = document.getElementById('checklist-location')?.value || 'Loc';
+    const timestamp = new Date().toISOString();
+    
+    const item = {
+        id: 'rsc_' + Date.now(),
+        title: `Rig Safety Checklist: ${rigName} - ${location}`,
+        content: checklistRawResult,
+        category: 'HSE',
+        type: 'text',
+        timestamp: timestamp
+    };
+
+    try {
+        await saveGeneration(item);
+        const btn = document.getElementById('save-rig-lib-btn');
+        btn.innerHTML = '✅ Tersimpan!';
+        btn.disabled = true;
+        setTimeout(() => {
+            btn.innerHTML = '💾 Simpan ke Perpustakaan';
+            btn.disabled = false;
+        }, 3000);
+        
+        if (typeof refreshLibraryUI === 'function') refreshLibraryUI();
+    } catch (err) {
+        console.error(err);
+        alert('Gagal menyimpan ke perpustakaan.');
+    }
+}
+
+function copyRigChecklist() {
+    if (!checklistRawResult) return;
+    navigator.clipboard.writeText(checklistRawResult).then(() => {
+        const btn = document.getElementById('copy-checklist-btn');
+        const original = btn.innerHTML;
+        btn.innerHTML = '✅ Tersalin!';
+        setTimeout(() => btn.innerHTML = original, 2000);
+    }).catch(() => {
+        alert('Gagal menyalin teks. Silakan blok dan copy langsung.');
+    });
+}
+
+function exportRigChecklistPDF() {
+    if (!checklistRawResult) {
+        alert('Laporan belum dibuat. Silakan klik Generate terlebih dahulu.');
+        return;
+    }
+
+    const rigName = document.getElementById('checklist-rig-name')?.value || 'Hoist L-350';
+    const wellLoc = document.getElementById('checklist-location')?.value || 'ST-223';
+    const prog = document.getElementById('checklist-program')?.value || 'Operational';
+    
+    // 1. Prepare Main Findings Content
+    const findingsLines = checklistRawResult.split('\n');
+    let findingsHtml = '';
+    findingsLines.forEach(line => {
+        if (!line.trim()) return;
+        const colorStyle = line.includes('Hasil Baik') ? 'color: #15803d;' : '';
+        findingsHtml += `<p style="margin: 0 0 8pt 0; ${colorStyle}">${line}</p>`;
+    });
+
+    // 2. Prepare Photo Annex Content
+    let photosHtml = '';
+    const photoKeys = Object.keys(rigChecklistPhotos).filter(k => rigChecklistPhotos[k] && rigChecklistPhotos[k].length > 0);
+    if (photoKeys.length > 0) {
+        photosHtml += `
+            <div style="page-break-before: always; padding-top: 20px; border-top: 2px solid #3182ce; margin-top: 40px;">
+                <h3 style="color: #3182ce; text-transform: uppercase; margin-bottom: 20px;">Attachment: Visual Documentation</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        `;
+
+        photoKeys.forEach(key => {
+            const list = rigChecklistPhotos[key];
+            let label = "";
+            if (key.startsWith('main-')) {
+                const idx = parseInt(key.split('-')[1]);
+                const itemEl = document.querySelector(`.rig-check-item[data-key="${key}"]`);
+                label = itemEl ? itemEl.querySelector('strong').nextSibling.textContent.trim() : `Item ${idx+1}`;
+            } else {
+                label = key === 'note-0' ? 'AA SG Status' : 'Travelling Block Status';
+            }
+
+            list.forEach((src, sIdx) => {
+                photosHtml += `
+                    <div style="border: 1px solid #ddd; padding: 10px; text-align: center; page-break-inside: avoid;">
+                        <div style="height: 250px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; background: #fefefe;">
+                            <img src="${src}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                        </div>
+                        <div style="font-size: 9pt; font-weight: bold; color: #444;">${label} (Img ${sIdx+1})</div>
+                    </div>
+                `;
+            });
+        });
+        photosHtml += `</div></div>`;
+    }
+
+    // 3. Open Print Window
+    const printWindow = window.open('', '_blank', 'height=900,width=1100');
+    if (!printWindow) {
+        alert('Pop-up terblokir! Silakan izinkan pop-up untuk mencetak PDF.');
+        return;
+    }
+
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>RSC Report - ${rigName}</title>
+            <style>
+                @page {
+                    size: A4 portrait;
+                    margin: 15mm;
+                }
+                body {
+                    font-family: 'Times New Roman', Times, serif;
+                    color: #000;
+                    background: #fff;
+                    margin: 0;
+                    padding: 0;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .document-wrapper {
+                    max-width: 100%;
+                    margin: 0 auto;
+                }
+                .gacor-header {
+                    background: #fff;
+                    padding: 15px 0;
+                    text-align: center;
+                    margin-bottom: 25px;
+                    border-bottom: 3px solid #000;
+                }
+                .gacor-header h2 {
+                    font-size: 20pt;
+                    font-weight: 700;
+                    color: #000;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    margin: 0 0 5px 0;
+                }
+                .gacor-header h3 {
+                    font-size: 13pt;
+                    font-weight: 400;
+                    color: #000;
+                    margin: 0;
+                    letter-spacing: 0.5px;
+                }
+                .meta-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 25px;
+                    border: 1.2px solid #000;
+                }
+                .meta-table td {
+                    padding: 8px 15px;
+                    border: 1.2px solid #000;
+                    vertical-align: top;
+                }
+                .meta-label {
+                    font-size: 8pt;
+                    color: #444;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    margin-bottom: 2px;
+                }
+                .meta-value {
+                    font-size: 10pt;
+                    font-weight: 700;
+                    color: #000;
+                }
+                .content-body {
+                    font-size: 10.5pt;
+                    line-height: 1.5;
+                    margin-bottom: 35px;
+                    padding: 0 5px;
+                    color: #000;
+                }
+                .content-body p {
+                    margin: 0 0 10pt 0;
+                    padding-left: 12px;
+                    border-left: 1.5px solid #000;
+                }
+                .footer-table {
+                    width: 100%;
+                    text-align: center;
+                    font-size: 10.5pt;
+                    border-collapse: collapse;
+                    margin-top: 60px;
+                    page-break-inside: avoid;
+                }
+                .footer-table td {
+                    border: 1px solid #000;
+                    padding: 15px 5px;
+                }
+                .signature-box {
+                    height: 100px;
+                }
+                .photo-annex-header {
+                    page-break-before: always; 
+                    padding-top: 30px; 
+                    border-top: 5px solid #000; 
+                    margin-top: 50px;
+                }
+                .photo-annex-header h3 {
+                    color: #000; 
+                    font-size: 18pt;
+                    font-weight: 900;
+                    text-transform: uppercase; 
+                    margin-bottom: 30px;
+                    letter-spacing: 2px;
+                }
+                .photo-card {
+                    border: 2px solid #000; 
+                    padding: 15px; 
+                    text-align: center; 
+                    page-break-inside: avoid;
+                    background: #fff;
+                    margin-bottom: 10px;
+                }
+                .photo-container {
+                    height: 280px; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    margin-bottom: 15px; 
+                    background: #fff;
+                    overflow: hidden;
+                    border: 1px solid #eee;
+                }
+                .photo-label {
+                    font-size: 10pt; 
+                    font-weight: 800; 
+                    color: #000;
+                    text-transform: uppercase;
+                }
+                .watermark-footer {
+                    margin-top: 70px; 
+                    text-align: center; 
+                    font-size: 8.5pt; 
+                    color: #000; 
+                    font-weight: 600;
+                    border-top: 2px solid #000; 
+                    padding-top: 20px;
+                    letter-spacing: 0.5px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="document-wrapper">
+                <div class="gacor-header">
+                    <h2>HSE DEPARTMENT</h2>
+                    <h3>RIG SAFETY CHECKLIST REPORT</h3>
+                </div>
+
+                <table class="meta-table">
+                    <tr>
+                        <td style="width: 50%; background: #fff;">
+                            <div class="meta-label">Well Location / Rig</div>
+                            <div class="meta-value">${wellLoc} / ${rigName}</div>
+                        </td>
+                        <td style="width: 50%; background: #fff;">
+                            <div class="meta-label">Reporting Date</div>
+                            <div class="meta-value">${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' })}</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="meta-label">Activity Program</div>
+                            <div class="meta-value">${prog}</div>
+                        </td>
+                        <td>
+                            <div class="meta-label">Report Status</div>
+                            <div class="meta-value" style="color: #000; font-weight: 900; text-decoration: underline;">VALIDATED & COMPLETED</div>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="content-body">
+                    ${findingsHtml}
+                </div>
+
+                ${photosHtml.replace(/class="photo-card"/g, 'class="photo-card"').replace(/class="photo-container"/g, 'class="photo-container"').replace(/class="photo-label"/g, 'class="photo-label"').replace(/class="photo-annex-header"/g, 'class="photo-annex-header"')}
+
+                <table class="footer-table">
+                    <tr>
+                        <td style="width: 33%;">Disiapkan Oleh,</td>
+                        <td style="width: 33%;">Diperiksa Oleh,</td>
+                        <td style="width: 33%;">Disetujui Oleh,</td>
+                    </tr>
+                    <tr class="signature-box">
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold;">HSE Representative</td>
+                        <td style="font-weight: bold;">Rig Superintendent</td>
+                        <td style="font-weight: bold;">Company Man</td>
+                    </tr>
+                </table>
+
+                <div class="watermark-footer">
+                    Generated via Jurnal AI - HSE PERFORMANCE CENTER HUB<br>
+                    Official HSE Professional Documentation - Certified System.
+                </div>
+            </div>
+            <script>
+                window.onload = () => {
+                    setTimeout(() => {
+                        window.print();
+                        window.close();
+                    }, 1000);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
 

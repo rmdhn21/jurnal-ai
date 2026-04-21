@@ -88,7 +88,7 @@ async function stitchVertical(dataUrls) {
     // Normalize width to the largest one
     const targetW = Math.max(...loadedImgs.map(img => img.width));
     const heights = loadedImgs.map(img => (targetW / img.width) * img.height);
-    const borderWeight = 10;
+    const borderWeight = 5; // Thinner separator for multi-page stitch
     const totalH = heights.reduce((a, b) => a + b, 0) + (borderWeight * (dataUrls.length - 1));
     
     const canvas = document.createElement('canvas');
@@ -105,8 +105,8 @@ async function stitchVertical(dataUrls) {
         currentY += heights[i];
         
         if (i < loadedImgs.length - 1) {
-            // Draw separator line
-            ctx.fillStyle = '#111827';
+            // Draw thick separator line
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, currentY, targetW, borderWeight);
             currentY += borderWeight;
         }
@@ -130,8 +130,8 @@ async function generateCollage() {
         const canvas = document.getElementById('collage-canvas');
         const ctx = canvas.getContext('2d');
         const W = 2400;
-        const margin = 10;
-        const captionHeight = 180;
+        const margin = 20; // Increased margin
+        const captionHeight = 220; // Increased caption height
 
         // 1. Pre-process active images (stitch multi-pages)
         const processedImgs = [];
@@ -146,8 +146,8 @@ async function generateCollage() {
         let H = 0;
         
         // 2. Determine Layout and Canvas Height
-        const outerPadding = 12; // Outer frame thickness
-        const innerGap = 12; // Gap between photos
+        const outerPadding = 40; // Thick bold outer frame
+        const innerGap = 8; // Thin aesthetic inner gap
 
         if (count === 1) {
             H = (W / processedImgs[0].img.width) * processedImgs[0].img.height + captionHeight + (outerPadding * 2);
@@ -195,8 +195,8 @@ async function generateCollage() {
             canvas.height = H;
         }
 
-        // Fill background with Caption Color to act as Frame/Border
-        ctx.fillStyle = '#111827';
+        // Fill background with Pure White
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, W, H);
 
         if (count === 1) {
@@ -260,12 +260,12 @@ async function generateCollage() {
         const captionDisplay = document.getElementById('collage-caption-text');
         if (captionDisplay) captionDisplay.innerText = captionStr;
 
-        ctx.fillStyle = '#111827';
-        ctx.fillRect(0, H - captionHeight - outerPadding, W, captionHeight + outerPadding); 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 50px Inter, sans-serif';
+        ctx.fillRect(0, H - captionHeight - outerPadding, W, captionHeight + outerPadding); 
+        ctx.fillStyle = '#000000';
+        ctx.font = '700 42px "Times New Roman", serif'; // Reduced from 55px
         ctx.textAlign = 'center';
-        ctx.fillText(captionStr, W / 2, H - outerPadding - 70);
+        ctx.fillText(captionStr, W / 2, H - outerPadding - 85);
 
         document.getElementById('collage-result-container').classList.remove('hidden');
         document.getElementById('collage-result-container').scrollIntoView({ behavior: 'smooth' });
@@ -280,7 +280,7 @@ async function generateCollage() {
 }
 
 function drawAdaptiveSlot(ctx, img, x, y, w, h, label) {
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(x, y, w, h);
     
     const imgRatio = img.width / img.height;
@@ -299,11 +299,11 @@ function drawAdaptiveSlot(ctx, img, x, y, w, h, label) {
 
     ctx.drawImage(img, tx, ty, tw, th);
     
-    // Minimal Label Badge
-    ctx.fillStyle = 'rgba(17, 24, 39, 0.7)';
-    ctx.fillRect(x + 10, y + 10, label.length * 15 + 40, 40);
+    // Minimal Label Badge (Gallery Style)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillRect(x + 15, y + 15, label.length * 12 + 40, 35); // Reduced size
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 18px Inter, sans-serif';
+    ctx.font = '700 14px "Times New Roman", serif'; // Reduced from 18px
     ctx.textAlign = 'left';
     ctx.fillText(label, x + 30, y + 36);
 }

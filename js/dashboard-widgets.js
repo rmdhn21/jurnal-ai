@@ -259,11 +259,53 @@ const WIDGET_REGISTRY = {
                </div>`,
         init: () => {}
     },
+    'quick-note': {
+        id: 'quick-note',
+        title: 'Catatan Cepat',
+        icon: '📝',
+        html: `<div class="card mt-md" style="position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(234, 179, 8, 0.05), rgba(0, 0, 0, 0.2)); border: 1px solid rgba(234, 179, 8, 0.2);">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">📝</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>📝</span> Catatan Cepat
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #eab308; background: rgba(234, 179, 8, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(234, 179, 8, 0.3); text-transform: uppercase;">AUTO-SAVE</span>
+                    </div>
+                    <textarea id="widget-quick-note" placeholder="Ketik ide, to-do sementara, atau catatan di sini..." style="width: 100%; min-height: 120px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #f8fafc; padding: 15px; font-size: 0.95rem; resize: vertical; position: relative; z-index: 1; outline: none; line-height: 1.5;"></textarea>
+                    <div id="quick-note-saved" style="font-size: 0.75rem; color: #10b981; margin-top: 8px; opacity: 0; transition: opacity 0.3s; position: relative; z-index: 1; display: flex; align-items: center; gap: 4px;">
+                        <span>✅</span> Tersimpan otomatis ke memori lokal
+                    </div>
+               </div>`,
+        init: () => { 
+            const textarea = document.getElementById('widget-quick-note');
+            const savedMsg = document.getElementById('quick-note-saved');
+            if(textarea) {
+                // Focus styling
+                textarea.addEventListener('focus', () => {
+                    textarea.style.borderColor = 'rgba(234, 179, 8, 0.5)';
+                    textarea.style.background = 'rgba(0,0,0,0.4)';
+                });
+                textarea.addEventListener('blur', () => {
+                    textarea.style.borderColor = 'rgba(255,255,255,0.1)';
+                    textarea.style.background = 'rgba(0,0,0,0.3)';
+                });
+                // Logic
+                textarea.value = localStorage.getItem('jurnal_ai_quick_note') || '';
+                let timeout;
+                textarea.addEventListener('input', () => {
+                    clearTimeout(timeout);
+                    localStorage.setItem('jurnal_ai_quick_note', textarea.value);
+                    savedMsg.style.opacity = '1';
+                    timeout = setTimeout(() => savedMsg.style.opacity = '0', 2500);
+                });
+            }
+        }
+    },
 
 };
 
 const DEFAULT_WIDGET_ORDER = [
-    'profile', 'hsse-center', 'overview', 'life-balance', 'prayer', 'daily-schedule', 'motivation', 
+    'profile', 'hsse-center', 'overview', 'quick-note', 'life-balance', 'prayer', 'daily-schedule', 'motivation', 
     'brain-boost', 'hadith', 'finance-budget', 
     'reminders', 'calendar', 'weekly-report'
 ];
