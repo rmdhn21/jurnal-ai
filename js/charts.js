@@ -26,7 +26,7 @@ function normalizeCategory(transaction) {
     const desc = (transaction.description || '').toLowerCase();
     
     // If it exactly matches a standard category, keep it
-    if (STANDARD_CATEGORIES.includes(cat)) return cat;
+    if (STANDARD_CATEGORIES.includes(cat) || cat.startsWith('Pindah Dana')) return cat;
     
     // Fuzzy match: check if the standard category is contained in the value or vice-versa (case-insensitive)
     const lower = cat.toLowerCase();
@@ -289,7 +289,7 @@ function getFinanceDataByPeriod(transactions, period) {
             d.setDate(d.getDate() - i);
             const dateStr = getLocalDateString(d);
             labels.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
-            const dayTx = transactions.filter(t => t.date === dateStr);
+            const dayTx = transactions.filter(t => t.date === dateStr && !t.category?.startsWith('Pindah Dana'));
             incomeData.push(dayTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
             expenseData.push(dayTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
         }
@@ -431,6 +431,7 @@ async function initCategoryBarChart(period) {
     
     // Filtering logic (same as initCategoryChart)
     const filteredTransactions = transactions.filter(t => {
+         if (t.category?.startsWith('Pindah Dana')) return false;
          if (currentChartPeriod === 'week') {
               const now = new Date();
               const weekAgo = new Date(now);
@@ -546,8 +547,7 @@ async function initCategoryChart(period) {
     
     // We only need expenses for the category chart
     const filteredTransactions = transactions.filter(t => {
-         // This is a bit redundant but ensures we get the exact same filter
-         // Actually, let's just filter transactions directly to match the currentChartPeriod logic
+         if (t.category?.startsWith('Pindah Dana')) return false;
          if (currentChartPeriod === 'week') {
               const now = new Date();
               const weekAgo = new Date(now);

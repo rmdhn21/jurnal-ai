@@ -52,6 +52,9 @@ async function initFinanceUI() {
 
     if (typeof initWalletUI === 'function') await initWalletUI();
     if (typeof initBudgetUI === 'function') await initBudgetUI();
+    
+    // Transfer UI Initialization
+    initTransferUI();
 }
 
 async function updateFinancialHealthScore() {
@@ -74,8 +77,8 @@ async function updateFinancialHealthScore() {
         return;
     }
 
-    const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const income = transactions.filter(t => t.type === 'income' && !t.category?.startsWith('Pindah Dana')).reduce((s, t) => s + t.amount, 0);
+    const expense = transactions.filter(t => t.type === 'expense' && !t.category?.startsWith('Pindah Dana')).reduce((s, t) => s + t.amount, 0);
     const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
 
     // Calculate Score (Simple Model)
@@ -121,7 +124,7 @@ async function renderProfessionalReport() {
 
     const monthTransactions = transactions.filter(t => {
         const d = new Date(t.date);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear && !t.category?.startsWith('Pindah Dana');
     });
 
     const income = monthTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -404,7 +407,7 @@ async function updateFinanceSummary() {
     // Filter to current month for summary cards
     const monthTransactions = transactions.filter(t => {
         const d = parseLocalDate(t.date);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear && !t.category?.startsWith('Pindah Dana');
     });
 
     const income = monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
@@ -443,6 +446,12 @@ async function updateGlobalBudgetUI() {
     // Auto-calculate global limit based on remaining balance / days remaining
     const wallets = await getWallets();
     const totalBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
+    
+    // NEW: Logic for 100k reserve per wallet
+    const totalWallets = wallets.length;
+    const reservePerWallet = 100000;
+    const totalReserve = totalWallets * reservePerWallet;
+    const spendableBalance = Math.max(0, totalBalance - totalReserve);
 
     const now = new Date();
     // Days in current month
@@ -450,13 +459,13 @@ async function updateGlobalBudgetUI() {
     // Days remaining including today
     const daysRemaining = daysInMonth - now.getDate() + 1;
 
-    // Safe daily limit
-    const globalLimit = totalBalance > 0 ? (totalBalance / daysRemaining) : 0;
+    // Safe daily limit based on spendable balance
+    const globalLimit = spendableBalance > 0 ? (spendableBalance / daysRemaining) : 0;
 
     const transactions = await getTransactions();
     const today = getTodayString();
     const todayExpenses = transactions
-        .filter(t => t.type === 'expense' && t.date === today)
+        .filter(t => t.type === 'expense' && t.date === today && !t.category?.startsWith('Pindah Dana'))
         .reduce((sum, t) => sum + t.amount, 0);
 
     const percentage = globalLimit > 0 ? Math.min((todayExpenses / globalLimit) * 100, 100) : 100;
@@ -479,9 +488,13 @@ async function updateGlobalBudgetUI() {
             headerTitle.innerHTML = '🛡️ Batas Aman Harian <span style="font-size:0.65rem;opacity:0.7;font-weight:normal;">(Sisa ' + daysRemaining + ' hari)</span>';
         }
 
-        // Update hint text
+        // Update hint text to reflect reserve
         if (hintText) {
-            hintText.textContent = `Saldo ${formatCurrency(totalBalance)} ÷ ${daysRemaining} hari = ${formatCurrency(globalLimit)}/hari`;
+            if (totalReserve > 0) {
+                hintText.textContent = `(Saldo ${formatCurrency(totalBalance)} - Cadangan ${formatCurrency(totalReserve)}) ÷ ${daysRemaining} hari = ${formatCurrency(globalLimit)}/hari`;
+            } else {
+                hintText.textContent = `Saldo ${formatCurrency(totalBalance)} ÷ ${daysRemaining} hari = ${formatCurrency(globalLimit)}/hari`;
+            }
         }
 
         if (text) text.innerHTML = `${formatCurrency(todayExpenses)} / ${formatCurrency(globalLimit)}`;
@@ -518,5 +531,134 @@ function filterCategoriesByType() {
         if (selectedOption.parentElement.style.display === 'none') {
             categorySelect.value = "";
         }
+    }
+}
+// ===== TRANSFER LOGIC =====
+function initTransferUI() {
+    const openBtn = document.getElementById('open-transfer-btn');
+    const modal = document.getElementById('transfer-modal');
+    const closeBtn = document.getElementById('close-transfer-modal');
+    const submitBtn = document.getElementById('submit-transfer-btn');
+    const dateInput = document.getElementById('transfer-date');
+
+    if (openBtn) {
+        openBtn.addEventListener('click', async () => {
+            if (modal) {
+                modal.classList.remove('hidden');
+                if (dateInput) dateInput.value = getTodayString();
+                await updateTransferWalletOptions();
+            }
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            if (modal) modal.classList.add('hidden');
+        });
+    }
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        });
+    }
+
+    if (submitBtn) {
+        submitBtn.addEventListener('click', handleTransfer);
+    }
+}
+
+async function updateTransferWalletOptions() {
+    const fromSelect = document.getElementById('transfer-from-wallet');
+    const toSelect = document.getElementById('transfer-to-wallet');
+    if (!fromSelect || !toSelect) return;
+
+    const wallets = await getWallets();
+    const options = wallets.map(w => `<option value="${w.id}">${w.name} (${formatCurrency(w.balance || 0)})</option>`).join('');
+    
+    fromSelect.innerHTML = options;
+    toSelect.innerHTML = options;
+}
+
+async function handleTransfer() {
+    const fromId = document.getElementById('transfer-from-wallet').value;
+    const toId = document.getElementById('transfer-to-wallet').value;
+    const amount = parseFloat(document.getElementById('transfer-amount').value);
+    const date = document.getElementById('transfer-date').value;
+    const desc = document.getElementById('transfer-desc').value.trim();
+
+    if (fromId === toId) {
+        alert('❌ Sumber dan tujuan dompet tidak boleh sama!');
+        return;
+    }
+
+    if (!amount || amount <= 0) {
+        alert('❌ Masukkan jumlah yang valid!');
+        return;
+    }
+
+    if (!date) {
+        alert('❌ Pilih tanggal transaksi!');
+        return;
+    }
+
+    // Check balance
+    const wallets = await getWallets();
+    const sourceWallet = wallets.find(w => w.id === fromId);
+    if (!sourceWallet || (sourceWallet.balance || 0) < amount) {
+        if (!confirm('⚠️ Saldo dompet sumber tidak cukup. Tetap lanjutkan?')) return;
+    }
+
+    try {
+        const transferId = generateId();
+        const baseDesc = desc ? ` (${desc})` : '';
+
+        // 1. Transaction Outflow (Source)
+        const txOut = {
+            id: generateId(),
+            transferId: transferId, // Link them
+            type: 'expense',
+            walletId: fromId,
+            category: 'Pindah Dana (Keluar)',
+            amount: amount,
+            date: date,
+            description: `Transfer ke ${wallets.find(w=>w.id===toId)?.name}${baseDesc}`,
+            createdAt: new Date().toISOString()
+        };
+
+        // 2. Transaction Inflow (Destination)
+        const txIn = {
+            id: generateId(),
+            transferId: transferId,
+            type: 'income',
+            walletId: toId,
+            category: 'Pindah Dana (Masuk)',
+            amount: amount,
+            date: date,
+            description: `Transfer dari ${sourceWallet?.name}${baseDesc}`,
+            createdAt: new Date().toISOString()
+        };
+
+        await saveTransaction(txOut);
+        await saveTransaction(txIn);
+
+        // Update balances correctly using their respective transaction types
+        await updateWalletBalance(fromId, amount, 'expense'); // Subtract from source
+        await updateWalletBalance(toId, amount, 'income');   // Add to destination
+
+        alert('✅ Perpindahan dana berhasil!');
+        
+        // Reset and close
+        document.getElementById('transfer-amount').value = '';
+        document.getElementById('transfer-desc').value = '';
+        document.getElementById('transfer-modal').classList.add('hidden');
+
+        // Refresh UI
+        refreshAllUIs();
+        if (typeof triggerCloudSync === 'function') triggerCloudSync();
+
+    } catch (error) {
+        console.error('Transfer error:', error);
+        alert('❌ Gagal melakukan perpindahan: ' + error.message);
     }
 }
