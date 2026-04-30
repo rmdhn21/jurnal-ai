@@ -130,56 +130,7 @@ async function initFinanceUpgrades() {
     await updateGlobalBudgetUI();
 }
 
-async function updateGlobalBudgetUI() {
-    const cards = document.querySelectorAll('[id="global-budget-card"]');
-    if (cards.length === 0) return;
-
-    // Auto-calculate: remaining wallet balance / days until payday (1st of next month)
-    const wallets = await getWallets();
-    const totalBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
-
-    const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysRemaining = daysInMonth - now.getDate() + 1;
-    const globalLimit = totalBalance > 0 ? (totalBalance / daysRemaining) : 0;
-
-    const transactions = await getTransactions();
-    const today = getTodayString();
-    const todayExpenses = transactions
-        .filter(t => t.type === 'expense' && t.date === today)
-        .reduce((sum, t) => sum + t.amount, 0);
-
-    const percentage = globalLimit > 0 ? Math.min((todayExpenses / globalLimit) * 100, 100) : 100;
-
-    cards.forEach(card => {
-        const text = card.querySelector('[id="global-budget-text"]');
-        const progressBar = card.querySelector('[id="global-budget-progress"]');
-        const headerTitle = card.querySelector('#budget-title, .card-header h3, .budget-card-header h3');
-        const hintText = card.querySelector('#budget-hint-text, .budget-card-hint');
-
-        if (totalBalance <= 0) {
-            card.classList.add('hidden');
-            return;
-        }
-
-        card.classList.remove('hidden');
-
-        if (headerTitle) {
-            headerTitle.innerHTML = '🛡️ Batas Aman Harian <span style="font-size:0.65rem;opacity:0.7;font-weight:normal;">(Sisa ' + daysRemaining + ' hari)</span>';
-        }
-        if (hintText) {
-            hintText.textContent = `Saldo ${formatCurrency(totalBalance)} ÷ ${daysRemaining} hari = ${formatCurrency(globalLimit)}/hari`;
-        }
-        if (text) text.innerHTML = `${formatCurrency(todayExpenses)} / ${formatCurrency(globalLimit)}`;
-        if (progressBar) {
-            progressBar.style.width = `${percentage}%`;
-            let color = '#10b981';
-            if (percentage >= 100) color = '#ef4444';
-            else if (percentage >= 75) color = '#f59e0b';
-            progressBar.style.background = color;
-        }
-    });
-}
+// updateGlobalBudgetUI is handled in finance-ui.js
 
 async function checkRecurringTransactions() {
     const recurringData = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECURRING) || '[]');

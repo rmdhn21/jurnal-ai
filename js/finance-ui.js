@@ -443,32 +443,36 @@ async function updateGlobalBudgetUI() {
     const cards = document.querySelectorAll('[id="global-budget-card"]');
     if (cards.length === 0) return;
 
-    // Auto-calculate global limit based on remaining balance / days remaining
+    // Ambil semua dompet dan hitung total saldo
     const wallets = await getWallets();
     const totalBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
     
-    // NEW: Logic for 100k reserve per wallet
+    // Logika: Minimal 100k per dompet sebagai dana cadangan (tidak boleh diotak-atik)
     const totalWallets = wallets.length;
     const reservePerWallet = 100000;
     const totalReserve = totalWallets * reservePerWallet;
+    
+    // Saldo yang benar-benar bisa dipakai (setelah dikurangi cadangan)
     const spendableBalance = Math.max(0, totalBalance - totalReserve);
 
     const now = new Date();
-    // Days in current month
+    // Asumsi gajian adalah tanggal 1 bulan berikutnya.
+    // Menghitung sisa hari dalam bulan ini (termasuk hari ini)
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    // Days remaining including today
     const daysRemaining = daysInMonth - now.getDate() + 1;
 
-    // Safe daily limit based on spendable balance
+    // Batas pengeluaran harian = sisa saldo dibagi sisa hari
     const globalLimit = spendableBalance > 0 ? (spendableBalance / daysRemaining) : 0;
 
     const transactions = await getTransactions();
     const today = getTodayString();
+    
+    // Hitung pengeluaran hari ini (kecuali pindah dana)
     const todayExpenses = transactions
         .filter(t => t.type === 'expense' && t.date === today && !t.category?.startsWith('Pindah Dana'))
         .reduce((sum, t) => sum + t.amount, 0);
 
-    const percentage = globalLimit > 0 ? Math.min((todayExpenses / globalLimit) * 100, 100) : 100;
+    const percentage = globalLimit > 0 ? Math.min((todayExpenses / globalLimit) * 100, 100) : (todayExpenses > 0 ? 100 : 0);
 
     cards.forEach(card => {
         const text = card.querySelector('[id="global-budget-text"]');
@@ -483,12 +487,12 @@ async function updateGlobalBudgetUI() {
 
         card.classList.remove('hidden');
 
-        // Update title with days remaining info
+        // Update teks judul dengan sisa hari
         if (headerTitle) {
             headerTitle.innerHTML = '🛡️ Batas Aman Harian <span style="font-size:0.65rem;opacity:0.7;font-weight:normal;">(Sisa ' + daysRemaining + ' hari)</span>';
         }
 
-        // Update hint text to reflect reserve
+        // Update teks petunjuk (hint)
         if (hintText) {
             if (totalReserve > 0) {
                 hintText.textContent = `(Saldo ${formatCurrency(totalBalance)} - Cadangan ${formatCurrency(totalReserve)}) ÷ ${daysRemaining} hari = ${formatCurrency(globalLimit)}/hari`;
@@ -498,12 +502,13 @@ async function updateGlobalBudgetUI() {
         }
 
         if (text) text.innerHTML = `${formatCurrency(todayExpenses)} / ${formatCurrency(globalLimit)}`;
+        
         if (progressBar) {
             progressBar.style.width = `${percentage}%`;
-            // Use inline color to work with both progress-fill and budget-progress-bar classes
-            let color = '#10b981'; // green
-            if (percentage >= 100) color = '#ef4444'; // red
-            else if (percentage >= 75) color = '#f59e0b'; // yellow
+            // Warna progress bar
+            let color = '#10b981'; // hijau (aman)
+            if (percentage >= 100) color = '#ef4444'; // merah (melebihi)
+            else if (percentage >= 75) color = '#f59e0b'; // kuning (warning)
             progressBar.style.background = color;
         }
     });
