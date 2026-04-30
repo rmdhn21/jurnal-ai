@@ -64,6 +64,7 @@ async function showMainApp() {
     await safelyInit('initHSEDailyReport');
     await safelyInit('initHSEFavorites');
     await safelyInit('initHSETrendChart');
+    await safelyInit('initStoicMuslim');
 
     // Check if Onboarding is needed
     if (typeof initOnboarding === 'function') initOnboarding();

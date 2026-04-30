@@ -510,6 +510,11 @@
                         <div class="hub-icon" style="background: rgba(237, 100, 166, 0.1); color: #f687b3; border: 1px solid rgba(237, 100, 166, 0.2);">🎯</div>
                         <span class="hub-label">Goals</span>
                     </button>
+                    <!-- Stoic Muslim Hub Button -->
+                    <button class="hub-btn" onclick="navigateToSubscreen('stoic-muslim')">
+                        <div class="hub-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">🗡️</div>
+                        <span class="hub-label">Stoic Muslim</span>
+                    </button>
                     <!-- Shift Tracker Hub Button -->
                     <button class="hub-btn" onclick="navigateToSubscreen('shift-tracker')">
                         <div class="hub-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">📅</div>
@@ -2541,6 +2546,54 @@
                 </div>
             </div>
 
+            <!-- Stoic Muslim Screen -->
+            <section id="stoic-muslim-screen" class="screen subscreen">
+                <div class="card" style="border-left: 4px solid #10b981;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <span>🗡️</span> Stoic Muslim
+                        </h2>
+                        <span class="badge-ai" style="background: #10b981; color: white; border: none;">Karisma & Aura</span>
+                    </div>
+                    <p class="text-muted mt-sm" style="font-size: 0.85rem;">Membangun wibawa melalui ketenangan, sedikit bicara, dan tawakkal.</p>
+                </div>
+
+                <div class="card mt-md" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(0, 0, 0, 0.2)); border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div class="card-header" style="border-bottom: 1px solid rgba(16, 185, 129, 0.1); padding-bottom: 10px; margin-bottom: 15px;">
+                        <h3 style="margin: 0; font-size: 1rem; color: #10b981;">📜 Prinsip Hari Ini</h3>
+                    </div>
+                    <div id="stoic-quote-container">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <div class="card mt-md">
+                    <div class="card-header">
+                        <h3>🛡️ Checklist Karisma & Aura</h3>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.8rem; margin-top: -5px; margin-bottom: 15px;">Latih kebiasaan ini hari ini untuk membangun wibawa yang sejati.</p>
+                    <div id="stoic-checklist-container">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <div class="card mt-md">
+                    <div class="card-header">
+                        <h3>🍃 Tawakkal Journal (Let It Go)</h3>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.8rem; margin-top: -5px; margin-bottom: 15px;">Tuliskan beban pikiran yang berada di luar kendali Anda, dan serahkan pada Allah.</p>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="text" id="tawakkal-input" class="input" placeholder="Apa yang membebani pikiranmu saat ini?" style="flex: 1;">
+                        <button class="btn btn-primary" onclick="addTawakkalEntry()" style="background: #10b981;">Serahkan</button>
+                    </div>
+
+                    <div id="tawakkal-list-container">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </section>
+
             <!-- Screen: JMP Generator -->
             <section id="jmp-generator-screen" class="screen">
                 <div class="card" style="border-left: 4px solid #e11d48;">
@@ -4070,6 +4123,7 @@
     <script src="js/hse-geomapper.js"></script>
     <script src="js/hse-analytics.js"></script>
     <script src="js/hse-emergency.js"></script>
+    <script src="js/mind-stoic.js"></script>
 
 </body>
 
