@@ -2436,6 +2436,12 @@
                         </div>
                     </div>
 
+                    <!-- Dzikir Guide Buttons -->
+                    <div class="dzikir-guide-buttons mt-md mb-md" style="display: flex; gap: 10px;">
+                        <button onclick="openDzikirGuide('pagi')" class="btn btn-primary flex-1" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); border: none; font-weight: bold; height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">☀️ Dzikir Pagi</button>
+                        <button onclick="openDzikirGuide('petang')" class="btn btn-secondary flex-1" style="background: linear-gradient(135deg, #4f46e5, #3730a3); color: white; border: none; font-weight: bold; height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);">🌙 Dzikir Petang</button>
+                    </div>
+
                     <!-- Wajib: Sholat 5 Waktu -->
                     <div class="mt-sm">
                         <label class="form-label" style="font-weight: 600;">Sholat Wajib</label>
@@ -2472,6 +2478,18 @@
                                 <input type="checkbox" id="islam-qobliyah" class="islam-checkbox"
                                     style="width: 20px; height: 20px; accent-color: var(--primary);">
                                 <span>Sholat Sunnah Qobliyah Subuh</span>
+                            </label>
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-dzikir-pagi" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Dzikir Pagi Selesai</span>
+                            </label>
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
+                                <input type="checkbox" id="islam-dzikir-petang" class="islam-checkbox"
+                                    style="width: 20px; height: 20px; accent-color: var(--primary);">
+                                <span>Dzikir Petang Selesai</span>
                             </label>
                             <label
                                 style="display: flex; align-items: center; gap: 10px; font-size: 1.05em; cursor: pointer;">
@@ -4061,6 +4079,7 @@
     <script src="js/journal-templates.js"></script>
     <script src="js/motivation.js"></script>
     <script src="js/islam-tracker.js"></script>
+    <script src="js/dzikir-pagi-petang.js"></script>
     <script src="js/ai-tutors.js"></script>
     <script src="js/todo-today.js"></script>
     <script src="js/english-hse.js"></script>

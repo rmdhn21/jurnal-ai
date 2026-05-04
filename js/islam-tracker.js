@@ -31,6 +31,8 @@ async function initIslamTrackerUI() {
 
     // Sunnah & Others
     setChecked('islam-qobliyah', trackData.qobliyah);
+    setChecked('islam-dzikir-pagi', trackData.dzikirPagi);
+    setChecked('islam-dzikir-petang', trackData.dzikirPetang);
     setChecked('islam-sedekah', trackData.sedekah);
     setChecked('islam-waqiah', trackData.waqiah);
     setChecked('islam-fasting', trackData.fasting);
@@ -64,6 +66,8 @@ async function initIslamTrackerUI() {
         newData.prayers.isya = isChecked('prayer-isya');
 
         newData.qobliyah = isChecked('islam-qobliyah');
+        newData.dzikirPagi = isChecked('islam-dzikir-pagi');
+        newData.dzikirPetang = isChecked('islam-dzikir-petang');
         newData.sedekah = isChecked('islam-sedekah');
         newData.waqiah = isChecked('islam-waqiah');
         newData.fasting = isChecked('islam-fasting');
