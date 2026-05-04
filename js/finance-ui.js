@@ -21,6 +21,12 @@ async function initFinanceUI() {
         filterCategoriesByType();
     }
 
+    // Smart Category Auto-Select
+    const descInput = document.getElementById('transaction-desc');
+    if (descInput) {
+        descInput.addEventListener('input', handleSmartCategory);
+    }
+
     // New Event Listeners
     const viewReportBtn = document.getElementById('view-pro-report-btn');
     if (viewReportBtn) viewReportBtn.addEventListener('click', renderProfessionalReport);
@@ -55,6 +61,9 @@ async function initFinanceUI() {
     
     // Transfer UI Initialization
     initTransferUI();
+
+    // Render Quick Actions
+    renderQuickActions();
 }
 
 async function updateFinancialHealthScore() {
@@ -249,6 +258,19 @@ async function handleAddTransaction() {
         date: date || getTodayString(),
         createdAt: new Date().toISOString()
     };
+
+    // STOIC CHECKOUT: Pencegah Belanja Impulsif
+    if (type === 'expense' && amount >= 200000 && (category === 'Hiburan & Nongkrong' || category === 'Lain-lain')) {
+        const confirmed = await showStoicCheckoutDialog(amount, category, desc);
+        if (!confirmed) {
+            // User cancelled the impulsive buy. Reward them with some XP for Discipline!
+            if (typeof addXP === 'function') {
+                addXP(20);
+                if (typeof showToast === 'function') showToast('Pilihan Bijak! +20 XP Disiplin');
+            }
+            return; 
+        }
+    }
 
     // CHECK DAILY BUDGET
     if (type === 'expense') {
@@ -666,4 +688,374 @@ async function handleTransfer() {
         console.error('Transfer error:', error);
         alert('❌ Gagal melakukan perpindahan: ' + error.message);
     }
+}
+
+// ===== SMART CATEGORY =====
+function handleSmartCategory(e) {
+    const text = e.target.value.toLowerCase();
+    const typeSelect = document.getElementById('transaction-type');
+    const categorySelect = document.getElementById('transaction-category');
+    if (!typeSelect || !categorySelect) return;
+
+    // Define keywords mapping
+    const rules = [
+        { keywords: ['indomaret', 'alfamart', 'supermarket', 'belanja', 'sabun', 'shampoo'], type: 'expense', category: 'Kebutuhan Harian/Bulanan' },
+        { keywords: ['bensin', 'pertamina', 'shell', 'parkir', 'gojek', 'grab', 'tol', 'tiket'], type: 'expense', category: 'Transportasi' },
+        { keywords: ['makan', 'minum', 'kopi', 'starbucks', 'warteg', 'mcd', 'kfc', 'roti'], type: 'expense', category: 'Makan & Minum' },
+        { keywords: ['listrik', 'token', 'pln', 'air', 'pdam', 'internet', 'wifi', 'indihome', 'pulsa', 'kuota'], type: 'expense', category: 'Tagihan & Utilitas' },
+        { keywords: ['kos', 'kontrakan', 'sewa', 'apartemen'], type: 'expense', category: 'Tempat Tinggal' },
+        { keywords: ['nonton', 'bioskop', 'netflix', 'spotify', 'game', 'main', 'jalan'], type: 'expense', category: 'Hiburan & Nongkrong' },
+        { keywords: ['sedekah', 'zakat', 'infaq', 'donasi', 'sumbangan', 'kondangan'], type: 'expense', category: 'Sosial & Sedekah' },
+        { keywords: ['gaji', 'bonus', 'thr', 'fee'], type: 'income', category: 'Gaji' },
+        { keywords: ['profit', 'dividen', 'saham', 'crypto', 'bunga'], type: 'income', category: 'Profit Trading/Investasi' }
+    ];
+
+    for (const rule of rules) {
+        if (rule.keywords.some(kw => text.includes(kw))) {
+            // Found a match
+            if (typeSelect.value !== rule.type) {
+                typeSelect.value = rule.type;
+                filterCategoriesByType(); // Update visible options
+            }
+            categorySelect.value = rule.category;
+            
+            // Add a subtle highlight effect to show it was auto-selected
+            categorySelect.style.transition = 'box-shadow 0.3s ease';
+            categorySelect.style.boxShadow = '0 0 8px var(--primary)';
+            setTimeout(() => {
+                categorySelect.style.boxShadow = 'none';
+            }, 1000);
+            break; // Stop at first match
+        }
+    }
+}
+
+// ===== QUICK ACTIONS =====
+let pendingQuickAction = null;
+
+function getQuickActions() {
+    const defaultQA = [
+        { id: 'qa1', icon: '☕', name: 'Kopi', amount: 20000, category: 'Makan & Minum' },
+        { id: 'qa2', icon: '🍱', name: 'Makan', amount: 35000, category: 'Makan & Minum' },
+        { id: 'qa3', icon: '🅿️', name: 'Parkir', amount: 5000, category: 'Transportasi' },
+        { id: 'qa4', icon: '⛽', name: 'Bensin', amount: 20000, category: 'Transportasi' },
+        { id: 'qa5', icon: '📱', name: 'Pulsa', amount: 15000, category: 'Tagihan & Utilitas' }
+    ];
+    const stored = localStorage.getItem('jurnal_ai_finance_qa');
+    return stored ? JSON.parse(stored) : defaultQA;
+}
+
+function saveQuickActions(data) {
+    localStorage.setItem('jurnal_ai_finance_qa', JSON.stringify(data));
+}
+
+function renderQuickActions() {
+    const container = document.getElementById('quick-actions-container');
+    if (!container) return;
+
+    const actions = getQuickActions();
+    container.innerHTML = actions.map(qa => `
+        <button type="button" class="qa-btn btn btn-secondary" onclick="handleQuickAction('${qa.id}')" style="white-space: nowrap; font-size: 0.75rem; border-radius: 20px; padding: 4px 12px; border: 1px solid rgba(255,255,255,0.1);">
+            ${qa.icon} ${qa.name} (${(qa.amount/1000)}k)
+        </button>
+    `).join('');
+}
+
+async function handleQuickAction(id) {
+    const actions = getQuickActions();
+    const qa = actions.find(a => a.id === id);
+    if (!qa) return;
+
+    const wallets = await getWallets();
+    if (!wallets || wallets.length === 0) {
+        alert('Buat dompet terlebih dahulu!');
+        return;
+    }
+
+    pendingQuickAction = qa;
+    
+    // Setup Modal
+    document.getElementById('qa-confirm-desc').textContent = `Mencatat: ${qa.icon} ${qa.name} (${formatCurrency(qa.amount)})`;
+    const select = document.getElementById('qa-wallet-select');
+    select.innerHTML = wallets.map(w => `<option value="${w.id}">${w.name} (${formatCurrency(w.balance || 0)})</option>`).join('');
+    
+    const confirmBtn = document.getElementById('qa-confirm-btn');
+    // Remove old listeners to prevent duplicates
+    const newBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+    
+    newBtn.addEventListener('click', executeQuickAction);
+
+    document.getElementById('qa-confirm-modal').classList.remove('hidden');
+}
+
+async function executeQuickAction() {
+    if (!pendingQuickAction) return;
+    const qa = pendingQuickAction;
+    const walletId = document.getElementById('qa-wallet-select').value;
+
+    // STOIC CHECKOUT: Pencegah Belanja Impulsif
+    if (qa.amount >= 200000 && (qa.category === 'Hiburan & Nongkrong' || qa.category === 'Lain-lain')) {
+        document.getElementById('qa-confirm-modal').classList.add('hidden'); // Sembunyikan modal wallet
+        const confirmed = await showStoicCheckoutDialog(qa.amount, qa.category, qa.name);
+        if (!confirmed) {
+            if (typeof addXP === 'function') {
+                addXP(20);
+                if (typeof showToast === 'function') showToast('Pilihan Bijak! +20 XP Disiplin');
+            }
+            pendingQuickAction = null;
+            return; 
+        }
+    }
+    
+    const transaction = {
+        id: generateId(),
+        type: 'expense',
+        amount: qa.amount,
+        category: qa.category,
+        description: qa.name,
+        walletId: walletId,
+        date: getTodayString(),
+        createdAt: new Date().toISOString()
+    };
+
+    // Budget check
+    const budgets = await getBudgets();
+    const categoryBudget = budgets.find(b => b.category === qa.category);
+
+    if (categoryBudget && categoryBudget.dailyLimit > 0) {
+        const transactions = await getTransactions();
+        const todayExpenses = transactions
+            .filter(t => t.type === 'expense' && t.category === qa.category && t.date === getTodayString())
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        if (todayExpenses + qa.amount > categoryBudget.dailyLimit) {
+            alert(`⚠️ Peringatan: Pengeluaran hari ini melebihi batas harian untuk kategori ${qa.category}!`);
+        }
+    }
+
+    await saveTransaction(transaction);
+    await updateWalletBalance(walletId, qa.amount, 'expense');
+
+    // UI Updates
+    if (typeof updateBudgetUI === 'function') await updateBudgetUI();
+    if (typeof updateGlobalBudgetUI === 'function') await updateGlobalBudgetUI();
+
+    transactionPage = 1;
+    await renderTransactionList();
+    await updateFinanceSummary();
+    if (typeof renderWalletListSummary === 'function') await renderWalletListSummary();
+    await initFinanceChart();
+    await updateFinancialHealthScore();
+
+    document.getElementById('qa-confirm-modal').classList.add('hidden');
+    pendingQuickAction = null;
+    alert(`✅ Berhasil mencatat: ${qa.name}`);
+}
+
+// ===== MANAGE QUICK ACTIONS =====
+function openManageQuickActionsModal() {
+    renderManageQAList();
+    document.getElementById('manage-qa-modal').classList.remove('hidden');
+}
+
+function renderManageQAList() {
+    const listEl = document.getElementById('manage-qa-list');
+    const actions = getQuickActions();
+    
+    listEl.innerHTML = actions.map(qa => `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div>
+                <strong>${qa.icon} ${qa.name}</strong>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">${formatCurrency(qa.amount)} • ${qa.category}</div>
+            </div>
+            <button class="icon-btn text-error" onclick="deleteQuickAction('${qa.id}')">🗑️</button>
+        </div>
+    `).join('');
+}
+
+function deleteQuickAction(id) {
+    let actions = getQuickActions();
+    actions = actions.filter(a => a.id !== id);
+    saveQuickActions(actions);
+    renderManageQAList();
+    renderQuickActions(); // Update background ui immediately
+}
+
+function addNewQuickAction() {
+    const icon = document.getElementById('new-qa-icon').value.trim() || '📌';
+    const name = document.getElementById('new-qa-name').value.trim();
+    const amount = parseFloat(document.getElementById('new-qa-amount').value);
+    const category = document.getElementById('new-qa-category').value.trim();
+
+    if (!name || !amount || isNaN(amount) || !category) {
+        alert("Mohon isi nama, jumlah, dan kategori dengan benar!");
+        return;
+    }
+
+    const actions = getQuickActions();
+    actions.push({
+        id: 'qa_' + Date.now(),
+        icon, name, amount, category
+    });
+
+    saveQuickActions(actions);
+    renderManageQAList();
+    renderQuickActions();
+
+    // Reset Form
+    document.getElementById('new-qa-icon').value = '';
+    document.getElementById('new-qa-name').value = '';
+    document.getElementById('new-qa-amount').value = '';
+    document.getElementById('new-qa-category').value = '';
+}
+
+// --- STOIC CHECKOUT MODAL LOGIC ---
+function showStoicCheckoutDialog(amount, category, desc) {
+    return new Promise((resolve) => {
+        // Create modal dynamically
+        const modalHtml = `
+            <div id="stoic-checkout-modal" class="modal" style="display: flex; z-index: 99999;">
+                <div class="modal-content" style="max-width: 350px; text-align: center; border: 2px solid rgba(245, 158, 11, 0.4); background: linear-gradient(135deg, #0f172a, #1e293b);">
+                    <div style="font-size: 4rem; margin-bottom: 10px;">🛡️</div>
+                    <h2 style="color: #f59e0b; margin-bottom: 5px; text-transform: uppercase;">Jeda 3 Detik</h2>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">
+                        Anda akan mengeluarkan <strong style="color: white;">Rp ${(amount/1000).toLocaleString('id-ID')}k</strong> untuk <strong style="color: white;">${category}</strong>.
+                    </p>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left; border-left: 3px solid #f59e0b;">
+                        <p style="margin: 0; font-size: 0.85rem; font-style: italic; color: #cbd5e1;">
+                            "Apakah pengeluaran ini benar-benar Anda butuhkan, atau hanya sekadar gengsi dan emosi sesaat? Buktikan kendali diri Anda."
+                        </p>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button id="btn-stoic-cancel" class="btn btn-primary" style="background: var(--success); border: none;">✅ Batal & Simpan Uangnya</button>
+                        <button id="btn-stoic-proceed" class="btn btn-secondary" style="opacity: 0.5; cursor: not-allowed; position: relative; overflow: hidden;" disabled>
+                            <span id="stoic-countdown">Tunggu 3s...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        const modal = document.getElementById('stoic-checkout-modal');
+        const btnCancel = document.getElementById('btn-stoic-cancel');
+        const btnProceed = document.getElementById('btn-stoic-proceed');
+        const countdownText = document.getElementById('stoic-countdown');
+        
+        let timeLeft = 3;
+        
+        const interval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft > 0) {
+                countdownText.textContent = 'Tunggu ' + timeLeft + 's...';
+            } else {
+                clearInterval(interval);
+                btnProceed.disabled = false;
+                btnProceed.style.opacity = '1';
+                btnProceed.style.cursor = 'pointer';
+                btnProceed.style.background = 'rgba(239, 68, 68, 0.2)';
+                btnProceed.style.color = '#ef4444';
+                countdownText.textContent = 'Tetap Lanjutkan (Beli)';
+            }
+        }, 1000);
+        
+        const cleanup = () => {
+            clearInterval(interval);
+            modal.remove();
+        };
+        
+        btnCancel.addEventListener('click', () => {
+            cleanup();
+            resolve(false); // User cancelled the purchase
+        });
+        
+        btnProceed.addEventListener('click', () => {
+            if (timeLeft <= 0) {
+                cleanup();
+                resolve(true); // User proceeded with purchase
+            }
+        });
+    });
+}
+
+// --- EXPORT FINANCE CSV ---
+async function exportFinanceCSV() {
+    const transactions = await getTransactions();
+    if (transactions.length === 0) {
+        alert('Tidak ada transaksi untuk diekspor.');
+        return;
+    }
+
+    // Build CSV
+    var csvRows = ['Tanggal,Tipe,Kategori,Deskripsi,Jumlah,Dompet'];
+    
+    // Get wallet names for lookup
+    var wallets = await getWallets();
+    var walletMap = {};
+    wallets.forEach(function(w) { walletMap[w.id] = w.name; });
+
+    transactions.forEach(function(t) {
+        var walletName = walletMap[t.walletId] || t.walletId || '-';
+        var desc = (t.description || '').replace(/,/g, ';').replace(/"/g, "'");
+        var cat = (t.category || '').replace(/,/g, ';');
+        csvRows.push(t.date + ',' + t.type + ',' + cat + ',' + desc + ',' + t.amount + ',' + walletName);
+    });
+
+    var csvString = csvRows.join('\n');
+    var blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    var now = new Date();
+    link.href = url;
+    link.download = 'Jurnal_AI_Keuangan_' + now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    alert('✅ File CSV berhasil diunduh! Buka dengan Excel/Google Sheets.');
+}
+
+// --- FULL BACKUP JSON ---
+async function exportFullBackupJSON() {
+    var backup = {
+        _meta: {
+            app: 'Jurnal AI',
+            exportedAt: new Date().toISOString(),
+            version: '2.0'
+        },
+        transactions: await getTransactions(),
+        wallets: await getWallets(),
+        journals: await getJournals(),
+        tasks: await getTasks(),
+        habits: await getHabits(),
+        goals: await getGoals(),
+        schedules: await getSchedules()
+    };
+
+    // Also grab relevant localStorage keys
+    var lsKeys = [
+        'jurnal_ai_stoic_tasks', 'jurnal_ai_stoic_xp', 'jurnal_ai_habits_daily',
+        'jurnal_ai_finance_qa', 'jurnal_ai_quick_note', 'jurnal_ai_xp',
+        'jurnal_ai_level', 'jurnal_ai_badges', 'jurnal_ai_workout_log',
+        'jurnal_ai_dashboard_widgets'
+    ];
+    backup.localStorage = {};
+    lsKeys.forEach(function(key) {
+        var val = localStorage.getItem(key);
+        if (val) backup.localStorage[key] = val;
+    });
+
+    var jsonString = JSON.stringify(backup, null, 2);
+    var blob = new Blob([jsonString], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    var now = new Date();
+    link.href = url;
+    link.download = 'Jurnal_AI_Backup_' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '.json';
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    alert('✅ Backup JSON berhasil diunduh! Simpan file ini di tempat yang aman.');
 }

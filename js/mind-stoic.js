@@ -272,10 +272,10 @@ function renderAuraChecklist() {
         html += `
             <div class="stoic-task-card" style="border-radius: 12px; overflow: hidden; transition: all 0.3s; ${cardStyle}">
                 <!-- Visual Header (Image Cover) -->
-                <div style="height: 120px; background-image: url('${task.img}'); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; position: relative;">
+                <div style="height: 250px; background-color: #0f172a; background-image: url('${task.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; display: flex; align-items: center; justify-content: center; position: relative;">
                     <span style="font-size: 3rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8)); z-index: 2;">${task.icon}</span>
-                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 1;"></div>
-                    <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); z-index: 1;"></div>
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); z-index: 1;"></div>
+                    <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 40%; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); z-index: 1;"></div>
                 </div>
 
                 <!-- Header part (Click to toggle completion) -->
@@ -312,6 +312,13 @@ function toggleAuraTask(taskId) {
     if (idx === -1) {
         stoicState.checklistProgress.push(taskId);
         stoicState.xp += 15; // Give XP
+        
+        // Log to RPG Stats (Weekly Growth)
+        const today = new Date().toISOString().split('T')[0];
+        const stoicLog = JSON.parse(localStorage.getItem('jurnal_ai_stoic_log') || '[]');
+        stoicLog.push({ id: taskId, date: today, timestamp: Date.now() });
+        localStorage.setItem('jurnal_ai_stoic_log', JSON.stringify(stoicLog.slice(-100)));
+
         if ("vibrate" in navigator) navigator.vibrate([20, 50, 20]);
     } else {
         // Can't un-done easily to prevent XP farming exploit, but let's allow it for user correction
@@ -320,6 +327,15 @@ function toggleAuraTask(taskId) {
         if(stoicState.xp < 0) stoicState.xp = 0;
     }
     saveStoicState();
+    
+    // Sync with RPG Stats widget
+    const exportTasks = stoicState.dailyMissions.map(id => ({
+        id: id,
+        isCompleted: stoicState.checklistProgress.includes(id)
+    }));
+    localStorage.setItem('jurnal_ai_stoic_tasks', JSON.stringify(exportTasks));
+    if (typeof refreshWidget === 'function') refreshWidget('rpg-stats');
+
     renderAuraHeader(); // Update XP bar
     renderAuraChecklist(); // Re-render list
 }

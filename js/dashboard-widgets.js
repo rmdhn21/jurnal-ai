@@ -1,5 +1,140 @@
 // ===== DASHBOARD WIDGETS SYSTEM =====
 const WIDGET_REGISTRY = {
+    'morning-briefing': {
+        id: 'morning-briefing',
+        title: 'Morning Briefing',
+        icon: '🌅',
+        html: `<div class="card" style="position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.05)); border: 1px solid rgba(59, 130, 246, 0.2);">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">🌅</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; position: relative; z-index: 1;">
+                        <h3 id="briefing-greeting" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🌅</span> Selamat Pagi!
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #3b82f6; background: rgba(59, 130, 246, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.3); text-transform: uppercase;">JARVIS BRIEFING</span>
+                    </div>
+                    <div id="briefing-content" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; position: relative; z-index: 1;">
+                        Memuat briefing harian Anda...
+                    </div>
+               </div>`,
+        init: async () => { 
+            const greetingEl = document.getElementById('briefing-greeting');
+            const contentEl = document.getElementById('briefing-content');
+            if(!greetingEl || !contentEl) return;
+
+            const hour = new Date().getHours();
+            let greeting = 'Selamat Pagi';
+            let icon = '🌅';
+            if (hour >= 12 && hour < 15) { greeting = 'Selamat Siang'; icon = '☀️'; }
+            else if (hour >= 15 && hour < 18) { greeting = 'Selamat Sore'; icon = '🌇'; }
+            else if (hour >= 18) { greeting = 'Selamat Malam'; icon = '🌙'; }
+            
+            greetingEl.innerHTML = `<span>${icon}</span> ${greeting}, Kapten!`;
+
+            // Compile briefing data
+            let briefingHtml = `<ul style="padding-left: 20px; margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">`;
+            
+            // Finance Briefing (sinkron dengan logika Batas Aman Harian)
+            if (typeof getWallets === 'function') {
+                const wallets = await getWallets();
+                const totalBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
+                const totalReserve = wallets.length * 100000; // 100k cadangan per dompet
+                const spendableBalance = Math.max(0, totalBalance - totalReserve);
+                
+                const now = new Date();
+                const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                const daysRemaining = daysInMonth - now.getDate() + 1;
+                
+                const safeDaily = daysRemaining > 0 ? Math.floor(spendableBalance / daysRemaining) : 0;
+                briefingHtml += '<li>\ud83d\udcb0 <strong>Budget Aman Hari Ini:</strong> <span style="color:#10b981; font-weight:bold;">Rp ' + safeDaily.toLocaleString('id-ID') + '</span></li>';
+            }
+
+            // Stoic Briefing
+            const storedAura = localStorage.getItem('jurnal_ai_stoic_tasks');
+            if (storedAura) {
+                const tasks = JSON.parse(storedAura);
+                const pending = tasks.filter(t => !t.isCompleted).length;
+                briefingHtml += `<li>🗡️ <strong>Misi Stoic:</strong> Tersisa <span style="color:#f59e0b; font-weight:bold;">${pending} misi</span> untuk memperkuat karakter Anda hari ini.</li>`;
+            }
+
+            briefingHtml += `<li>✅ Jangan lupa cek <strong>Habit Tracker</strong> Anda di bawah!</li>`;
+            briefingHtml += `</ul>`;
+            
+            contentEl.innerHTML = briefingHtml;
+        }
+    },
+    'habit-tracker': {
+        id: 'habit-tracker',
+        title: 'Daily Habit Tracker',
+        icon: '🌱',
+        html: `<div class="card mt-md" style="position: relative; overflow: hidden; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">🌱</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🌱</span> Habit Checklist
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); text-transform: uppercase;">DISIPLIN</span>
+                    </div>
+                    <div id="habit-tracker-list" style="display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1;"></div>
+               </div>`,
+        init: () => {
+            const listEl = document.getElementById('habit-tracker-list');
+            if(!listEl) return;
+
+            const today = new Date().toISOString().split('T')[0];
+            const habits = [
+                { id: 'h1', icon: '🌙', name: 'Tahajjud' },
+                { id: 'h2', icon: '☀️', name: 'Dhuha' },
+                { id: 'h3', icon: '📚', name: 'Membaca Buku (10 Halaman)' },
+                { id: 'h4', icon: '🏋️', name: 'Olahraga Beban / Fisik' }
+            ];
+
+            let storedHabits = JSON.parse(localStorage.getItem('jurnal_ai_habits_daily')) || {};
+            if (storedHabits.date !== today) {
+                storedHabits = { date: today, completed: [] };
+                localStorage.setItem('jurnal_ai_habits_daily', JSON.stringify(storedHabits));
+            }
+
+            const renderHabits = () => {
+                listEl.innerHTML = habits.map(h => {
+                    const isDone = storedHabits.completed.includes(h.id);
+                    const borderColor = isDone ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255,255,255,0.05)';
+                    const textStyle = isDone ? 'opacity: 0.6; text-decoration: line-through;' : '';
+                    const circBorder = isDone ? '#10b981' : '#64748b';
+                    const circBg = isDone ? '#10b981' : 'transparent';
+                    const checkMark = isDone ? '✓' : '';
+                    return '<div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 8px; border: 1px solid ' + borderColor + '; transition: all 0.2s; cursor: pointer;" onclick="toggleHabit(\'' + h.id + '\')">' +
+                        '<div style="display: flex; align-items: center; gap: 10px; ' + textStyle + '">' +
+                            '<span>' + h.icon + '</span>' +
+                            '<strong>' + h.name + '</strong>' +
+                        '</div>' +
+                        '<div style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid ' + circBorder + '; background: ' + circBg + '; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white;">' +
+                            checkMark +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            };
+
+            window.toggleHabit = (id) => {
+                if (storedHabits.completed.includes(id)) {
+                    storedHabits.completed = storedHabits.completed.filter(x => x !== id);
+                } else {
+                    storedHabits.completed.push(id);
+                    if (typeof addXP === 'function') addXP(10);
+                    
+                    // Log to RPG Stats (Weekly Growth)
+                    const habitLog = JSON.parse(localStorage.getItem('jurnal_ai_habit_log') || '[]');
+                    habitLog.push({ id: id, date: today, timestamp: Date.now() });
+                    localStorage.setItem('jurnal_ai_habit_log', JSON.stringify(habitLog.slice(-100)));
+                }
+                localStorage.setItem('jurnal_ai_habits_daily', JSON.stringify(storedHabits));
+                renderHabits();
+                if (typeof updateStreakLog === 'function') updateStreakLog();
+                if (typeof refreshWidget === 'function') refreshWidget('rpg-stats');
+            };
+
+            renderHabits();
+        }
+    },
     'profile': {
         id: 'profile',
         title: 'User Profile & XP',
@@ -302,11 +437,413 @@ const WIDGET_REGISTRY = {
         }
     },
 
+    'rpg-stats': {
+        id: 'rpg-stats',
+        title: 'RPG Character Stats',
+        icon: '⚔️',
+        html: `<div class="card mt-md" style="position: relative; overflow: hidden; border: 1px solid rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(0, 0, 0, 0.3));">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">⚔️</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>⚔️</span> Character Stats
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #a78bfa; background: rgba(139, 92, 246, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(139, 92, 246, 0.3); text-transform: uppercase;">RPG MODE</span>
+                    </div>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 10px; position: relative; z-index: 1;">Atribut karakter diukur dari aktivitas harian Anda.</p>
+                    <div style="min-height: 220px; position: relative; z-index: 1;">
+                        <canvas id="rpg-stats-chart"></canvas>
+                    </div>
+                    <div id="rpg-stats-summary" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; position: relative; z-index: 1;"></div>
+               </div>`,
+        init: async () => {
+            const ctx = document.getElementById('rpg-stats-chart');
+            if (!ctx) return;
+
+            // Calculate stats
+            let strScore = 0, wisScore = 0, disScore = 0, chaScore = 0;
+
+            // 1. STR: Workout completions (Last 7 Days)
+            let workoutLog = JSON.parse(localStorage.getItem('jurnal_ai_workout_log') || '[]');
+            const recentWorkouts = workoutLog.filter(w => (Date.now() - (w.timestamp || 0)) < 7 * 86400000);
+            strScore = Math.min(100, recentWorkouts.length * 10);
+
+            // 2. WIS: Stoic missions completed (Last 7 Days)
+            let stoicLog = JSON.parse(localStorage.getItem('jurnal_ai_stoic_log') || '[]');
+            // Self-Correction: Jika log kosong tapi ada misi selesai hari ini, masukkan ke log
+            if (stoicLog.length === 0) {
+                const stoicTasks = JSON.parse(localStorage.getItem('jurnal_ai_stoic_tasks') || '[]');
+                stoicTasks.forEach(t => { if (t.isCompleted) stoicLog.push({ id: t.id, timestamp: Date.now() }); });
+                if (stoicLog.length > 0) localStorage.setItem('jurnal_ai_stoic_log', JSON.stringify(stoicLog));
+            }
+            const recentStoic = stoicLog.filter(s => (Date.now() - (s.timestamp || 0)) < 7 * 86400000);
+            wisScore = Math.min(100, recentStoic.length * 5);
+
+            // 3. DIS: Habit completion (Last 7 Days)
+            let habitLog = JSON.parse(localStorage.getItem('jurnal_ai_habit_log') || '[]');
+            // Self-Correction: Jika log kosong tapi ada habit selesai hari ini, masukkan ke log
+            if (habitLog.length === 0) {
+                const habitsData = JSON.parse(localStorage.getItem('jurnal_ai_habits_daily') || '{}');
+                (habitsData.completed || []).forEach(id => { habitLog.push({ id: id, timestamp: Date.now() }); });
+                if (habitLog.length > 0) localStorage.setItem('jurnal_ai_habit_log', JSON.stringify(habitLog));
+            }
+            const recentHabits = habitLog.filter(h => (Date.now() - (h.timestamp || 0)) < 7 * 86400000);
+            disScore = Math.min(100, recentHabits.length * 3);
+
+            // CHA: XP level as proxy for overall authority
+            let chaXp = 0;
+            if (typeof getGamificationStats === 'function') {
+                try {
+                    const gStats = await getGamificationStats();
+                    chaXp = gStats.xp || 0;
+                } catch(e) {}
+            }
+            chaScore = Math.min(100, Math.floor(chaXp / 100)); // 10,000 XP to max 100 on radar
+
+            // Render summary boxes
+            const summaryEl = document.getElementById('rpg-stats-summary');
+            if (summaryEl) {
+                var items = [
+                    { label: 'STR', val: strScore, color: '#ef4444', emoji: '💪' },
+                    { label: 'WIS', val: wisScore, color: '#f59e0b', emoji: '🧠' },
+                    { label: 'DIS', val: disScore, color: '#10b981', emoji: '🛡️' },
+                    { label: 'CHA', val: chaScore, color: '#8b5cf6', emoji: '👑' }
+                ];
+                summaryEl.innerHTML = items.map(function(s) {
+                    return '<div style="background: rgba(0,0,0,0.2); padding: 6px 8px; border-radius: 6px; border: 1px solid ' + s.color + '33; text-align: center;">' +
+                        '<div style="font-size: 0.65rem; color: ' + s.color + '; font-weight: 800;">' + s.emoji + ' ' + s.label + '</div>' +
+                        '<div style="font-size: 1rem; font-weight: bold; color: white;">' + s.val + '</div>' +
+                    '</div>';
+                }).join('');
+            }
+
+            // Destroy previous chart if exists
+            if (window._rpgChart) window._rpgChart.destroy();
+
+            window._rpgChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['💪 STR (Fisik)', '🧠 WIS (Stoic)', '🛡️ DIS (Disiplin)', '👑 CHA (Otoritas)'],
+                    datasets: [{
+                        label: 'Character Stats',
+                        data: [strScore, wisScore, disScore, chaScore],
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        borderColor: 'rgba(139, 92, 246, 0.8)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#a78bfa',
+                        pointBorderColor: '#fff',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                            pointLabels: { color: '#cbd5e1', font: { size: 10, weight: 'bold' } },
+                            ticks: { display: false, stepSize: 20 },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    },
+
+    'finance-export': {
+        id: 'finance-export',
+        title: 'Export & Backup Data',
+        icon: '💾',
+        html: `<div class="card mt-md" style="position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(0,0,0,0.3)); border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">💾</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>💾</span> Export & Backup
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); text-transform: uppercase;">SAFE</span>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 15px; position: relative; z-index: 1;">Cetak laporan keuangan atau backup seluruh data Anda.</p>
+                    <div style="display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1;">
+                        <button class="btn btn-primary" onclick="exportFinanceCSV()" style="border-radius: 8px; font-weight: 700; font-size: 0.8rem;">📊 Export Keuangan (CSV/Excel)</button>
+                        <button class="btn btn-secondary" onclick="exportFullBackupJSON()" style="border-radius: 8px; font-weight: 700; font-size: 0.8rem;">💾 Backup Seluruh Data (JSON)</button>
+                    </div>
+               </div>`,
+        init: () => {}
+    },
+
+    'streak-calendar': {
+        id: 'streak-calendar',
+        title: 'Streak Heatmap',
+        icon: '🔥',
+        html: `<div class="card mt-md" style="position: relative; overflow: hidden; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">🔥</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🔥</span> Streak Calendar
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); text-transform: uppercase;">30 HARI</span>
+                    </div>
+                    <div id="streak-heatmap" style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; position: relative; z-index: 1;"></div>
+                    <div id="streak-summary" style="margin-top: 10px; font-size: 0.75rem; color: var(--text-muted); position: relative; z-index: 1;"></div>
+               </div>`,
+        init: () => {
+            const heatmap = document.getElementById('streak-heatmap');
+            const summary = document.getElementById('streak-summary');
+            if (!heatmap) return;
+
+            // Load streak data from localStorage
+            var streakData = JSON.parse(localStorage.getItem('jurnal_ai_streak_log') || '{}');
+            var today = new Date();
+            var totalActive = 0;
+            var currentStreak = 0;
+            var cells = [];
+
+            for (var i = 29; i >= 0; i--) {
+                var d = new Date(today);
+                d.setDate(d.getDate() - i);
+                var dateStr = d.toISOString().split('T')[0];
+                var level = streakData[dateStr] || 0; // 0-4
+                if (level > 0) totalActive++;
+
+                var color = 'rgba(255,255,255,0.05)';
+                if (level === 1) color = 'rgba(16, 185, 129, 0.2)';
+                else if (level === 2) color = 'rgba(16, 185, 129, 0.4)';
+                else if (level === 3) color = 'rgba(16, 185, 129, 0.65)';
+                else if (level >= 4) color = 'rgba(16, 185, 129, 0.9)';
+
+                var dayLabel = d.getDate();
+                cells.push('<div title="' + dateStr + '" style="width: 100%; aspect-ratio: 1; background: ' + color + '; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; color: rgba(255,255,255,0.4);">' + dayLabel + '</div>');
+            }
+
+            // Calculate current streak (consecutive days from today going back)
+            for (var j = 0; j <= 29; j++) {
+                var dd = new Date(today);
+                dd.setDate(dd.getDate() - j);
+                var ds = dd.toISOString().split('T')[0];
+                if ((streakData[ds] || 0) > 0) {
+                    currentStreak++;
+                } else {
+                    break;
+                }
+            }
+
+            heatmap.innerHTML = cells.join('');
+            if (summary) {
+                summary.innerHTML = '🔥 Streak: <strong>' + currentStreak + ' hari</strong> &nbsp;|&nbsp; Aktif: <strong>' + totalActive + '/30</strong> hari';
+            }
+        }
+    },
+
+    'muhasabah': {
+        id: 'muhasabah',
+        title: 'Muhasabah Malam',
+        icon: '🌊',
+        html: `<div class="card mt-md" style="position: relative; overflow: hidden; border: 1px solid rgba(99, 102, 241, 0.2); background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(0,0,0,0.3));">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">🌊</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🌊</span> Muhasabah Malam
+                        </h3>
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #818cf8; background: rgba(99, 102, 241, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.3); text-transform: uppercase;">REFLEKSI</span>
+                    </div>
+                    <div id="muhasabah-container" style="position: relative; z-index: 1;"></div>
+               </div>`,
+        init: () => {
+            var container = document.getElementById('muhasabah-container');
+            if (!container) return;
+
+            var today = new Date().toISOString().split('T')[0];
+            var stored = JSON.parse(localStorage.getItem('jurnal_ai_muhasabah') || '{}');
+            var todayData = stored[today] || {};
+            var isSaved = !!todayData.grateful;
+
+            if (isSaved) {
+                // Show saved reflection
+                var stars = '';
+                for (var s = 0; s < 5; s++) stars += (s < (todayData.rating || 0)) ? '⭐' : '☆';
+                container.innerHTML = '<div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border-left: 3px solid #818cf8;">' +
+                    '<p style="margin: 0 0 5px; font-size: 0.8rem;"><strong>Syukur:</strong> ' + (todayData.grateful || '-') + '</p>' +
+                    '<p style="margin: 0 0 5px; font-size: 0.8rem;"><strong>Perbaiki:</strong> ' + (todayData.improve || '-') + '</p>' +
+                    '<p style="margin: 0; font-size: 0.9rem;">' + stars + '</p>' +
+                '</div>' +
+                '<p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">✅ Refleksi hari ini sudah tercatat. Jazakallah khairan!</p>';
+            } else {
+                container.innerHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">' +
+                    '<input id="muh-grateful" type="text" class="input" placeholder="Apa yang saya syukuri hari ini?" style="font-size: 0.85rem;">' +
+                    '<input id="muh-improve" type="text" class="input" placeholder="Apa yang bisa saya perbaiki?" style="font-size: 0.85rem;">' +
+                    '<div style="display: flex; align-items: center; gap: 5px;">' +
+                        '<span style="font-size: 0.8rem; color: var(--text-muted);">Rating hari ini:</span>' +
+                        '<span id="muh-stars" style="font-size: 1.2rem; cursor: pointer;">☆☆☆☆☆</span>' +
+                    '</div>' +
+                    '<button class="btn btn-primary" onclick="saveMuhasabah()" style="border-radius: 8px; font-size: 0.8rem; font-weight: 700;">💾 Simpan Refleksi</button>' +
+                '</div>';
+
+                // Star rating click handler
+                var starsEl = document.getElementById('muh-stars');
+                if (starsEl) {
+                    window._muhRating = 0;
+                    starsEl.addEventListener('click', function(e) {
+                        var rect = starsEl.getBoundingClientRect();
+                        var x = e.clientX - rect.left;
+                        var starWidth = rect.width / 5;
+                        window._muhRating = Math.ceil(x / starWidth);
+                        var display = '';
+                        for (var i = 0; i < 5; i++) display += (i < window._muhRating) ? '⭐' : '☆';
+                        starsEl.textContent = display;
+                    });
+                }
+            }
+        }
+    },
+
+    'water-tracker': {
+        id: 'water-tracker',
+        title: 'Water Tracker',
+        icon: '💧',
+        html: `<div class="card mt-md" style="position: relative; overflow: hidden; border: 1px solid rgba(59, 130, 246, 0.2);">
+                    <div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">💧</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; position: relative; z-index: 1;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>💧</span> Water Tracker
+                        </h3>
+                        <span id="water-count-badge" style="font-size: 0.65rem; font-weight: 800; color: #3b82f6; background: rgba(59, 130, 246, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.3); text-transform: uppercase;">0/8 GELAS</span>
+                    </div>
+                    <div id="water-glasses" style="display: flex; gap: 6px; flex-wrap: wrap; position: relative; z-index: 1;"></div>
+                    <button class="btn btn-primary" onclick="addWaterGlass()" style="margin-top: 10px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; width: 100%; position: relative; z-index: 1;">💧 + 1 Gelas Air</button>
+               </div>`,
+        init: () => {
+            var today = new Date().toISOString().split('T')[0];
+            var waterData = JSON.parse(localStorage.getItem('jurnal_ai_water') || '{}');
+            if (waterData.date !== today) {
+                waterData = { date: today, count: 0 };
+                localStorage.setItem('jurnal_ai_water', JSON.stringify(waterData));
+            }
+            renderWaterUI(waterData.count);
+        }
+    },
+
+    'spending-forecast': {
+        id: 'spending-forecast',
+        title: 'Prediksi Pengeluaran AI',
+        icon: '🔮',
+        html: '<div class="card mt-md" style="position: relative; overflow: hidden; border: 1px solid rgba(245, 158, 11, 0.25); background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(0,0,0,0.3));">' +
+                '<div style="position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 6rem; pointer-events: none;">🔮</div>' +
+                '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; position: relative; z-index: 1;">' +
+                    '<h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">' +
+                        '<span>🔮</span> Prediksi Keuangan' +
+                    '</h3>' +
+                    '<span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); text-transform: uppercase;">AI FORECAST</span>' +
+                '</div>' +
+                '<div id="forecast-content" style="position: relative; z-index: 1; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">Menganalisis pola belanja...</div>' +
+            '</div>',
+        init: async () => {
+            var el = document.getElementById('forecast-content');
+            if (!el) return;
+
+            try {
+                var wallets = typeof getWallets === 'function' ? await getWallets() : [];
+                var transactions = typeof getTransactions === 'function' ? await getTransactions() : [];
+
+                var totalBalance = wallets.reduce(function(s, w) { return s + (w.balance || 0); }, 0);
+                var totalReserve = wallets.length * 100000;
+
+                var now = new Date();
+                var year = now.getFullYear();
+                var month = now.getMonth();
+                var daysInMonth = new Date(year, month + 1, 0).getDate();
+                var daysPassed = now.getDate();
+                var daysRemaining = daysInMonth - daysPassed + 1;
+
+                // Get this month's expenses (excluding transfers)
+                var monthExpenses = transactions.filter(function(t) {
+                    var d = new Date(t.date);
+                    return t.type === 'expense' && d.getMonth() === month && d.getFullYear() === year && !(t.category && t.category.indexOf('Pindah Dana') === 0);
+                });
+
+                var totalSpentThisMonth = monthExpenses.reduce(function(s, t) { return s + t.amount; }, 0);
+                var avgDailySpend = daysPassed > 0 ? totalSpentThisMonth / daysPassed : 0;
+                var projectedMonthSpend = Math.round(avgDailySpend * daysInMonth);
+                var projectedRemaining = Math.round(avgDailySpend * (daysRemaining - 1));
+                var projectedEndBalance = totalBalance - projectedRemaining;
+
+                // Get this month's income
+                var monthIncome = transactions.filter(function(t) {
+                    var d = new Date(t.date);
+                    return t.type === 'income' && d.getMonth() === month && d.getFullYear() === year && !(t.category && t.category.indexOf('Pindah Dana') === 0);
+                }).reduce(function(s, t) { return s + t.amount; }, 0);
+
+                // Top spending category
+                var catMap = {};
+                monthExpenses.forEach(function(t) {
+                    var cat = t.category || 'Lain-lain';
+                    catMap[cat] = (catMap[cat] || 0) + t.amount;
+                });
+                var topCat = '';
+                var topCatAmt = 0;
+                for (var c in catMap) {
+                    if (catMap[c] > topCatAmt) { topCatAmt = catMap[c]; topCat = c; }
+                }
+
+                // Determine status
+                var statusIcon, statusColor, statusText, adviceText;
+                if (projectedEndBalance >= totalReserve) {
+                    statusIcon = '✅';
+                    statusColor = '#10b981';
+                    statusText = 'AMAN';
+                    adviceText = 'Pola belanja Anda terkendali. Saldo di akhir bulan diprediksi masih sehat.';
+                } else if (projectedEndBalance > 0) {
+                    statusIcon = '⚠️';
+                    statusColor = '#f59e0b';
+                    statusText = 'HATI-HATI';
+                    adviceText = 'Saldo akhir bulan diprediksi mendekati batas cadangan. Kurangi pengeluaran non-esensial.';
+                } else {
+                    statusIcon = '🚨';
+                    statusColor = '#ef4444';
+                    statusText = 'BAHAYA';
+                    adviceText = 'Dengan pola belanja saat ini, saldo Anda diprediksi MINUS di akhir bulan! Segera hemat!';
+                }
+
+                var fmtCurrency = typeof formatCurrency === 'function' ? formatCurrency : function(n) { return 'Rp ' + n.toLocaleString('id-ID'); };
+
+                el.innerHTML = '<div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border-left: 3px solid ' + statusColor + '; margin-bottom: 10px;">' +
+                    '<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">' +
+                        '<span style="font-size: 1.2rem;">' + statusIcon + '</span>' +
+                        '<strong style="color: ' + statusColor + '; text-transform: uppercase; font-size: 0.8rem;">' + statusText + '</strong>' +
+                    '</div>' +
+                    '<p style="margin: 0; font-size: 0.8rem; color: #cbd5e1;">' + adviceText + '</p>' +
+                '</div>' +
+                '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">' +
+                    '<div style="background: rgba(0,0,0,0.15); padding: 8px; border-radius: 6px; text-align: center;">' +
+                        '<div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Rata-rata/Hari</div>' +
+                        '<div style="font-size: 0.85rem; font-weight: bold; color: #f59e0b;">' + fmtCurrency(Math.round(avgDailySpend)) + '</div>' +
+                    '</div>' +
+                    '<div style="background: rgba(0,0,0,0.15); padding: 8px; border-radius: 6px; text-align: center;">' +
+                        '<div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Proyeksi Bulan Ini</div>' +
+                        '<div style="font-size: 0.85rem; font-weight: bold; color: ' + statusColor + ';">' + fmtCurrency(projectedMonthSpend) + '</div>' +
+                    '</div>' +
+                    '<div style="background: rgba(0,0,0,0.15); padding: 8px; border-radius: 6px; text-align: center;">' +
+                        '<div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Prediksi Saldo Akhir</div>' +
+                        '<div style="font-size: 0.85rem; font-weight: bold; color: ' + (projectedEndBalance >= 0 ? '#10b981' : '#ef4444') + ';">' + fmtCurrency(Math.round(projectedEndBalance)) + '</div>' +
+                    '</div>' +
+                    '<div style="background: rgba(0,0,0,0.15); padding: 8px; border-radius: 6px; text-align: center;">' +
+                        '<div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Boros Terbesar</div>' +
+                        '<div style="font-size: 0.85rem; font-weight: bold; color: #ef4444;">' + (topCat || '-') + '</div>' +
+                    '</div>' +
+                '</div>';
+            } catch(e) {
+                el.textContent = 'Gagal memuat prediksi.';
+            }
+        }
+    },
+
 };
 
 const DEFAULT_WIDGET_ORDER = [
-    'profile', 'hsse-center', 'overview', 'quick-note', 'life-balance', 'prayer', 'daily-schedule', 'motivation', 
-    'brain-boost', 'hadith', 'finance-budget', 
+    'morning-briefing', 'habit-tracker', 'water-tracker', 'profile', 'rpg-stats', 'hsse-center', 'overview', 'quick-note', 'streak-calendar', 'life-balance', 'prayer', 'daily-schedule', 'motivation', 
+    'brain-boost', 'hadith', 'finance-budget', 'spending-forecast', 'finance-export', 'muhasabah',
     'reminders', 'calendar', 'weekly-report'
 ];
 
@@ -372,9 +909,18 @@ async function initDashboardWidgets() {
         }
     }
 
-    // Final safety: ensure loading spinner is gone if it somehow persisted
     const spinner = container.querySelector('.loading-spinner-container');
     if (spinner) spinner.remove();
+}
+
+async function refreshWidget(widgetId) {
+    if (WIDGET_REGISTRY[widgetId] && WIDGET_REGISTRY[widgetId].init) {
+        try {
+            await WIDGET_REGISTRY[widgetId].init();
+        } catch (e) {
+            console.error(`Error refreshing widget ${widgetId}:`, e);
+        }
+    }
 }
 
 // Add UI for customization
@@ -456,3 +1002,125 @@ function resetWidgetsToDefault() {
     localStorage.removeItem('jurnal_ai_dashboard_widgets');
     renderWidgetSettingsList();
 }
+
+// ===== MUHASABAH MALAM =====
+function saveMuhasabah() {
+    var grateful = document.getElementById('muh-grateful');
+    var improve = document.getElementById('muh-improve');
+    if (!grateful || !grateful.value.trim()) {
+        alert('Tuliskan setidaknya 1 hal yang Anda syukuri.');
+        return;
+    }
+
+    var today = new Date().toISOString().split('T')[0];
+    var stored = JSON.parse(localStorage.getItem('jurnal_ai_muhasabah') || '{}');
+    stored[today] = {
+        grateful: grateful.value.trim(),
+        improve: improve ? improve.value.trim() : '',
+        rating: window._muhRating || 3
+    };
+    localStorage.setItem('jurnal_ai_muhasabah', JSON.stringify(stored));
+
+    // Update streak log
+    updateStreakLog();
+
+    // Give XP
+    if (typeof addXP === 'function') addXP(15);
+    alert('✅ Muhasabah tersimpan. Jazakallah khairan!');
+
+    // Re-render widget
+    var container = document.getElementById('muhasabah-container');
+    if (container) {
+        var todayData = stored[today];
+        var stars = '';
+        for (var s = 0; s < 5; s++) stars += (s < (todayData.rating || 0)) ? '⭐' : '☆';
+        container.innerHTML = '<div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border-left: 3px solid #818cf8;">' +
+            '<p style="margin: 0 0 5px; font-size: 0.8rem;"><strong>Syukur:</strong> ' + todayData.grateful + '</p>' +
+            '<p style="margin: 0 0 5px; font-size: 0.8rem;"><strong>Perbaiki:</strong> ' + (todayData.improve || '-') + '</p>' +
+            '<p style="margin: 0; font-size: 0.9rem;">' + stars + '</p>' +
+        '</div>' +
+        '<p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">✅ Refleksi hari ini sudah tercatat. Jazakallah khairan!</p>';
+    }
+}
+
+// ===== WATER TRACKER =====
+function renderWaterUI(count) {
+    var glassesEl = document.getElementById('water-glasses');
+    var badge = document.getElementById('water-count-badge');
+    if (!glassesEl) return;
+
+    var html = '';
+    for (var i = 0; i < 8; i++) {
+        var filled = i < count;
+        html += '<div style="width: 30px; height: 36px; border-radius: 4px; border: 2px solid ' + (filled ? '#3b82f6' : 'rgba(255,255,255,0.1)') + '; background: ' + (filled ? 'rgba(59, 130, 246, 0.3)' : 'transparent') + '; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">' + (filled ? '💧' : '') + '</div>';
+    }
+    glassesEl.innerHTML = html;
+
+    if (badge) {
+        badge.textContent = count + '/8 GELAS';
+        if (count >= 8) {
+            badge.style.color = '#10b981';
+            badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+            badge.style.background = 'rgba(16, 185, 129, 0.15)';
+        }
+    }
+}
+
+function addWaterGlass() {
+    var today = new Date().toISOString().split('T')[0];
+    var waterData = JSON.parse(localStorage.getItem('jurnal_ai_water') || '{}');
+    if (waterData.date !== today) {
+        waterData = { date: today, count: 0 };
+    }
+
+    if (waterData.count >= 8) {
+        alert('Target 8 gelas sudah tercapai hari ini! 🎉');
+        return;
+    }
+
+    waterData.count++;
+    localStorage.setItem('jurnal_ai_water', JSON.stringify(waterData));
+    renderWaterUI(waterData.count);
+
+    if (waterData.count >= 8) {
+        if (typeof addXP === 'function') addXP(10);
+        alert('🎉 Target 8 gelas tercapai! +10 XP');
+    }
+
+    // Update streak
+    updateStreakLog();
+}
+
+// ===== STREAK LOGGER =====
+// Called from habits, muhasabah, water, etc. to track daily activity level
+function updateStreakLog() {
+    var today = new Date().toISOString().split('T')[0];
+    var streakData = JSON.parse(localStorage.getItem('jurnal_ai_streak_log') || '{}');
+
+    // Count activities done today
+    var level = 0;
+
+    // 1. Habits
+    var habits = JSON.parse(localStorage.getItem('jurnal_ai_habits_daily') || '{}');
+    if (habits.date === today) level += (habits.completed || []).length;
+
+    // 2. Muhasabah
+    var muh = JSON.parse(localStorage.getItem('jurnal_ai_muhasabah') || '{}');
+    if (muh[today]) level++;
+
+    // 3. Water
+    var water = JSON.parse(localStorage.getItem('jurnal_ai_water') || '{}');
+    if (water.date === today && water.count >= 4) level++;
+
+    // 4. Stoic
+    var stoic = JSON.parse(localStorage.getItem('jurnal_ai_stoic_tasks') || '[]');
+    var stoicDone = stoic.filter(function(t) { return t.isCompleted; }).length;
+    if (stoicDone > 0) level++;
+
+    // Cap at 4
+    streakData[today] = Math.min(4, level);
+    localStorage.setItem('jurnal_ai_streak_log', JSON.stringify(streakData));
+}
+
+window.initDashboardWidgets = initDashboardWidgets;
+window.refreshWidget = refreshWidget;

@@ -409,6 +409,12 @@ async function toggleWorkoutTask(category, id) {
         if (window.addXP && !workoutState.earnedXpToday.includes(id)) {
             window.addXP(5, 'Latihan Hybrid Athlete');
             workoutState.earnedXpToday.push(id);
+            
+            // Log to RPG Stats
+            const workoutLog = JSON.parse(localStorage.getItem('jurnal_ai_workout_log') || '[]');
+            workoutLog.push({ id: id, date: today, timestamp: Date.now() });
+            localStorage.setItem('jurnal_ai_workout_log', JSON.stringify(workoutLog.slice(-100))); // Keep last 100
+            if (typeof refreshWidget === 'function') refreshWidget('rpg-stats');
         }
 
         // Full category goal bonus

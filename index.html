@@ -55,6 +55,9 @@
     <!-- html2pdf.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
+    <!-- Tesseract.js for OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
     <!-- Three.js for 3D Rig Viewer -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -2192,7 +2195,36 @@
 
                 <!-- Add Transaction -->
                 <div class="card">
-                    <h2>💰 Tambah Transaksi</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h2 style="margin: 0;">💰 Tambah Transaksi</h2>
+                        <button class="btn btn-secondary btn-small" id="scan-receipt-btn" style="font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                            <span class="btn-icon">📸</span> Scan Struk
+                        </button>
+                        <input type="file" id="receipt-upload" accept="image/*" capture="environment" class="hidden">
+                    </div>
+
+                    <!-- Tombol Cepat (Quick Actions) -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Quick Actions</span>
+                        <button type="button" class="text-xs text-primary" style="background:none; border:none; padding:0; cursor:pointer;" onclick="if(typeof openManageQuickActionsModal === 'function') openManageQuickActionsModal()">⚙️ Atur</button>
+                    </div>
+                    <div id="quick-actions-container" class="quick-actions-scroll" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border);">
+                        <!-- Dinamis via JS -->
+                    </div>
+
+                    <div id="ocr-loading" class="hidden" style="margin-bottom: 15px; padding: 10px; background: rgba(59, 130, 246, 0.1); border: 1px dashed var(--primary); border-radius: 8px; text-align: center;">
+                        <div class="loading-spinner" style="width: 20px; height: 20px; margin: 0 auto 5px auto;"></div>
+                        <p class="text-xs text-primary" id="ocr-status-text">AI sedang membaca struk...</p>
+                    </div>
+
+                    <div id="ocr-result-container" class="hidden" style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span class="text-xs font-bold text-primary">📝 Hasil Teks Struk</span>
+                            <button class="icon-btn text-xs" style="padding:0; margin:0; line-height:1;" onclick="document.getElementById('ocr-result-container').classList.add('hidden')">✕</button>
+                        </div>
+                        <pre id="ocr-result-text" style="font-size: 0.7rem; color: var(--text-secondary); max-height: 100px; overflow-y: auto; white-space: pre-wrap; margin: 0; font-family: monospace;"></pre>
+                    </div>
+
                     <div class="transaction-form">
                         <div class="form-row">
                             <select id="transaction-type" class="input">
@@ -2218,7 +2250,7 @@
                                 placeholder="Tanggal 1-31">
                         </div>
                         <div class="form-row">
-                            <input type="number" id="transaction-amount" placeholder="Jumlah" class="input">
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="transaction-amount" placeholder="Jumlah (Rp)" class="input">
                             <input type="date" id="transaction-date" class="input">
                         </div>
                         <div class="form-group">
@@ -4120,10 +4152,57 @@
         </div>
     </div>
 
+    <!-- Quick Action Confirmation Modal -->
+    <div id="qa-confirm-modal" class="modal hidden" style="z-index: 10005;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 style="margin-bottom: 15px;">Pilih Dompet & Konfirmasi</h3>
+            <p id="qa-confirm-desc" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;"></p>
+            <div class="form-group">
+                <label>Pilih Dompet Sumber:</label>
+                <select id="qa-wallet-select" class="input"></select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-secondary flex-1" onclick="document.getElementById('qa-confirm-modal').classList.add('hidden')">Batal</button>
+                <button class="btn btn-primary flex-1" id="qa-confirm-btn">Catat!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Quick Actions Modal -->
+    <div id="manage-qa-modal" class="modal hidden" style="z-index: 10005;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>⚙️ Atur Tombol Cepat</h3>
+                <span class="close-modal" onclick="document.getElementById('manage-qa-modal').classList.add('hidden')">&times;</span>
+            </div>
+            <div id="manage-qa-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 5px;">
+                <!-- List of items to edit/delete -->
+            </div>
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
+                <h4>Tambah Baru</h4>
+                <div class="form-group">
+                    <input type="text" id="new-qa-icon" class="input" placeholder="Icon (misal: 🍔)" style="width: 25%; display: inline-block;">
+                    <input type="text" id="new-qa-name" class="input" placeholder="Nama (misal: Burger)" style="width: 70%; display: inline-block;">
+                </div>
+                <div class="form-group">
+                    <input type="number" id="new-qa-amount" class="input" placeholder="Jumlah (Rp)">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="new-qa-category" class="input" placeholder="Kategori (misal: Makan & Minum)">
+                </div>
+                <button class="btn btn-secondary w-full" onclick="addNewQuickAction()">Tambah Tombol Cepat</button>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-primary w-full" onclick="document.getElementById('manage-qa-modal').classList.add('hidden')">Selesai</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/hse-geomapper.js"></script>
     <script src="js/hse-analytics.js"></script>
     <script src="js/hse-emergency.js"></script>
     <script src="js/mind-stoic.js"></script>
+    <script src="js/finance-ocr.js"></script>
 
 </body>
 
