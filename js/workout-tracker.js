@@ -35,6 +35,31 @@ const workoutData = {
         { id: 'h2_2', text: 'Band Rotator Cuff (External)', sets: '3 Set x 15 Reps', how: 'Ikat band, siku tempel di pinggang, tarik band menjauhi badan.', benefit: 'Maintenance harian sendi bahu. Latihan wajib para spiker voli agar engselnya tidak kendor.', img: 'img/workouts/band_rotator_cuff.png' },
         { id: 'h2_3', text: 'Band Lateral Raises', sets: '3 Set x 12-15 Reps', how: 'Injak tengah band, angkat kedua ujung ke samping.', benefit: 'Bahu samping tanpa beban besi. Menjaga otot delt tetap kencang tanpa perlu ke gym.', img: 'img/workouts/band_lateral_raises.png' },
         { id: 'h2_4', text: 'Dead Bugs (Stabilitas Otak & Core)', sets: '3 Set x 12 Reps / Sisi', how: 'Rebahan, tangan & kaki di udara. Turunkan lurus tangan KANAN & kaki KIRI bersamaan.', benefit: 'Koordinasi silang diam-diam. BOLA/VOLI: Melatih sinkronisasi otak antara tangan dan kaki saat berlari atau melompat.', img: 'img/workouts/dead_bugs.png' }
+    ],
+    posture: [
+        { id: 'p1', text: 'Chin Tuck (Anti Tech-Neck)', sets: '3 Set x 10-12 Reps', how: 'Duduk tegak, tarik dagu ke belakang (buat dagu berlapis) tanpa menunduk. Tahan 2 detik.', benefit: 'Memperbaiki posisi kepala yang sering maju karena HP/Laptop. Membuat leher terlihat lebih gagah dan tegap.', img: 'img/workouts/chin_tuck.png' },
+        { id: 'p2', text: 'Wall Slides', sets: '3 Set x 10 Reps', how: 'Senderkan punggung & tangan di tembok posisi "W". Geser tangan ke atas sampai jadi "Y", lalu tarik turun lagi.', benefit: 'Membuka dada yang bungkuk & mengaktifkan otot punggung atas. Sangat efektif untuk memperbaiki postur pundak melengkung.', img: 'img/workouts/wall_slides.png' },
+        { id: 'p3', text: 'Cat-Cow Stretch', sets: '3 Set x 10 Reps', how: 'Posisi merangkak. Lengkungkan punggung ke atas (Cat) lalu tekan ke bawah sambil angkat dagu (Cow).', benefit: 'Meningkatkan mobilitas tulang belakang. Menghilangkan kaku di punggung setelah seharian duduk.', img: 'img/workouts/cat_cow.png' },
+        { id: 'p4', text: 'Prone Y-T-W', sets: '3 Set x 10-12 Reps', how: 'Tengkurap di lantai. Angkat tangan membentuk huruf Y, lalu T, lalu tarik siku ke pinggang membentuk W.', benefit: 'Memperkuat seluruh otot penopang postur di punggung belakang tanpa perlu alat sama sekali.', img: 'img/workouts/prone_ytw.png' },
+        { id: 'p5', text: 'Scapular Squeeze', sets: '3 Set x 12-15 Reps', how: 'Duduk/berdiri tegak, busungkan dada, tarik bahu ke belakang dan rapatkan tulang belikat sekuat mungkin.', benefit: 'Melatih otot romboid agar bahu tetap tegap secara alami tanpa harus dipaksa.', img: 'img/workouts/scapular_squeeze.png' }
+    ],
+    posture2: [
+        { id: 'p2_1', text: 'Peregangan Kobra (Cobra Stretch)', sets: '3-4 Set x 20-30 Detik', how: 'Berbaring tengkurap, letakkan tangan di samping bahu, dorong dada ke atas perlahan sampai punggung melengkung.', benefit: 'Mengendurkan otot dada & perut yang kencang karena sering bungkuk. Memberi ruang bagi tulang belakang untuk kembali tegak.', img: 'img/workouts/cobra_stretch.png' },
+        { id: 'p2_2', text: 'Superman / Back Extensions', sets: '3 Set x 10-12 Reps', how: 'Berbaring tengkurap, angkat dada, kepala, dan tangan dari lantai. Jepit belikat ke belakang. Tahan 3-5 detik.', benefit: 'Memperkuat otot punggung tengah (rhomboids/traps) yang lemah agar kuat menopang tubuh tetap tegak otomatis.', img: 'img/workouts/superman.png' },
+        { id: 'p2_3', text: 'Mountain Pose (Kesadaran Postur)', sets: 'Setiap Saat', how: 'Berdiri tegak, bahu rileks ke belakang, tarik belikat sedikit. Telinga, bahu, pinggul, mata kaki satu garis.', benefit: 'Mengajarkan tubuh postur baru yang otomatis. Bayangkan ada benang yang menarik ubun-ubun kepala ke atas.', img: 'img/workouts/mountain_pose.png' }
+    ],
+    posture3: [
+        { id: 'p3_1', text: 'Bird-Dog (Stabilitas Tulang Belakang)', sets: '3 Set x 10 Reps / Sisi', how: 'Posisi merangkak. Angkat tangan kanan & kaki kiri bersamaan sampai sejajar punggung. Tahan 2 detik.', benefit: 'Melatih otot inti (core) dan punggung bawah agar tetap stabil saat melakukan gerakan eksplosif di lapangan.', img: 'img/workouts/bird_dog.png' },
+        { id: 'p3_2', text: 'Dead Bug (Kontrol Perut & Rusuk)', sets: '3 Set x 12 Reps / Sisi', how: 'Rebahan, tangan & kaki di udara. Turunkan tangan kanan & kaki kiri pelan-pelan tanpa punggung bawah melengkung.', benefit: 'Mencegah tulang rusuk "flare" (menonjol) dan memperbaiki lengkungan pinggang yang berlebihan (anterior pelvic tilt).', img: 'img/workouts/dead_bug.png' },
+        { id: 'p3_3', text: 'Hip Flexor Stretch', sets: '3 Set x 30 Detik / Sisi', how: 'Posisi lunge satu lutut di bawah. Dorong pinggul ke depan sedikit, kencangkan perut & bokong.', benefit: 'Melepas kaku pada lipatan paha akibat terlalu banyak duduk. Membuat berdiri lebih tegak tanpa tarikan di pinggul.', img: 'img/workouts/hip_flexor_stretch.png' },
+        { id: 'p3_4', text: 'Glute Bridge Hold', sets: '3 Set x 15 Reps (Hold 5s)', how: 'Rebahan, tekuk lutut, angkat pinggul ke atas sampai sejajar paha. Squeeze bokong sekuat mungkin di atas.', benefit: 'Memperkuat otot bokong (powerhouse). Penting untuk lompatan voli dan kestabilan lari di bola.', img: 'img/workouts/glute_bridge_hold.png' },
+        { id: 'p3_5', text: 'Plank Shoulder Tap', sets: '3 Set x 20 Tap', how: 'Posisi High Plank. Sentuh bahu kiri dengan tangan kanan, dan sebaliknya. Jaga pinggul jangan goyang!', benefit: 'Melatih kestabilan bahu dan core secara dinamis. Sangat berguna saat harus adu bodi di lapangan.', img: 'img/workouts/plank_shoulder_tap.png' }
+    ],
+    core_stamina: [
+        { id: 'cs1', text: 'Hollow Body Hold (Struktur Baja)', sets: '3 Set x 30-45 Detik', how: 'Rebahan, angkat bahu & kaki sedikit dari lantai. Tekan punggung bawah ke lantai sekuat mungkin. Tahan posisi "pisang".', benefit: 'Membangun integritas struktural tubuh. Membuat tubuh tidak mudah lelah saat harus berdiri atau duduk lama bekerja.', img: 'img/workouts/hollow_body.png' },
+        { id: 'cs2', text: 'Mountain Climbers (Mesin Stamina)', sets: '3 Set x 45 Detik', how: 'Posisi High Plank. Lari di tempat dengan menarik lutut ke dada secara bergantian secepat mungkin.', benefit: 'Meningkatkan kapasitas kardiovaskular dan daya tahan otot inti. Rahasia stamina "unlimited" saat bekerja di bawah tekanan.', img: 'img/workouts/mountain_climbers.png' },
+        { id: 'cs3', text: 'Side Plank Leg Lift', sets: '3 Set x 10 Reps / Sisi', how: 'Side plank pada siku. Angkat kaki bagian atas ke arah langit-langit, lalu turunkan perlahan.', benefit: 'Memperkuat rantai samping tubuh. Mencegah sakit pinggang dan memberikan stabilitas ekstra saat membawa beban atau bergerak.', img: 'img/workouts/side_plank_lift.png' },
+        { id: 'cs4', text: 'Bicycle Crunches (Endurance Perut)', sets: '3 Set x 20 Reps', how: 'Rebahan, tangan di kepala. Pertemukan siku kanan dengan lutut kiri, lalu sebaliknya seperti mengayuh sepeda.', benefit: 'Melatih ketahanan otot perut secara menyeluruh. Memberikan "armor" pada perut dan meningkatkan power rotasi tubuh.', img: 'img/workouts/bicycle_crunches.png' }
     ]
 };
 
@@ -461,6 +486,10 @@ function getCategoryColorHex(category) {
     if (category === 'gym2') return '#a855f7';
     if (category === 'home1') return '#10b981';
     if (category === 'home2') return '#14b8a6';
+    if (category === 'posture') return '#f43f5e';
+    if (category === 'posture2') return '#e11d48';
+    if (category === 'posture3') return '#fb7185';
+    if (category === 'core_stamina') return '#34d399';
     return '#f59e0b';
 }
 
@@ -469,6 +498,10 @@ function getCategoryColorClass(category) {
     if (category === 'gym2') return 'purple';
     if (category === 'home1') return 'emerald';
     if (category === 'home2') return 'teal';
+    if (category === 'posture') return 'rose';
+    if (category === 'posture2') return 'rose-dark';
+    if (category === 'posture3') return 'rose-light';
+    if (category === 'core_stamina') return 'emerald-vibrant';
     return 'amber';
 }
 
@@ -477,6 +510,10 @@ function getCategoryTitle(category) {
     if (category === 'gym2') return 'Gym 2: Upper & Stability';
     if (category === 'home1') return 'Home 1: Silent Endurance';
     if (category === 'home2') return 'Home 2: Band Mobility';
+    if (category === 'posture') return 'Postur: Tegap & Gagah';
+    if (category === 'posture2') return 'Postur 2: Anti-Bungkuk';
+    if (category === 'posture3') return 'Postur 3: Core & Hip Stability';
+    if (category === 'core_stamina') return 'Core: Stamina Tanpa Batas';
     return 'Latihan';
 }
 

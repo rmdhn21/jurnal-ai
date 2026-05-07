@@ -518,6 +518,16 @@
                         <div class="hub-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">🗡️</div>
                         <span class="hub-label">Stoic Muslim</span>
                     </button>
+                    <!-- Cortisol Control Hub Button -->
+                    <button class="hub-btn" onclick="navigateToSubscreen('cortisol-control')">
+                        <div class="hub-icon" style="background: rgba(6, 182, 212, 0.1); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.2);">🧠</div>
+                        <span class="hub-label">Cortisol Control</span>
+                    </button>
+                    <!-- Looksmaxing Hub Button -->
+                    <button class="hub-btn" onclick="navigateToSubscreen('looksmaxing')">
+                        <div class="hub-icon" style="background: rgba(244, 114, 182, 0.1); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.2);">💎</div>
+                        <span class="hub-label">Looksmaxing</span>
+                    </button>
                     <!-- Shift Tracker Hub Button -->
                     <button class="hub-btn" onclick="navigateToSubscreen('shift-tracker')">
                         <div class="hub-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">📅</div>
@@ -1036,6 +1046,10 @@
                     <button class="tab-btn" data-tab="gym2">🏋️ Gym 2</button>
                     <button class="tab-btn" data-tab="home1">🏠 Home 1</button>
                     <button class="tab-btn" data-tab="home2">🩹 Home 2</button>
+                    <button class="tab-btn" data-tab="posture">🧘 Postur</button>
+                    <button class="tab-btn" data-tab="posture2">🧍 Postur 2</button>
+                    <button class="tab-btn" data-tab="posture3">🧘 Postur 3</button>
+                    <button class="tab-btn" data-tab="core_stamina">🔋 Core</button>
                 </div>
 
 
@@ -2597,6 +2611,90 @@
             </div>
 
             <!-- Stoic Muslim Screen -->
+            <!-- Looksmaxing Screen -->
+            <section id="looksmaxing-screen" class="screen subscreen">
+                <div class="card" style="border-left: 4px solid #f472b6;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <span>💎</span> Looksmaxing
+                        </h2>
+                        <span class="badge-ai" style="background: linear-gradient(135deg, #f472b6, #a78bfa); color: white; border: none;">Glow Up</span>
+                    </div>
+                    <p class="text-muted mt-sm" style="font-size: 0.85rem;">Rutinitas harian berbasis sains untuk memaksimalkan penampilan, grooming, dan aura.</p>
+                </div>
+
+                <div class="card mt-md" style="background: linear-gradient(135deg, rgba(244, 114, 182, 0.05), rgba(0, 0, 0, 0.2)); border: 1px solid rgba(244, 114, 182, 0.2);">
+                    <div style="border-bottom: 1px solid rgba(244, 114, 182, 0.1); padding-bottom: 10px; margin-bottom: 15px;">
+                        <h3 style="margin: 0; font-size: 1rem; color: #f472b6;">💡 Tips Looksmaxing Hari Ini</h3>
+                    </div>
+                    <div id="looks-tip-container"><!-- JS --></div>
+                </div>
+
+                <div class="card mt-md" style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.06);">
+                    <div id="looks-level-container"><!-- JS --></div>
+                </div>
+
+                <div class="card mt-md" style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; margin-bottom: 15px;">
+                        <h3 style="margin: 0; font-size: 1rem; color: #fbbf24;">📊 Glow-Up Grade</h3>
+                    </div>
+                    <div id="looks-score-container"><!-- JS --></div>
+                </div>
+
+                <div class="card mt-md">
+                    <div class="card-header"><h3>💎 12 Rutinitas Looksmaxing</h3></div>
+                    <p class="text-muted" style="font-size: 0.8rem; margin-top: -5px; margin-bottom: 15px;">Centang yang sudah dilakukan. Target minimal 7 untuk A-Tier glow.</p>
+                    <div id="looks-habits-container"><!-- JS --></div>
+                </div>
+
+                <div class="card mt-md">
+                    <div class="card-header"><h3>📈 Riwayat 7 Hari</h3></div>
+                    <div id="looks-history-container"><!-- JS --></div>
+                </div>
+            </section>
+
+            <!-- Cortisol Control Screen -->
+            <section id="cortisol-control-screen" class="screen subscreen">
+                <div class="card" style="border-left: 4px solid #06b6d4;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <span>🧠</span> Cortisol Control
+                        </h2>
+                        <span class="badge-ai" style="background: #06b6d4; color: white; border: none;">Anti-Stres</span>
+                    </div>
+                    <p class="text-muted mt-sm" style="font-size: 0.85rem;">Kebiasaan harian berbasis sains untuk menjaga kortisol tetap rendah dan hidup lebih tenang.</p>
+                </div>
+
+                <div class="card mt-md" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(0, 0, 0, 0.2)); border: 1px solid rgba(6, 182, 212, 0.2);">
+                    <div style="border-bottom: 1px solid rgba(6, 182, 212, 0.1); padding-bottom: 10px; margin-bottom: 15px;">
+                        <h3 style="margin: 0; font-size: 1rem; color: #06b6d4;">💡 Tips Anti-Kortisol Hari Ini</h3>
+                    </div>
+                    <div id="cortisol-tip-container"><!-- Filled by JS --></div>
+                </div>
+
+                <div class="card mt-md" style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; margin-bottom: 15px;">
+                        <h3 style="margin: 0; font-size: 1rem; color: #22d3ee;">📊 Status Kortisol Anda</h3>
+                    </div>
+                    <div id="cortisol-score-container"><!-- Filled by JS --></div>
+                </div>
+
+                <div class="card mt-md">
+                    <div class="card-header">
+                        <h3>🛡️ 12 Kebiasaan Anti-Kortisol</h3>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.8rem; margin-top: -5px; margin-bottom: 15px;">Centang kebiasaan yang sudah Anda lakukan hari ini. Target minimal 5 untuk menjaga kortisol rendah.</p>
+                    <div id="cortisol-habits-container"><!-- Filled by JS --></div>
+                </div>
+
+                <div class="card mt-md">
+                    <div class="card-header">
+                        <h3>📈 Riwayat 7 Hari Terakhir</h3>
+                    </div>
+                    <div id="cortisol-history-container"><!-- Filled by JS --></div>
+                </div>
+            </section>
+
             <section id="stoic-muslim-screen" class="screen subscreen">
                 <div class="card" style="border-left: 4px solid #10b981;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -4221,6 +4319,8 @@
     <script src="js/hse-analytics.js"></script>
     <script src="js/hse-emergency.js"></script>
     <script src="js/mind-stoic.js"></script>
+    <script src="js/cortisol-control.js"></script>
+    <script src="js/looksmaxing.js"></script>
     <script src="js/finance-ocr.js"></script>
 
 </body>

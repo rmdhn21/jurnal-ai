@@ -113,6 +113,10 @@ function showScreen(targetScreen) {
         }
     } else if (targetScreen === 'moving-checklist') {
         if (typeof initMovingChecklist === 'function') initMovingChecklist();
+    } else if (targetScreen === 'cortisol-control') {
+        if (typeof initCortisolControl === 'function') initCortisolControl();
+    } else if (targetScreen === 'looksmaxing') {
+        if (typeof initLooksmaxing === 'function') initLooksmaxing();
     }
 }
 
