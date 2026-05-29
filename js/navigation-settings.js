@@ -117,6 +117,12 @@ function showScreen(targetScreen) {
         if (typeof initCortisolControl === 'function') initCortisolControl();
     } else if (targetScreen === 'looksmaxing') {
         if (typeof initLooksmaxing === 'function') initLooksmaxing();
+    } else if (targetScreen === 'bps-roster') {
+        if (typeof initBpsRoster === 'function') initBpsRoster();
+    } else if (targetScreen === 'k3-migas-mastery') {
+        if (typeof initK3MigasMastery === 'function') initK3MigasMastery();
+    } else if (targetScreen === 'tkd-mastery') {
+        if (typeof initTkdMastery === 'function') initTkdMastery();
     }
 }
 

@@ -1106,7 +1106,13 @@ Tak lupa ucapan terima kasih kepada bapak-bapak semua untuk 12 jam sebelumnya su
 - Jelaskan singkat makna slogan tersebut dalam konteks pekerjaan hari ini.
 - Ingat poin 9 Perilaku Wajib: Patuh pada aturan.
 
-6. PENUTUP & DOA (Wajib Seperti Ini):
+6. CERITA SAFETY INSPIRATIF & PELAJARAN (WAJIB BEDA SETIAP GENERATE):
+- Ceritakan secara singkat SATU kisah (berdasarkan kisah nyata insiden safety, near-miss, atau keberhasilan mencegah kecelakaan) yang relevan dengan pekerjaan hari ini atau kehidupan di rig/lapangan.
+- Pastikan ceritanya MENGGUGAH, MENARIK, dan TIDAK MEMBOSANKAN agar para pekerja tetap antusias dan mendapat penyegaran.
+- WAJIB BEDA untuk setiap kali generate (ciptakan variasi cerita unik).
+- Setelah cerita, sampaikan "Pelajaran yang bisa kita ambil dari cerita ini adalah..." (sebutkan moral atau nilai safety yang bisa dipetik).
+
+7. PENUTUP & DOA (Wajib Seperti Ini):
 "Sebelum kita mulai pekerjaan kita hari ini ada baiknya, kita berdoa menurut agama dan kepercayaan masing-masing agar pekerjaan hari ini berjalan lancar, selamat, dan berkah. Berdoa dipersilahkan.
 
 (Berdoa)
