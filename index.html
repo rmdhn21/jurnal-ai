@@ -273,6 +273,22 @@
         .official-jmp-table-wrapper table {
             margin-top: -1px; 
         }
+
+        /* K3 Migas Mastery Responsiveness */
+        @media (max-width: 768px) {
+            .k3-quiz-layout {
+                flex-direction: column !important;
+            }
+            .k3-grid-panel {
+                display: none !important;
+            }
+            .hide-on-desktop {
+                display: block !important;
+            }
+            .k3-menu-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
     </style>
 </head>
 
@@ -543,6 +559,11 @@
                         <div class="hub-icon" style="background: rgba(66, 153, 225, 0.1); color: #63b3ed; border: 1px solid rgba(66, 153, 225, 0.2);">🏋️</div>
                         <span class="hub-label">Workout</span>
                     </button>
+                    <!-- BPS Roster Hub Button -->
+                    <button class="hub-btn" onclick="navigateToSubscreen('bps-roster')">
+                        <div class="hub-icon" style="background: rgba(0, 84, 166, 0.1); color: #0054A6; border: 1px solid rgba(0, 84, 166, 0.2);">📋</div>
+                        <span class="hub-label">Jadwal BPS</span>
+                    </button>
                 </div>
             </section>
 
@@ -798,6 +819,13 @@
                         <div class="card-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">📜</div>
                         <div class="card-title">9 Perilaku Wajib</div>
                         <div class="card-desc">Sembilan perilaku dasar keselamatan.</div>
+                    </div>
+
+                    <!-- K3 Migas Mastery -->
+                    <div class="hse-card hse-card-compact" onclick="navigateToSubscreen('k3-migas-mastery')" style="border: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.05);">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">🔥</div>
+                        <div class="card-title">K3 Migas Mastery</div>
+                        <div class="card-desc">Tanya Jawab Cepu & Ujian Tipe X, Y, Z.</div>
                     </div>
                 </div>
             </section>
@@ -1147,6 +1175,20 @@
                         <div class="hub-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">📖</div>
                         <span class="hub-label">Perpustakaan AI</span>
                         <p class="hub-desc">Kelola hasil JSA, JMP, & Lesson Anda.</p>
+                    </button>
+
+                    <!-- K3 Migas Mastery -->
+                    <button class="hub-btn" onclick="navigateToSubscreen('k3-migas-mastery')" style="border: 1px solid #f59e0b; background: rgba(245, 158, 11, 0.03);">
+                        <div class="hub-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">🔥</div>
+                        <span class="hub-label">K3 Migas Mastery</span>
+                        <p class="hub-desc">Tanya Jawab Cepu & Simulasi Ujian X, Y, Z.</p>
+                    </button>
+
+                    <!-- TKD 1000 Mastery -->
+                    <button class="hub-btn" onclick="navigateToSubscreen('tkd-mastery')" style="border: 1px solid #3b82f6; background: rgba(59, 130, 246, 0.03);">
+                        <div class="hub-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white;">⚡</div>
+                        <span class="hub-label">TKD 1000 Mastery</span>
+                        <p class="hub-desc">1.000 Soal Tes Kemampuan Dasar Interaktif.</p>
                     </button>
                 </div>
             </section>
@@ -2340,8 +2382,20 @@
                     <div id="transaction-list" class="transaction-list"></div>
                 </div>
 
+                <!-- Bimbingan Syariah Harian -->
+                <div class="card mb-sm" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(0, 0, 0, 0.2)); border-left: 4px solid #10b981; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span style="font-size: 1.2rem;">💡</span>
+                        <h3 style="margin: 0; font-size: 0.95rem; color: #10b981;">Bimbingan Syariah Hari Ini</h3>
+                    </div>
+                    <p id="islamic-finance-tip" class="text-sm" style="margin: 0; color: var(--text-primary); line-height: 1.5; font-style: italic;">
+                        Memuat bimbingan...
+                    </p>
+                </div>
+
                 <!-- AI Analysis Button -->
                 <button id="analyze-finance-btn" class="btn btn-ai btn-full">🧠 Analisis AI - Keuangan</button>
+                <button id="open-fire-planner-btn" class="btn btn-secondary btn-full mt-md" style="border: 1px solid #10b981; color: #10b981; background: rgba(16,185,129,0.1); font-weight: bold;">🔥 FIRE / Financial Freedom Planner</button>
             </section>
 
             <!-- Screen 4: Habits -->
@@ -4129,6 +4183,392 @@
             </div>
         </section>
 
+        <!-- K3 Migas Mastery Screen -->
+        <section id="k3-migas-mastery-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali</button></div>
+            <div id="k3-migas-mastery-content" style="padding-bottom: 80px;">
+                <!-- Content will be injected by js/k3-migas-mastery.js -->
+            </div>
+        </section>
+
+        <!-- TKD 1000 Mastery Screen -->
+        <section id="tkd-mastery-screen" class="screen">
+            <div class="header-back"><button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali</button></div>
+            <div id="tkd-mastery-content" style="padding-bottom: 80px;">
+                <!-- Content will be injected by js/learn-tkd.js -->
+            </div>
+        </section>
+
+        <!-- BPS Roster Screen (Dark Theme) -->
+        <section id="bps-roster-screen" class="screen subscreen" style="padding: 0; overflow: hidden; background-color: var(--bg-primary);">
+            <!-- Back Button -->
+            <div class="header-back" style="padding: 10px 16px 0;">
+                <button class="back-btn" onclick="handleBackButton()"><span class="back-icon">←</span> Kembali</button>
+            </div>
+
+            <!-- Header Card -->
+            <div class="card" style="margin: 10px 16px; background: linear-gradient(135deg, rgba(0, 84, 166, 0.3), rgba(29, 78, 216, 0.2)); border: 1px solid rgba(0, 84, 166, 0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div>
+                        <h2 style="font-size: 1.3rem; font-weight: 700; margin: 0; color: var(--text-primary);">👷 Persiapan BPS</h2>
+                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0 0 0;">Jadwal Roster 13 Jam</p>
+                    </div>
+                    <div style="background: rgba(0, 84, 166, 0.2); padding: 0.6rem; border-radius: 0.75rem; border: 1px solid rgba(0, 84, 166, 0.3);">
+                        <span style="font-size: 1.3rem;">📋</span>
+                    </div>
+                </div>
+                
+                <!-- Tabs -->
+                <div style="display: flex; background: rgba(255,255,255,0.05); border-radius: 0.75rem; overflow: hidden; padding: 0.25rem; border: 1px solid rgba(255,255,255,0.08);">
+                    <button onclick="bpsSwitchTab('shiftPagi')" id="btn-shiftPagi" class="bps-tab-btn bps-tab-active" style="flex: 1; padding: 0.625rem; font-size: 0.875rem; font-weight: 700; border-radius: 0.5rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;">
+                        <span>☀️</span> Shift Pagi
+                    </button>
+                    <button onclick="bpsSwitchTab('shiftMalam')" id="btn-shiftMalam" class="bps-tab-btn" style="flex: 1; padding: 0.625rem; font-size: 0.875rem; font-weight: 700; border-radius: 0.5rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s; background: transparent; color: var(--text-muted);">
+                        <span>🌙</span> Shift Malam
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Scrollable Content -->
+            <div style="overflow-y: auto; padding: 0 16px 6rem 16px; max-height: calc(100vh - 220px);">
+                
+                <!-- Alert MCU -->
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.75rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; display: flex; align-items: flex-start;">
+                    <span style="color: #f87171; margin-top: 0.15rem; margin-right: 0.75rem; font-size: 1rem;">❤️</span>
+                    <div>
+                        <h3 style="font-size: 0.7rem; font-weight: 700; color: #f87171; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.25rem 0;">Prioritas MCU</h3>
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.625; margin: 0;">
+                            Jika fisik hancur sehabis kerja, <strong style="color: var(--text-primary);">tidur lebih penting dari belajar</strong>. Jangan paksakan target harian jika lelah ekstrem.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TAB 1: SHIFT PAGI -->
+                <div id="bps-content-shiftPagi" class="bps-tab-content" style="display: block;">
+                    
+                    <!-- Timeline Item: 04:30 -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; padding-bottom: 1.5rem; border-left: 2px solid rgba(255,255,255,0.08);">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #22c55e; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                <span style="background: rgba(255,255,255,0.06); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: var(--text-primary);">04:30 - 05:00</span>
+                                <span style="font-size: 0.625rem; font-weight: 700; color: #4ade80; background: rgba(34,197,94,0.15); padding: 0.25rem 0.5rem; border-radius: 9999px; border: 1px solid rgba(34,197,94,0.3);">IBADAH</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin: 0 0 0.75rem 0;">Bangun & Ibadah</h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p1" class="bps-checkbox green-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Langsung bangun, wudhu (jangan buka medsos).</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p2" class="bps-checkbox green-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Shalat Subuh & Dzikir penenang 5 menit.</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item: 05:00 (FOKUS) -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; padding-bottom: 1.5rem; border-left: 2px solid rgba(255,255,255,0.08);">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #ED2024; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem; border: 1px solid rgba(237,32,36,0.25); background: rgba(237,32,36,0.08); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: 0; right: 0; width: 4px; height: 100%; background: #ED2024;"></div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                <span style="background: rgba(237,32,36,0.15); border: 1px solid rgba(237,32,36,0.3); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: #f87171;">05:00 - 05:30</span>
+                                <span style="font-size: 0.625rem; font-weight: 700; color: white; background: #ED2024; padding: 0.25rem 0.5rem; border-radius: 9999px; animation: bpsPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;">MENU UTAMA</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin: 0 0 0.25rem 0;">Fokus Belajar TKD</h3>
+                            <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(237,32,36,0.1); padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(237,32,36,0.2); font-size: 0.75rem; font-weight: 600; color: #f87171; margin-bottom: 1rem;">
+                                ⏱️ Timer 30 Menit!
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p3" class="bps-checkbox red-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Duduk di meja, siapkan kertas coretan.</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p4" class="bps-checkbox red-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Hajar 15-20 soal (Numerik/Silogisme).</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item: 05:30 - 19:00 -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; padding-bottom: 1.5rem; border-left: 2px solid rgba(255,255,255,0.08);">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #6b7280; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem;">
+                            <div style="margin-bottom: 0.75rem;">
+                                <span style="background: rgba(255,255,255,0.06); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: var(--text-primary);">05:30 - 19:00</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin: 0 0 0.75rem 0;">Operasional Lapangan</h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p5" class="bps-checkbox">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Sarapan bergizi (bekal jaga tensi MCU).</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p6" class="bps-checkbox">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);"><strong style="color: var(--text-primary);">Wajib Qailulah:</strong> Tidur siang 15-20 menit di sela istirahat jam 12.</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p7" class="bps-checkbox">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);"><strong style="color: var(--text-primary);">Tugas:</strong> Catat di HP 1 masalah/kejadian lapangan hari ini untuk cerita wawancara.</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item: 19:00 -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; padding-bottom: 1.5rem; border-left: 2px solid rgba(255,255,255,0.08);">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #60a5fa; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem; border: 1px solid rgba(96,165,250,0.2); background: rgba(59,130,246,0.06);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                <span style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: #60a5fa;">19:00 - 20:20</span>
+                                <span style="font-size: 0.625rem; font-weight: 700; color: #93c5fd; background: rgba(59,130,246,0.2); padding: 0.25rem 0.5rem; border-radius: 9999px;">SANTAI</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin: 0 0 0.25rem 0;">Transisi & Review</h3>
+                            <p style="font-size: 0.75rem; color: #60a5fa; font-weight: 500; margin: 0 0 1rem 0;">🚫 Jangan sentuh soal hitungan malam ini!</p>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p8" class="bps-checkbox">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Mandi air hangat (wajib), Shalat, Makan.</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p9" class="bps-checkbox">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Sambil rebahan: Rapihkan catatan kejadian siang tadi ke format STAR di notes HP.</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item: 20:20 -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; border-left: 2px solid transparent;">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #f472b6; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem; border: 1px solid rgba(244,114,182,0.2); background: rgba(236,72,153,0.06);">
+                            <div style="margin-bottom: 0.75rem;">
+                                <span style="background: rgba(236,72,153,0.15); border: 1px solid rgba(236,72,153,0.3); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: #f472b6;">20:20 - Tidur</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: #f472b6; margin: 0 0 0.75rem 0; display: flex; align-items: center;">
+                                <span style="margin-right: 0.5rem;">❤️</span> Quality Time
+                            </h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p10" class="bps-checkbox pink-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Telepon/VC kekasih, buang stres pekerjaan.</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-p11" class="bps-checkbox pink-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Tidur jam 21:30 (Target: tidur minimal 7 jam).</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- End Tab Pagi -->
+
+                <!-- TAB 2: SHIFT MALAM -->
+                <div id="bps-content-shiftMalam" class="bps-tab-content" style="display: none;">
+                    
+                    <!-- Timeline Item: 08:00 -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; padding-bottom: 1.5rem; border-left: 2px solid rgba(255,255,255,0.08);">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #818cf8; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem; border: 1px solid rgba(129,140,248,0.2); background: rgba(99,102,241,0.06);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                <span style="background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: #a5b4fc;">08:00 - 14:30</span>
+                                <span style="font-size: 0.625rem; font-weight: 700; color: #a5b4fc; background: rgba(99,102,241,0.2); padding: 0.25rem 0.5rem; border-radius: 9999px; border: 1px solid rgba(99,102,241,0.3);">PEMULIHAN</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: #a5b4fc; margin: 0 0 0.75rem 0; display: flex; align-items: center;">
+                                <span style="margin-right: 0.5rem;">🛏️</span> Tidur Utama (Wajib)
+                            </h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-m1" class="bps-checkbox indigo-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Tutup tirai, buat kamar sedingin & segelap mungkin.</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-m2" class="bps-checkbox indigo-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);"><strong style="color: var(--text-primary);">Dilarang main HP.</strong> Ini investasi mutlak agar tidak gagal tes darah MCU.</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item: 15:30 (FOKUS) -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; padding-bottom: 1.5rem; border-left: 2px solid rgba(255,255,255,0.08);">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #ED2024; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem; border: 1px solid rgba(237,32,36,0.25); background: rgba(237,32,36,0.08); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: 0; right: 0; width: 4px; height: 100%; background: #ED2024;"></div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                <span style="background: rgba(237,32,36,0.15); border: 1px solid rgba(237,32,36,0.3); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: #f87171;">15:30 - 16:15</span>
+                                <span style="font-size: 0.625rem; font-weight: 700; color: white; background: #ED2024; padding: 0.25rem 0.5rem; border-radius: 9999px; animation: bpsPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;">MENU UTAMA</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin: 0 0 0.25rem 0;">Fokus Belajar TKD</h3>
+                            <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(237,32,36,0.1); padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(237,32,36,0.2); font-size: 0.75rem; font-weight: 600; color: #f87171; margin-bottom: 1rem;">
+                                ⏱️ Timer 45 Menit!
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-m3" class="bps-checkbox red-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Otak baru di-recharge. Duduk tegak di meja.</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-m4" class="bps-checkbox red-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Hajar soal Aritmatika/Logika. Langsung koreksi yang salah.</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item: 16:15 -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; padding-bottom: 1.5rem; border-left: 2px solid rgba(255,255,255,0.08);">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #60a5fa; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem;">
+                            <div style="margin-bottom: 0.75rem;">
+                                <span style="background: rgba(255,255,255,0.06); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: var(--text-primary);">16:15 - 17:00</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin: 0 0 0.75rem 0;">Review & Bahasa</h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-m5" class="bps-checkbox">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Dengar Podcast B.Inggris (20 mnt) sambil santai.</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-m6" class="bps-checkbox">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Tulis draf 1 kejadian rig semalam jadi cerita STAR.</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item: 17:00 -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; padding-bottom: 1.5rem; border-left: 2px solid rgba(255,255,255,0.08);">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #f472b6; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem; border: 1px solid rgba(244,114,182,0.2); background: rgba(236,72,153,0.06);">
+                            <div style="margin-bottom: 0.75rem;">
+                                <span style="background: rgba(236,72,153,0.15); border: 1px solid rgba(236,72,153,0.3); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: #f472b6;">17:00 - 18:00</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: #f472b6; margin: 0 0 0.75rem 0; display: flex; align-items: center;">
+                                <span style="margin-right: 0.5rem;">❤️</span> Quality Time
+                            </h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" id="bps-m7" class="bps-checkbox pink-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Mandi, Shalat, Makan Malam (bekal shift malam).</span>
+                                </label>
+                                <label class="bps-task-label" style="display: flex; align-items: flex-start; cursor: pointer; border: 1px solid rgba(236,72,153,0.3); background: rgba(236,72,153,0.08); padding: 0.5rem; border-radius: 0.5rem;">
+                                    <input type="checkbox" id="bps-m8" class="bps-checkbox pink-check">
+                                    <span style="font-size: 0.85rem; color: var(--text-primary); font-weight: 700;">Wajib Telepon pacar SEBELUM berangkat. Sinyal lapangan malam biasanya jelek.</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item: 18:00 -->
+                    <div class="bps-timeline-item" style="position: relative; padding-left: 1.75rem; border-left: 2px solid transparent;">
+                        <div style="position: absolute; left: -0.625rem; top: 0; background: var(--bg-primary); border: 4px solid #6b7280; border-radius: 9999px; height: 1.25rem; width: 1.25rem;"></div>
+                        <div class="card" style="margin: 0; padding: 1rem;">
+                            <div style="margin-bottom: 0.75rem;">
+                                <span style="background: rgba(255,255,255,0.06); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.875rem; color: var(--text-primary);">18:00 - 07:00</span>
+                            </div>
+                            <h3 style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin: 0 0 0.75rem 0;">Operasional Lapangan</h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div style="display: flex; align-items: flex-start;">
+                                    <span style="color: #60a5fa; margin-top: 0.15rem; margin-right: 0.75rem;">📝</span>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Catat 1 masalah/inovasi malam ini untuk bahan wawancara.</p>
+                                </div>
+                                <div style="display: flex; align-items: flex-start;">
+                                    <span style="color: #f87171; margin-top: 0.15rem; margin-right: 0.75rem;">🚫</span>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Jika ada waktu standby di tengah malam, <strong style="color: var(--text-primary);">gunakan untuk nap/tidur.</strong> Jangan dipakai belajar!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- End Tab Malam -->
+
+                <!-- Reset Button -->
+                <div style="margin-top: 2rem; margin-bottom: 2rem; display: flex; justify-content: center;">
+                    <button onclick="bpsResetCheckboxes()" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 9999px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                        <span>🔄</span> Reset Jadwal untuk Besok
+                    </button>
+                </div>
+
+            </div>
+            
+            <!-- Toast Notification (Hidden by default) -->
+            <div id="bps-toast" style="position: fixed; bottom: 5rem; left: 50%; transform: translate(-50%, 0); background: rgba(24,24,27,0.95); color: white; padding: 0.75rem 1.25rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); transition: all 0.3s; opacity: 0; pointer-events: none; display: flex; align-items: center; gap: 0.5rem; z-index: 1050;">
+                <span style="color: #4ade80;">✅</span>
+                <span id="bps-toastMessage">Tugas berhasil direset!</span>
+            </div>
+
+            <!-- CSS Khusus BPS (Dark) -->
+            <style>
+                @keyframes bpsPulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: .5; }
+                }
+                #bps-roster-screen .bps-tab-btn:hover { color: var(--text-primary) !important; }
+                #bps-roster-screen .bps-tab-active { background: var(--primary) !important; color: #000 !important; box-shadow: 0 0 12px var(--accent-glow) !important; }
+                
+                #bps-roster-screen .bps-checkbox {
+                    appearance: none;
+                    background-color: transparent;
+                    margin: 0.125rem 0.75rem 0 0;
+                    font: inherit;
+                    color: currentColor;
+                    width: 1.15em;
+                    height: 1.15em;
+                    border: 2px solid rgba(255,255,255,0.2);
+                    border-radius: 0.25em;
+                    display: grid;
+                    place-content: center;
+                    transition: all 0.2s ease-in-out;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                }
+                #bps-roster-screen .bps-checkbox::before {
+                    content: "";
+                    width: 0.65em;
+                    height: 0.65em;
+                    transform: scale(0);
+                    transition: 120ms transform ease-in-out;
+                    box-shadow: inset 1em 1em white;
+                    background-color: transparent;
+                    transform-origin: center;
+                    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+                }
+                #bps-roster-screen .bps-checkbox:checked {
+                    background-color: #0054A6;
+                    border-color: #0054A6;
+                }
+                #bps-roster-screen .bps-checkbox.red-check:checked {
+                    background-color: #ED2024;
+                    border-color: #ED2024;
+                }
+                #bps-roster-screen .bps-checkbox.pink-check:checked {
+                    background-color: #ec4899;
+                    border-color: #ec4899;
+                }
+                #bps-roster-screen .bps-checkbox.indigo-check:checked {
+                    background-color: #6366f1;
+                    border-color: #6366f1;
+                }
+                #bps-roster-screen .bps-checkbox.green-check:checked {
+                    background-color: #16a34a;
+                    border-color: #16a34a;
+                }
+                #bps-roster-screen .bps-checkbox:checked::before {
+                    transform: scale(1);
+                }
+                #bps-roster-screen .bps-checkbox:checked + span {
+                    text-decoration: line-through;
+                    color: var(--text-muted) !important;
+                    transition: all 0.2s;
+                }
+            </style>
+        </section>
+
     </div>
 
     <!-- Scripts (modular) -->
@@ -4158,6 +4598,7 @@
     <script src="js/navigation-settings.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/wallet-budget-ui.js"></script>
+    <script src="js/fire-planner.js"></script>
 
     <!-- Feature Modules -->
     <script src="js/jarvis-voice.js"></script>
@@ -4186,6 +4627,7 @@
     <script src="js/jmp-template-b64.js"></script>
     <script src="js/jmp-generator.js"></script>
     <script src="js/moving-checklist.js"></script>
+    <script src="js/bps-roster.js"></script>
     <script src="js/epls.js"></script>
     <script src="js/lesson-tools.js"></script>
     <script src="js/workout-tracker.js"></script>
@@ -4204,6 +4646,62 @@
     <div id="rig-photo-modal" class="modal hidden" style="z-index: 99999; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
         <span id="close-rig-photo-modal" style="position: absolute; top: 20px; right: 30px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer;">&times;</span>
         <img class="modal-content" id="rig-photo-full" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px;">
+    </div>
+
+    <!-- FIRE / Financial Freedom Planner Modal -->
+    <div id="fire-planner-modal" class="modal hidden" style="z-index: 10005;">
+        <div class="modal-content animate-in zoom-in duration-300" style="max-width: 500px; padding: 20px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="display: flex; align-items: center; gap: 8px; color: #10b981; margin: 0;">🔥 FIRE Planner</h2>
+                <button id="close-fire-planner" class="close-btn">&times;</button>
+            </div>
+            
+            <div class="fire-planner-body">
+                <div class="card mb-sm" style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="text-sm text-muted">Total Saldo Awal</span>
+                        <span id="fire-current-balance" class="text-md font-bold text-primary">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="text-xs">Target Pengeluaran Pensiun /Bulan</label>
+                        <input type="number" id="fire-target-expense" class="input" placeholder="Misal: 10000000" value="10000000">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="text-xs">Tabungan / Investasi per Bulan</label>
+                        <input type="number" id="fire-monthly-investment" class="input" placeholder="Misal: 2000000" value="2000000">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="text-xs">Asumsi Return / Tahun (%)</label>
+                        <input type="number" id="fire-return-rate" class="input" placeholder="8" value="8">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="text-xs">Safe Withdrawal Rate (%)</label>
+                        <input type="number" id="fire-swr" class="input" placeholder="4" value="4">
+                    </div>
+                </div>
+
+                <button id="fire-calculate-btn" class="btn btn-primary btn-full mb-md" style="background: linear-gradient(135deg, #10b981, #059669); border: none;">Kalkulasi FIRE</button>
+
+                <!-- Result Section -->
+                <div id="fire-result-section" class="hidden">
+                    <div class="card mb-sm" style="text-align: center; border-left: 4px solid #f59e0b; background: rgba(245,158,11,0.05);">
+                        <p class="text-xs text-muted" style="margin: 0 0 5px 0;">Target FIRE Number Anda</p>
+                        <h3 id="fire-target-number" style="margin: 0; color: #f59e0b; font-size: 1.5rem;">Rp 0</h3>
+                        <p id="fire-years-result" class="mt-xs text-sm font-bold" style="color: var(--text-primary);">Dapat dicapai dalam: -- Tahun</p>
+                    </div>
+
+                    <div class="chart-container" style="height: 250px; position: relative;">
+                        <canvas id="fire-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- App Initialization (must be last) -->
@@ -4322,6 +4820,8 @@
     <script src="js/cortisol-control.js"></script>
     <script src="js/looksmaxing.js"></script>
     <script src="js/finance-ocr.js"></script>
+    <script src="js/k3-migas-mastery.js"></script>
+    <script src="js/learn-tkd.js"></script>
 
 </body>
 
