@@ -251,3 +251,16 @@ ATURAN KOMUNIKASI:
     const text = await unifiedGeminiCall(requestBody);
     return text || "Maaf, coba lagi.";
 }
+
+function setJarvisNeuralStatus(text, active = true) {
+    const statusContainer = document.getElementById('jarvis-neural-status');
+    const statusText = document.getElementById('neural-text');
+    if (!statusContainer || !statusText) return;
+
+    if (active) {
+        statusContainer.classList.add('active');
+        statusText.textContent = text;
+    } else {
+        statusContainer.classList.remove('active');
+    }
+}
