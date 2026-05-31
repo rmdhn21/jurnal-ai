@@ -272,12 +272,9 @@ async function callLocalAI(payload, options = {}) {
 
     const localPayload = {
         messages: messages,
-        temperature: payload.generationConfig?.temperature !== undefined ? payload.generationConfig.temperature : 0.7
+        temperature: payload.generationConfig?.temperature !== undefined ? payload.generationConfig.temperature : 0.2,
+        max_tokens: payload.generationConfig?.maxOutputTokens !== undefined ? payload.generationConfig.maxOutputTokens : 1024
     };
-
-    if (payload.generationConfig?.responseMimeType === 'application/json') {
-        localPayload.response_format = { type: 'json_object' };
-    }
 
     try {
         const response = await window.localAIEngine.chat.completions.create(localPayload);
