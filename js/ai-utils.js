@@ -11,6 +11,15 @@ const GEMINI_MODELS_PRIORITY = [
 ];
 
 async function unifiedGeminiCall(payload, options = {}) {
+    const provider = localStorage.getItem('jurnal_ai_provider') || 'gemini';
+    
+    if (provider === 'local') {
+        return await callLocalAI(payload, options);
+    }
+    if (provider === 'openai') {
+        return await callOpenAI(payload, options);
+    }
+
     const apiKey = typeof getApiKey === 'function' ? getApiKey() : localStorage.getItem('jurnal_ai_gemini_key');
     if (!apiKey) throw new Error('API Key belum diatur!');
 
@@ -67,6 +76,96 @@ async function unifiedGeminiCall(payload, options = {}) {
     throw lastError || new Error('Semua model AI gagal merespon. Mohon cek koneksi atau API Key Anda.');
 }
 
+async function callOpenAI(payload, options = {}) {
+    const apiKey = localStorage.getItem('jurnal_ai_openai_key');
+    if (!apiKey) throw new Error('OpenAI API Key belum diatur!');
+
+    const selectedModel = localStorage.getItem('jurnal_ai_openai_model') || 'gpt-4o-mini';
+    const modelsToTry = [selectedModel];
+    if (selectedModel !== 'gpt-4o-mini') {
+        modelsToTry.push('gpt-4o-mini'); // Fallback model
+    }
+
+    let lastError = null;
+
+    for (const modelName of modelsToTry) {
+        try {
+            console.log(`🤖 Jarvis attempting OpenAI call with model: ${modelName}...`);
+            
+            const messages = [];
+
+            // Add system prompt if present
+            if (payload.systemInstruction && payload.systemInstruction.parts && payload.systemInstruction.parts[0]) {
+                messages.push({
+                    role: 'system',
+                    content: payload.systemInstruction.parts[0].text
+                });
+            }
+
+            // Add contents (history/messages)
+            if (payload.contents && Array.isArray(payload.contents)) {
+                payload.contents.forEach(item => {
+                    let role = item.role || 'user';
+                    if (role === 'model') role = 'assistant';
+                    
+                    let contentText = '';
+                    if (item.parts && Array.isArray(item.parts)) {
+                        contentText = item.parts.map(p => p.text).join('\n');
+                    }
+                    
+                    messages.push({
+                        role: role,
+                        content: contentText
+                    });
+                });
+            }
+
+            const openAIPayload = {
+                model: modelName,
+                messages: messages,
+                temperature: payload.generationConfig?.temperature !== undefined ? payload.generationConfig.temperature : 0.7
+            };
+
+            if (payload.generationConfig?.responseMimeType === 'application/json') {
+                openAIPayload.response_format = { type: 'json_object' };
+            }
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify(openAIPayload)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                console.error(`❌ OpenAI Model ${modelName} failed:`, errData);
+                lastError = new Error(errData.error?.message || `OpenAI API Error ${response.status}`);
+                continue;
+            }
+
+            const data = await response.json();
+            const textResponse = data.choices?.[0]?.message?.content;
+
+            if (!textResponse) {
+                console.warn(`⚠️ OpenAI Model ${modelName} returned empty response. Trying fallback...`);
+                continue;
+            }
+
+            console.log(`✅ Success with OpenAI model: ${modelName}`);
+            return textResponse;
+
+        } catch (error) {
+            console.error(`❌ Network error with OpenAI model ${modelName}:`, error);
+            lastError = error;
+        }
+    }
+
+    throw lastError || new Error('Semua model OpenAI gagal merespon. Mohon cek koneksi atau API Key Anda.');
+}
+
 /**
  * Convenience wrapper for simple prompt-based calls
  */
@@ -82,4 +181,122 @@ async function getQuickAIResponse(prompt, systemPrompt = null) {
     }
 
     return await unifiedGeminiCall(payload);
+}
+
+// Global engine references for Local AI (WebLLM)
+window.localAIEngine = window.localAIEngine || null;
+window.currentLocalModel = window.currentLocalModel || null;
+
+async function callLocalAI(payload, options = {}) {
+    if (!navigator.gpu) {
+        throw new Error("WebGPU tidak didukung atau belum diaktifkan di browser Anda. Harap gunakan Google Chrome atau Microsoft Edge terbaru dan pastikan WebGPU aktif.");
+    }
+
+    const selectedModel = localStorage.getItem('jurnal_ai_local_model') || 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
+
+    if (typeof setJarvisNeuralStatus === 'function') {
+        setJarvisNeuralStatus('📦 Menghubungkan ke Local AI...', true);
+    }
+
+    // Dynamically import WebLLM
+    const webLLM = await import("https://esm.run/@mlc-ai/web-llm");
+
+    // Initialize or re-initialize engine if model changed
+    if (!window.localAIEngine || window.currentLocalModel !== selectedModel) {
+        if (typeof setJarvisNeuralStatus === 'function') {
+            setJarvisNeuralStatus(`📥 Menyiapkan Model AI (${selectedModel.split('-')[0]} ${selectedModel.includes('1B') ? '1B' : selectedModel.includes('3B') ? '3B' : 'Mini'})...`, true);
+        }
+
+        const initProgressCallback = (report) => {
+            console.log("WebLLM Progress:", report.text);
+            if (typeof setJarvisNeuralStatus === 'function') {
+                let text = report.text;
+                if (text.includes("Fetching")) {
+                    const pctMatch = text.match(/\d+%/);
+                    const pct = pctMatch ? ` (${pctMatch[0]})` : "";
+                    text = `📥 Mengunduh Bobot Model${pct}...`;
+                } else if (text.includes("Loading")) {
+                    text = `🧠 Memuat Model ke GPU...`;
+                } else {
+                    text = `⚙️ Inisialisasi Model...`;
+                }
+                setJarvisNeuralStatus(text, true);
+            }
+        };
+
+        try {
+            window.localAIEngine = await webLLM.CreateMLCEngine(selectedModel, {
+                initProgressCallback: initProgressCallback
+            });
+            window.currentLocalModel = selectedModel;
+        } catch (err) {
+            console.error("Gagal menginisialisasi WebLLM:", err);
+            if (typeof setJarvisNeuralStatus === 'function') {
+                setJarvisNeuralStatus('', false);
+            }
+            throw new Error(`Gagal memuat model lokal: ${err.message}. Pastikan memori GPU mencukupi.`);
+        }
+    }
+
+    if (typeof setJarvisNeuralStatus === 'function') {
+        setJarvisNeuralStatus('🧠 Memproses secara Lokal...', true);
+    }
+
+    const messages = [];
+
+    // Add system prompt if present
+    if (payload.systemInstruction && payload.systemInstruction.parts && payload.systemInstruction.parts[0]) {
+        messages.push({
+            role: 'system',
+            content: payload.systemInstruction.parts[0].text
+        });
+    }
+
+    // Add contents (history/messages)
+    if (payload.contents && Array.isArray(payload.contents)) {
+        payload.contents.forEach(item => {
+            let role = item.role || 'user';
+            if (role === 'model') role = 'assistant';
+            
+            let contentText = '';
+            if (item.parts && Array.isArray(item.parts)) {
+                contentText = item.parts.map(p => p.text).join('\n');
+            }
+            
+            messages.push({
+                role: role,
+                content: contentText
+            });
+        });
+    }
+
+    const localPayload = {
+        messages: messages,
+        temperature: payload.generationConfig?.temperature !== undefined ? payload.generationConfig.temperature : 0.7
+    };
+
+    if (payload.generationConfig?.responseMimeType === 'application/json') {
+        localPayload.response_format = { type: 'json_object' };
+    }
+
+    try {
+        const response = await window.localAIEngine.chat.completions.create(localPayload);
+        const textResponse = response.choices?.[0]?.message?.content;
+
+        if (typeof setJarvisNeuralStatus === 'function') {
+            setJarvisNeuralStatus('', false);
+        }
+
+        if (!textResponse) {
+            throw new Error("Model lokal mengembalikan respon kosong.");
+        }
+
+        return textResponse;
+    } catch (error) {
+        console.error("Error saat inferensi WebLLM:", error);
+        if (typeof setJarvisNeuralStatus === 'function') {
+            setJarvisNeuralStatus('', false);
+        }
+        throw error;
+    }
 }

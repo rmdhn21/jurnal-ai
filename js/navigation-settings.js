@@ -239,7 +239,11 @@ function initSettings() {
     }
 
     saveSettingsBtn.addEventListener('click', () => {
+        const providerSelectVal = document.getElementById('ai-provider-select')?.value || 'gemini';
         const apiKey = apiKeyInput.value.trim();
+        const openaiKey = document.getElementById('openai-key-input')?.value.trim() || '';
+        const openaiModel = document.getElementById('openai-model-select')?.value || 'gpt-4o-mini';
+        const localModel = document.getElementById('local-model-select')?.value || 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
         const dailyBudget = parseInt(document.getElementById('global-daily-budget-input').value);
 
         const widgetTimeToggle = document.getElementById('widget-time-toggle');
@@ -255,9 +259,17 @@ function initSettings() {
             }
         }
 
-        if (apiKey) {
-            saveApiKey(apiKey);
-        }
+        localStorage.setItem('jurnal_ai_provider', providerSelectVal);
+        localStorage.setItem('jurnal_ai_gemini_key', apiKey);
+        localStorage.setItem('jurnal_ai_openai_key', openaiKey);
+        localStorage.setItem('jurnal_ai_openai_model', openaiModel);
+        localStorage.setItem('jurnal_ai_local_model', localModel);
+        
+        // Backwards compatibility save: save active key to default slot
+        let activeKey = apiKey;
+        if (providerSelectVal === 'openai') activeKey = openaiKey;
+        else if (providerSelectVal === 'local') activeKey = 'local-offline';
+        saveApiKey(activeKey);
 
         if (dailyBudget && dailyBudget > 0) {
             localStorage.setItem(STORAGE_KEYS.GLOBAL_BUDGET, dailyBudget);
@@ -297,8 +309,46 @@ function initSettings() {
         saveCloudBtn.addEventListener('click', saveCloudConfig);
     }
 
-    // Load existing API key
-    apiKeyInput.value = getApiKey();
+    // Set up provider select listener
+    const providerSelect = document.getElementById('ai-provider-select');
+    const toggleConfigSections = () => {
+        if (!providerSelect) return;
+        const selected = providerSelect.value;
+        const geminiSec = document.getElementById('gemini-config-section');
+        const openaiSec = document.getElementById('openai-config-section');
+        const localSec = document.getElementById('local-config-section');
+        
+        geminiSec?.classList.add('hidden');
+        openaiSec?.classList.add('hidden');
+        localSec?.classList.add('hidden');
+        
+        if (selected === 'openai') {
+            openaiSec?.classList.remove('hidden');
+        } else if (selected === 'local') {
+            localSec?.classList.remove('hidden');
+        } else {
+            geminiSec?.classList.remove('hidden');
+        }
+    };
+    providerSelect?.addEventListener('change', toggleConfigSections);
+
+    // Load existing settings
+    const savedProvider = localStorage.getItem('jurnal_ai_provider') || 'gemini';
+    if (providerSelect) providerSelect.value = savedProvider;
+
+    const geminiKeyVal = localStorage.getItem('jurnal_ai_gemini_key') || localStorage.getItem('jurnal_ai_gemini_key') || '';
+    if (apiKeyInput) apiKeyInput.value = geminiKeyVal || getApiKey();
+
+    const openaiKeyInput = document.getElementById('openai-key-input');
+    if (openaiKeyInput) openaiKeyInput.value = localStorage.getItem('jurnal_ai_openai_key') || '';
+
+    const openaiModelSelect = document.getElementById('openai-model-select');
+    if (openaiModelSelect) openaiModelSelect.value = localStorage.getItem('jurnal_ai_openai_model') || 'gpt-4o-mini';
+
+    const localModelSelect = document.getElementById('local-model-select');
+    if (localModelSelect) localModelSelect.value = localStorage.getItem('jurnal_ai_local_model') || 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
+
+    toggleConfigSections();
 
     const savedDailyBudget = localStorage.getItem(STORAGE_KEYS.GLOBAL_BUDGET);
     if (savedDailyBudget) {
@@ -349,7 +399,41 @@ function initSettings() {
 
 function showSettings() {
     document.getElementById('settings-modal').classList.remove('hidden');
-    document.getElementById('api-key-input').value = getApiKey();
+    
+    // Load setting values
+    const provider = localStorage.getItem('jurnal_ai_provider') || 'gemini';
+    const providerSelect = document.getElementById('ai-provider-select');
+    if (providerSelect) providerSelect.value = provider;
+
+    const geminiInput = document.getElementById('api-key-input');
+    if (geminiInput) geminiInput.value = localStorage.getItem('jurnal_ai_gemini_key') || '';
+
+    const openaiInput = document.getElementById('openai-key-input');
+    if (openaiInput) openaiInput.value = localStorage.getItem('jurnal_ai_openai_key') || '';
+
+    const openaiModelSelect = document.getElementById('openai-model-select');
+    if (openaiModelSelect) openaiModelSelect.value = localStorage.getItem('jurnal_ai_openai_model') || 'gpt-4o-mini';
+
+    const localModelSelect = document.getElementById('local-model-select');
+    if (localModelSelect) localModelSelect.value = localStorage.getItem('jurnal_ai_local_model') || 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
+
+    // Toggle visibility
+    const geminiSec = document.getElementById('gemini-config-section');
+    const openaiSec = document.getElementById('openai-config-section');
+    const localSec = document.getElementById('local-config-section');
+    
+    geminiSec?.classList.add('hidden');
+    openaiSec?.classList.add('hidden');
+    localSec?.classList.add('hidden');
+    
+    if (provider === 'openai') {
+        openaiSec?.classList.remove('hidden');
+    } else if (provider === 'local') {
+        localSec?.classList.remove('hidden');
+    } else {
+        geminiSec?.classList.remove('hidden');
+    }
+
     updateEncryptionStatus();
 }
 

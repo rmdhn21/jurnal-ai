@@ -164,9 +164,9 @@ const AudioAI = {
 
     async transcribeWithAI(base64Data, mimeType) {
         // Use the correct key name defined in storage.js
-        const apiKey = localStorage.getItem('jurnal_ai_gemini_key');
+        const apiKey = typeof getApiKey === 'function' ? getApiKey() : localStorage.getItem('jurnal_ai_gemini_key');
         if (!apiKey) {
-            alert('⚠️ API Key Gemini belum diatur di Settings.');
+            alert('⚠️ API Key belum diatur di Settings.');
             this.showProcessing(false);
             return;
         }

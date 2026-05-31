@@ -168,7 +168,7 @@ function renderInsightResult(insight) {
 }
 
 async function getInsightFromAI(userData) {
-    const apiKey = localStorage.getItem('jurnal_ai_gemini_key');
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : localStorage.getItem('jurnal_ai_gemini_key');
     if (!apiKey) throw new Error("API Key tidak ditemukan. Set di Pengaturan.");
 
     const API_URL = '$';

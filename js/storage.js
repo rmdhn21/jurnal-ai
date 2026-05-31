@@ -445,7 +445,14 @@ async function completeGoal(goalId) {
 
 // ===== API KEY OPERATIONS =====
 function getApiKey() {
-    return localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
+    const provider = localStorage.getItem('jurnal_ai_provider') || 'gemini';
+    if (provider === 'local') {
+        return 'local-offline';
+    }
+    if (provider === 'openai') {
+        return localStorage.getItem('jurnal_ai_openai_key') || '';
+    }
+    return localStorage.getItem('jurnal_ai_gemini_key') || localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
 }
 
 function saveApiKey(key) {

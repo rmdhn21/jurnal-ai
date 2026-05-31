@@ -14,6 +14,8 @@ const urlsToCache = [
     './js/cloud-sync.js',
     './js/ai.js',
     './js/ai-assistant.js',
+    './js/ai-utils.js',
+    './js/audio-ai.js',
     './js/ai-commands.js',
     './js/ai-finance.js',
     './js/ai-tutors.js',
