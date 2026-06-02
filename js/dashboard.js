@@ -190,108 +190,529 @@ async function updateDashboardReminders() {
     const now = new Date();
     const todayStr = getTodayString();
 
-    // Helper to extract time value for sorting
-    const getSortWeight = (timeLabel) => {
-        if (timeLabel === 'Mendesak') return now.getTime() - 10000;
-        if (timeLabel === 'Hari Ini') return now.getTime() - 5000;
-        return now.getTime();
-    };
+    // 1. Schedules (Planner)
+    try {
+        const schedules = await getSchedules();
+        const todayStrLocal = new Date().toISOString().split('T')[0];
+        
+        const activeSchedules = schedules
+            .filter(s => !s.completed && (s.datetime.startsWith(todayStrLocal) || new Date(s.datetime) > now))
+            .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
 
-    // 1. Schedules (Upcoming)
-    const schedules = await getSchedules();
-    const upcomingSchedules = schedules
-        .filter(s => new Date(s.datetime) > now)
-        .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))
-        .slice(0, 5);
-
-    upcomingSchedules.forEach(s => {
-        const date = new Date(s.datetime);
-        const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-        allReminders.push({
-            type: 'schedule',
-            icon: '📅',
-            title: s.title,
-            timeLabel: `${timeStr} - ${dateStr}`,
-            sortWeight: date.getTime(),
-            targetScreen: 'planner'
-        });
-    });
-
-    // 2. To-Do List Hari Ini (Incomplete)
-    const dailyTodos = await getDailyTodos();
-    if (dailyTodos) {
-        dailyTodos.filter(t => !t.completed).forEach(t => {
-            let priorityLabel = 'Hari Ini';
-            let extraWeight = 500;
-            if (t.priority === 'p1') { priorityLabel = 'Mendesak'; extraWeight = 0; }
-            else if (t.priority === 'p2') { priorityLabel = 'Penting'; extraWeight = 200; }
-
+        activeSchedules.forEach(s => {
+            const date = new Date(s.datetime);
+            const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
             allReminders.push({
-                type: 'todo-today',
-                icon: '✅',
-                title: t.text,
-                timeLabel: `To-Do: ${priorityLabel}`,
-                sortWeight: now.getTime() + extraWeight,
-                targetScreen: 'todo-today'
+                type: 'schedule', cat: 'planner',
+                icon: '📅', title: s.title, id: s.id,
+                color: '#818cf8',
+                timeLabel: `Planner: ${timeStr} - ${dateStr}`,
+                sortWeight: date.getTime(),
+                targetScreen: 'planner'
             });
         });
-    }
+    } catch(e) { console.warn('Reminders: Planner error', e); }
+
+    // 2. To-Do List Hari Ini (Incomplete)
+    try {
+        const dailyTodos = await getDailyTodos();
+        if (dailyTodos) {
+            dailyTodos.filter(t => !t.completed).forEach(t => {
+                let priorityLabel = 'Hari Ini';
+                let extraWeight = 500;
+                if (t.priority === 'p1') { priorityLabel = 'Mendesak'; extraWeight = 0; }
+                else if (t.priority === 'p2') { priorityLabel = 'Penting'; extraWeight = 200; }
+                allReminders.push({
+                    type: 'todo-today', cat: 'todo',
+                    icon: '✅', title: t.text, id: t.id,
+                    color: '#f59e0b',
+                    timeLabel: `To-Do: ${priorityLabel}`,
+                    sortWeight: now.getTime() + extraWeight,
+                    targetScreen: 'todo-today'
+                });
+            });
+        }
+    } catch(e) { console.warn('Reminders: Todo error', e); }
 
     // 3. Kanban
-    const tasks = await getTasks();
-    const pendingTasks = tasks.filter(t => !t.done && t.status !== 'done');
-    pendingTasks.forEach(t => {
-        allReminders.push({
-            type: 'kanban',
-            icon: '📋',
-            title: t.title,
-            timeLabel: 'Kanban',
-            sortWeight: now.getTime() + 1000,
-            targetScreen: 'kanban'
+    try {
+        const tasks = await getTasks();
+        const pendingTasks = tasks.filter(t => !t.done && t.status !== 'done');
+        pendingTasks.forEach(t => {
+            allReminders.push({
+                type: 'kanban', cat: 'kanban',
+                icon: '📋', title: t.title, id: t.id,
+                color: '#3b82f6',
+                timeLabel: 'Kanban',
+                sortWeight: now.getTime() + 1000,
+                targetScreen: 'kanban'
+            });
         });
-    });
+    } catch(e) { console.warn('Reminders: Kanban error', e); }
 
     // 4. Habits
-    const habits = await getHabits();
-    const undoneHabits = habits.filter(h => {
-        if (h.completions && h.completions[todayStr]) return false;
-        if (h.completedDates && h.completedDates.includes(todayStr)) return false;
-        return true;
-    });
-
-    undoneHabits.forEach(h => {
-        allReminders.push({
-            type: 'habit',
-            icon: '🌱',
-            title: h.name,
-            timeLabel: 'Habit',
-            sortWeight: now.getTime() + 2000,
-            targetScreen: 'habits'
+    try {
+        const habits = await getHabits();
+        const undoneHabits = habits.filter(h => {
+            if (h.completions && h.completions[todayStr]) return false;
+            if (h.completedDates && h.completedDates.includes(todayStr)) return false;
+            return true;
         });
+        undoneHabits.forEach(h => {
+            allReminders.push({
+                type: 'habit', cat: 'habits',
+                icon: '🌱', title: h.name, id: h.id,
+                color: '#10b981',
+                timeLabel: 'Habit',
+                sortWeight: now.getTime() + 2000,
+                targetScreen: 'habits'
+            });
+        });
+    } catch(e) { console.warn('Reminders: Habits error', e); }
+
+    // 5. Ibadah (Islamic Tracker) - belum sholat hari ini
+    try {
+        if (typeof getIslamicTrackByDate === 'function') {
+            const islamData = await getIslamicTrackByDate(todayStr);
+            const prayers = [
+                { key: 'subuh', label: 'Sholat Subuh' },
+                { key: 'dzuhur', label: 'Sholat Dzuhur' },
+                { key: 'ashar', label: 'Sholat Ashar' },
+                { key: 'maghrib', label: 'Sholat Maghrib' },
+                { key: 'isya', label: 'Sholat Isya' }
+            ];
+            // Only show prayers that should have been done by now
+            const hour = now.getHours();
+            const prayerTimeMap = { subuh: 5, dzuhur: 12, ashar: 15, maghrib: 18, isya: 19 };
+            prayers.forEach(p => {
+                if (islamData.prayers && !islamData.prayers[p.key]) {
+                    allReminders.push({
+                        type: 'ibadah', cat: 'ibadah',
+                        icon: '🕌', title: p.label, id: `prayer-${p.key}`,
+                        color: '#a78bfa',
+                        timeLabel: 'Ibadah',
+                        sortWeight: now.getTime() - 500 + prayerTimeMap[p.key], // Sort chronologically
+                        targetScreen: 'islam'
+                    });
+                }
+            });
+            // Sunnah & Others reminders
+            const sunnahItems = [
+                { key: 'qobliyah', label: 'Sholat Qobliyah/Ba\'diyah' },
+                { key: 'dzikirPagi', label: 'Dzikir Pagi' },
+                { key: 'dzikirPetang', label: 'Dzikir Petang' },
+                { key: 'waqiah', label: "Baca Al-Waqi'ah" },
+                { key: 'sedekah', label: 'Sedekah Harian' },
+                { key: 'fasting', label: 'Puasa Sunnah' }
+            ];
+            sunnahItems.forEach(s => {
+                if (!islamData[s.key]) {
+                    allReminders.push({
+                        type: 'ibadah-sunnah', cat: 'ibadah',
+                        icon: '🤲', title: s.label, id: `sunnah-${s.key}`,
+                        color: '#c084fc',
+                        timeLabel: 'Sunnah',
+                        sortWeight: now.getTime() + 100,
+                        targetScreen: 'islam'
+                    });
+                }
+            });
+        }
+    } catch(e) { console.warn('Reminders: Ibadah error', e); }
+
+    // 6. Stoic Muslim (Daily Missions belum selesai)
+    try {
+        if (typeof stoicState !== 'undefined' && typeof stoicData !== 'undefined') {
+            const undoneMissions = (stoicState.dailyMissions || []).filter(
+                mId => !(stoicState.checklistProgress || []).includes(mId)
+            );
+            undoneMissions.forEach(mId => {
+                const mission = stoicData.auraBank.find(m => m.id === mId);
+                if (mission) {
+                    allReminders.push({
+                        type: 'stoic', cat: 'stoic',
+                        icon: '🗡️', title: mission.title, id: mId,
+                        color: '#10b981',
+                        timeLabel: 'Stoic Muslim',
+                        sortWeight: now.getTime() + 3000,
+                        targetScreen: 'stoic-muslim'
+                    });
+                }
+            });
+        }
+    } catch(e) { console.warn('Reminders: Stoic error', e); }
+
+    // 7. Cortisol Control (Habits belum selesai hari ini)
+    try {
+        if (typeof cortisolState !== 'undefined' && typeof cortisolData !== 'undefined') {
+            const doneCortisolIds = cortisolState.completedToday || [];
+            const undoneCortisolHabits = cortisolData.habits.filter(h => !doneCortisolIds.includes(h.id));
+            undoneCortisolHabits.forEach(h => {
+                allReminders.push({
+                    type: 'cortisol', cat: 'cortisol',
+                    icon: h.icon || '🧘', title: h.title, id: h.id,
+                    color: '#38bdf8',
+                    timeLabel: 'Cortisol Control',
+                    sortWeight: now.getTime() + 4000,
+                    targetScreen: 'cortisol-control'
+                });
+            });
+        }
+    } catch(e) { console.warn('Reminders: Cortisol error', e); }
+
+    // 8. Looksmaxing (Habits belum selesai hari ini)
+    try {
+        if (typeof looksState !== 'undefined' && typeof looksData !== 'undefined') {
+            const doneLooksIds = looksState.completedToday || [];
+            const undoneLooksHabits = looksData.habits.filter(h => !doneLooksIds.includes(h.id));
+            undoneLooksHabits.forEach(h => {
+                allReminders.push({
+                    type: 'looksmaxing', cat: 'looks',
+                    icon: h.icon || '✨', title: h.title, id: h.id,
+                    color: '#f472b6',
+                    timeLabel: 'Looksmaxing',
+                    sortWeight: now.getTime() + 5000,
+                    targetScreen: 'looksmaxing'
+                });
+            });
+        }
+    } catch(e) { console.warn('Reminders: Looksmaxing error', e); }
+
+    // 9. BPS Roster (Checklist items belum selesai di tab aktif hari ini)
+    try {
+        const savedShifts = localStorage.getItem('work_shift_data');
+        let todayShift = null;
+        if (savedShifts) {
+            const shiftData = JSON.parse(savedShifts);
+            const todayShiftKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            todayShift = shiftData[todayShiftKey];
+        }
+
+        if (todayShift && todayShift !== 'Off' && todayShift !== 'Cuti' && todayShift !== 'Izin') {
+            let bpsTab = 'shiftPagi';
+            if (todayShift.includes('Malam') || todayShift === 'Dinas Malam') bpsTab = 'shiftMalam';
+            
+            const bpsTabEl = document.getElementById('bps-content-' + bpsTab);
+            if (bpsTabEl) {
+                const unchecked = bpsTabEl.querySelectorAll('.bps-checkbox:not(:checked)');
+                const total = bpsTabEl.querySelectorAll('.bps-checkbox').length;
+                const checked = total - unchecked.length;
+                if (unchecked.length > 0) {
+                    unchecked.forEach((cb, idx) => {
+                        const labelText = cb.nextElementSibling ? cb.nextElementSibling.textContent.trim() : `Tugas BPS ${idx+1}`;
+                        allReminders.push({
+                            type: 'bps', cat: 'bps',
+                            icon: '👷', title: labelText, id: cb.id,
+                            color: '#0054A6',
+                            timeLabel: `BPS: ${todayShift}`,
+                            sortWeight: now.getTime() + 500 + idx,
+                            targetScreen: 'bps-roster'
+                        });
+                    });
+                }
+            }
+        } else if (!todayShift) {
+            allReminders.push({
+                type: 'bps-assign', cat: 'bps',
+                icon: '👷', title: `Set Jadwal Shift BPS Hari Ini`, id: 'bps-assign-shift',
+                color: '#0054A6',
+                timeLabel: `Shift Belum Diatur`,
+                sortWeight: now.getTime() + 100,
+                targetScreen: 'shift-tracker'
+            });
+        }
+    } catch(e) { console.warn('Reminders: BPS error', e); }
+
+    // 10. Workout (Latihan hari ini berdasarkan jadwal)
+    try {
+        if (typeof workoutData !== 'undefined' && typeof workoutState !== 'undefined') {
+            const dayIndex = now.getDay(); // 0=Sun, 1=Mon...
+            const dayMap = [6, 0, 1, 2, 3, 4, 5]; // Map JS day to workoutSchedule index
+            const schedIdx = dayMap[dayIndex];
+            const todaySched = typeof workoutSchedule !== 'undefined' ? workoutSchedule[schedIdx] : null;
+            
+            if (todaySched && todaySched.type !== 'rest') {
+                // Find the corresponding data category
+                let workoutCatKey = null;
+                if (todaySched.type === 'gym' && todaySched.title.includes('1')) workoutCatKey = 'gym1';
+                else if (todaySched.type === 'gym' && todaySched.title.includes('2')) workoutCatKey = 'gym2';
+                else if (todaySched.type === 'home' && todaySched.title.includes('1')) workoutCatKey = 'home1';
+                else if (todaySched.type === 'home' && todaySched.title.includes('2')) workoutCatKey = 'home2';
+
+                if (workoutCatKey && workoutData[workoutCatKey]) {
+                    const donework = workoutState.progress[workoutCatKey] || [];
+                    workoutData[workoutCatKey].forEach((task, idx) => {
+                        if (!donework.includes(task.id)) {
+                            allReminders.push({
+                                type: 'workout', cat: 'workout',
+                                icon: '💪', title: task.text, id: `workout-${workoutCatKey}-${task.id}`,
+                                color: '#818cf8',
+                                timeLabel: `Workout: ${todaySched.title}`,
+                                sortWeight: now.getTime() + 1500 + idx,
+                                targetScreen: 'workout-tracker'
+                            });
+                        }
+                    });
+                } else if (todaySched.type === 'game') {
+                    allReminders.push({
+                        type: 'workout', cat: 'workout',
+                        icon: '🏆', title: 'Game Day! Main Voli/Bola', id: 'workout-game',
+                        color: '#f59e0b',
+                        timeLabel: `Workout ${todaySched.day}`,
+                        sortWeight: now.getTime() + 1500,
+                        targetScreen: 'workout-tracker'
+                    });
+                }
+            }
+        }
+    } catch(e) { console.warn('Reminders: Workout error', e); }
+
+    // 11. Journal (Belum menulis jurnal hari ini)
+    try {
+        if (typeof getJournals === 'function') {
+            const journals = await getJournals();
+            const wroteToday = journals.some(j => j.date === todayStr);
+            if (!wroteToday) {
+                allReminders.push({
+                    type: 'journal', cat: 'journal',
+                    icon: '📝', title: 'Tulis Jurnal Hari Ini', id: 'journal-today',
+                    color: '#6366f1',
+                    timeLabel: 'Jurnal',
+                    sortWeight: now.getTime() + 100,
+                    targetScreen: 'journal'
+                });
+            }
+        }
+    } catch(e) { console.warn('Reminders: Journal error', e); }
+
+    // Store all reminders for filtering
+    window._allDashboardReminders = allReminders;
+
+    // Render with category filter tabs
+    renderReminderTabs(container, allReminders);
+}
+
+// Category filter tabs and rendering
+function renderReminderTabs(container, allReminders) {
+    // Count items per category
+    const catCounts = {};
+    allReminders.forEach(r => {
+        catCounts[r.cat] = (catCounts[r.cat] || 0) + 1;
     });
 
-    if (allReminders.length === 0) {
-        container.innerHTML = '<p class="text-muted" style="text-align:center; padding: 15px;">🎉 Semua beres! Tidak ada reminder.</p>';
+    const catLabels = {
+        'all': { label: 'Semua', icon: '📌', color: '#94a3b8' },
+        'ibadah': { label: 'Ibadah', icon: '🕌', color: '#a78bfa' },
+        'todo': { label: 'To-Do', icon: '✅', color: '#f59e0b' },
+        'habits': { label: 'Habits', icon: '🌱', color: '#10b981' },
+        'planner': { label: 'Planner', icon: '📅', color: '#818cf8' },
+        'kanban': { label: 'Kanban', icon: '📋', color: '#3b82f6' },
+        'stoic': { label: 'Stoic', icon: '🗡️', color: '#10b981' },
+        'cortisol': { label: 'Cortisol', icon: '🧘', color: '#38bdf8' },
+        'looks': { label: 'Looks', icon: '✨', color: '#f472b6' },
+        'bps': { label: 'BPS', icon: '👷', color: '#0054A6' },
+        'workout': { label: 'Workout', icon: '💪', color: '#818cf8' },
+        'journal': { label: 'Jurnal', icon: '📝', color: '#6366f1' }
+    };
+
+    const activeCats = Object.keys(catCounts);
+    const activeFilter = window._reminderActiveFilter || 'all';
+
+    // Build filter tabs (only show if multiple categories exist)
+    let tabsHtml = '';
+    if (activeCats.length > 1) {
+        tabsHtml = `<div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">`;
+        
+        // "All" tab
+        const allActive = activeFilter === 'all';
+        tabsHtml += `<button onclick="filterDashboardReminders('all')" style="
+            font-size: 0.65rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; border: 1px solid ${allActive ? '#94a3b8' : 'rgba(255,255,255,0.1)'}; 
+            background: ${allActive ? 'rgba(148, 163, 184, 0.2)' : 'transparent'}; color: ${allActive ? '#e2e8f0' : '#94a3b8'}; 
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px;
+        ">📌 ${allReminders.length}</button>`;
+
+        activeCats.forEach(cat => {
+            const info = catLabels[cat] || { label: cat, icon: '•', color: '#94a3b8' };
+            const isActive = activeFilter === cat;
+            tabsHtml += `<button onclick="filterDashboardReminders('${cat}')" style="
+                font-size: 0.65rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; border: 1px solid ${isActive ? info.color : 'rgba(255,255,255,0.1)'}; 
+                background: ${isActive ? info.color + '25' : 'transparent'}; color: ${isActive ? info.color : '#94a3b8'}; 
+                cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px;
+            ">${info.icon} ${catCounts[cat]}</button>`;
+        });
+        tabsHtml += `</div>`;
+    }
+
+    // Filter reminders
+    let filtered = activeFilter === 'all' ? allReminders : allReminders.filter(r => r.cat === activeFilter);
+    filtered.sort((a, b) => a.sortWeight - b.sortWeight);
+
+    if (filtered.length === 0 && allReminders.length === 0) {
+        container.innerHTML = '<p class="text-muted" style="text-align:center; padding: 15px;">🎉 Semua beres! Tidak ada pengingat kegiatan.</p>';
         return;
     }
 
-    // Sort Reminders
-    allReminders.sort((a, b) => a.sortWeight - b.sortWeight);
+    if (filtered.length === 0) {
+        container.innerHTML = tabsHtml + '<p class="text-muted" style="text-align:center; padding: 10px; font-size: 0.85rem;">✅ Kategori ini sudah beres!</p>';
+        return;
+    }
 
-    // Limit to 10 max
-    container.innerHTML = allReminders.slice(0, 10).map(r => `
+    // Show up to 100 items (so all checklists appear)
+    const itemsHtml = filtered.slice(0, 100).map(r => `
         <div class="reminder-item" 
-             style="display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer;"
-             onclick="navigateToScreen('${r.targetScreen}')">
-            <div style="font-size: 1.5rem; background: var(--bg-color); padding: 8px; border-radius: 8px; border: 1px solid var(--border);">${r.icon}</div>
-            <div style="display: flex; flex-direction: column;">
-                <span class="reminder-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-color);">${r.title}</span>
-                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${r.timeLabel}</span>
+             style="display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); transition: all 0.2s;"
+             onmouseover="this.style.background='rgba(255,255,255,0.02)'"
+             onmouseout="this.style.background='transparent'">
+            <div onclick="event.stopPropagation(); toggleDashboardReminderItem('${r.type}', '${r.id}')" 
+                 style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid ${r.color}; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;"
+                 class="reminder-checkbox-btn"
+                 title="Tandai Selesai">
+            </div>
+            <div style="display: flex; flex-direction: column; flex: 1; cursor: pointer;" onclick="${['stoic-muslim','cortisol-control','looksmaxing','workout-tracker','bps-roster','islam'].includes(r.targetScreen) ? `navigateToSubscreen('${r.targetScreen}')` : `navigateToScreen('${r.targetScreen}')`}">
+                <span class="reminder-text" style="font-weight: 600; font-size: 0.9rem; color: var(--text-color);">${r.icon} ${r.title}</span>
+                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">${r.timeLabel}</span>
             </div>
         </div>
     `).join('');
+
+    // Summary bar at bottom
+    const totalCount = allReminders.length;
+    const doneMsg = totalCount > 0 
+        ? `<div style="text-align: center; padding: 8px 0 2px; font-size: 0.65rem; color: var(--text-muted); opacity: 0.7;">📊 ${totalCount} tugas aktif dari semua modul</div>` 
+        : '';
+
+    container.innerHTML = tabsHtml + itemsHtml + doneMsg;
 }
+
+window.filterDashboardReminders = function(cat) {
+    window._reminderActiveFilter = cat;
+    const container = document.getElementById('dashboard-reminders');
+    if (container && window._allDashboardReminders) {
+        renderReminderTabs(container, window._allDashboardReminders);
+    }
+};
+
+window.toggleDashboardReminderItem = async function(type, id) {
+    const todayStr = typeof getTodayString === 'function' ? getTodayString() : new Date().toISOString().split('T')[0];
+    
+    try {
+        if (type === 'habit') {
+            if (typeof toggleHabitCompletion === 'function') {
+                const habit = await toggleHabitCompletion(id, todayStr);
+                if (habit && habit.completions && habit.completions[todayStr]) {
+                    if (typeof addXP === 'function') {
+                        addXP(10, 'Habit Selesai');
+                        if (habit.streak > 0 && habit.streak % 7 === 0) {
+                            addXP(20, `${habit.streak} Hari Streak!`);
+                        }
+                    }
+                }
+            }
+        } else if (type === 'todo-today') {
+            if (typeof toggleDailyTodo === 'function') {
+                await toggleDailyTodo(id);
+            }
+        } else if (type === 'kanban') {
+            if (typeof toggleTask === 'function') {
+                const task = await toggleTask(id);
+                if (task && task.done && typeof addXP === 'function') {
+                    addXP(15, 'Tugas Kanban Selesai');
+                }
+            }
+        } else if (type === 'schedule') {
+            if (typeof getSchedules === 'function') {
+                const schedules = await getSchedules(true);
+                const sched = schedules.find(s => s.id === id);
+                if (sched) {
+                    sched.completed = true;
+                    if (typeof saveSchedule === 'function') {
+                        await saveSchedule(sched);
+                        if (typeof addXP === 'function') addXP(10, 'Jadwal Selesai');
+                    }
+                }
+            }
+        } else if (type === 'ibadah') {
+            // Toggle prayer checkbox in the Islam tracker
+            const prayerKey = id.replace('prayer-', '');
+            const el = document.getElementById('prayer-' + prayerKey);
+            if (el) {
+                el.checked = true;
+                el.dispatchEvent(new Event('change'));
+            }
+            if (typeof addXP === 'function') addXP(5, 'Sholat Selesai');
+        } else if (type === 'ibadah-sunnah') {
+            // Toggle sunnah checkbox
+            const sunnahKey = id.replace('sunnah-', '');
+            const keyMap = { qobliyah: 'islam-qobliyah', dzikirPagi: 'islam-dzikir-pagi', dzikirPetang: 'islam-dzikir-petang', waqiah: 'islam-waqiah', sedekah: 'islam-sedekah', fasting: 'islam-fasting' };
+            const el = document.getElementById(keyMap[sunnahKey]);
+            if (el) {
+                el.checked = true;
+                el.dispatchEvent(new Event('change'));
+            }
+            if (typeof addXP === 'function') addXP(5, 'Sunnah Selesai');
+        } else if (type === 'stoic') {
+            // Toggle stoic mission completion
+            if (typeof stoicState !== 'undefined') {
+                if (!stoicState.checklistProgress) stoicState.checklistProgress = [];
+                if (!stoicState.checklistProgress.includes(id)) {
+                    stoicState.checklistProgress.push(id);
+                    stoicState.xp = (stoicState.xp || 0) + 15;
+                    if (typeof saveStoicState === 'function') saveStoicState();
+                    if (typeof addXP === 'function') addXP(10, 'Misi Stoic Selesai');
+                }
+            }
+        } else if (type === 'cortisol') {
+            // Toggle cortisol habit
+            if (typeof toggleCortisolHabit === 'function') {
+                toggleCortisolHabit(id);
+                if (typeof addXP === 'function') addXP(5, 'Cortisol Habit');
+            }
+        } else if (type === 'looksmaxing') {
+            // Toggle looksmaxing habit
+            if (typeof toggleLooksHabit === 'function') {
+                toggleLooksHabit(id);
+            }
+        } else if (type === 'bps' || type === 'workout' || type === 'journal' || type === 'bps-assign') {
+            if (type === 'workout' && id.startsWith('workout-')) {
+                const parts = id.split('-');
+                if (parts.length === 3 && typeof toggleWorkoutTask === 'function') {
+                    await toggleWorkoutTask(parts[1], parts[2]); // e.g. workout-gym1-g1_1
+                    // Don't return, let it refresh below
+                }
+            } else if (type === 'bps' && id.startsWith('bps-')) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.checked = true;
+                    el.dispatchEvent(new Event('change'));
+                    // Don't return, let it refresh below
+                }
+            } else {
+
+            
+                // Fallback: Navigate to module for complex interactions
+                let screen = type;
+                if (type === 'bps' || type === 'bps-assign') screen = type === 'bps' ? 'bps-roster' : 'shift-tracker';
+                if (type === 'workout') screen = 'workout-tracker';
+                if (type === 'journal') screen = 'journal';
+                
+                if (typeof navigateToSubscreen === 'function') navigateToSubscreen(screen);
+                return; // Don't refresh, we're navigating away
+            }
+        }
+    } catch(e) {
+        console.error("Gagal mencentang pengingat kegiatan", e);
+    }
+    
+    // Refresh stats and reminder widgets
+    if (typeof updateDashboardStats === 'function') await updateDashboardStats();
+    if (typeof updateDashboardReminders === 'function') await updateDashboardReminders();
+    if (typeof refreshWidget === 'function') {
+        refreshWidget('rpg-stats');
+        refreshWidget('reminders');
+        refreshWidget('stoic-muslim');
+    }
+};
 
 async function getDailyInsight() {
     const apiKey = getApiKey();

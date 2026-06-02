@@ -123,6 +123,8 @@ function showScreen(targetScreen) {
         if (typeof initK3MigasMastery === 'function') initK3MigasMastery();
     } else if (targetScreen === 'tkd-mastery') {
         if (typeof initTkdMastery === 'function') initTkdMastery();
+    } else if (targetScreen === 'stats-dist') {
+        if (typeof initStatsDist === 'function') initStatsDist();
     }
 }
 

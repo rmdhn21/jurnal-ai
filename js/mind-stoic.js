@@ -152,6 +152,7 @@ async function initStoicMuslim() {
     renderAuraHeader();
     renderAuraChecklist();
     renderTawakkalJournal();
+    initBurnoutRecovery();
 }
 
 function loadStoicState() {
@@ -162,10 +163,17 @@ function loadStoicState() {
     // Backward compatibility if upgrading from v1
     if (stoicState.xp === undefined) stoicState.xp = 0;
     if (!stoicState.dailyMissions) stoicState.dailyMissions = [];
+    if (!stoicState.burnoutProgress) stoicState.burnoutProgress = [];
+    
+    // Ensure dailyQuoteIndex is valid
+    if (stoicState.dailyQuoteIndex === undefined || stoicState.dailyQuoteIndex === null || isNaN(stoicState.dailyQuoteIndex) || stoicState.dailyQuoteIndex < 0 || stoicState.dailyQuoteIndex >= stoicData.quotes.length) {
+        stoicState.dailyQuoteIndex = Math.floor(Math.random() * stoicData.quotes.length);
+    }
 }
 
 function saveStoicState() {
     localStorage.setItem(STOIC_STORAGE_KEY, JSON.stringify(stoicState));
+    if (typeof refreshWidget === 'function') refreshWidget('stoic-muslim');
 }
 
 function checkDailyReset() {
@@ -180,12 +188,19 @@ function checkDailyReset() {
         const shuffled = [...stoicData.auraBank].sort(() => 0.5 - Math.random());
         stoicState.dailyMissions = shuffled.slice(0, 4).map(m => m.id);
         
+        // Reset burnout progress harian
+        stoicState.burnoutProgress = [];
+        
         saveStoicState();
     }
 }
 
 function renderStoicQuote() {
-    const quoteObj = stoicData.quotes[stoicState.dailyQuoteIndex];
+    let quoteObj = stoicData.quotes[stoicState.dailyQuoteIndex];
+    if (!quoteObj) {
+        stoicState.dailyQuoteIndex = Math.floor(Math.random() * stoicData.quotes.length);
+        quoteObj = stoicData.quotes[stoicState.dailyQuoteIndex] || { q: "Tetap tenang dan kuasai diri Anda.", author: "Marcus Aurelius" };
+    }
     const container = document.getElementById('stoic-quote-container');
     if (!container) return;
 
@@ -362,7 +377,7 @@ async function addTawakkalEntry() {
         try {
             const payload = {
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 800 }
+                generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 2048 }
             };
             
             let response = await unifiedGeminiCall(payload);
@@ -435,8 +450,279 @@ function renderTawakkalJournal() {
     container.innerHTML = html;
 }
 
+function deleteTawakkal(entryId) {
+    stoicState.tawakkalEntries = stoicState.tawakkalEntries.filter(entry => entry.id !== entryId);
+    saveStoicState();
+    renderTawakkalJournal();
+}
+
+const burnoutTasks = [
+    {
+        id: 'bo1',
+        category: 'scientific',
+        icon: '📱',
+        title: 'Dopamine Fasting (Detox Layar)',
+        description: 'Matikan semua layar gawai selama 30-45 menit. Izinkan pikiran Anda masuk dalam kondisi tenang.',
+        benefit: 'Mengistirahatkan reseptor dopamin yang overstimulated agar motivasi alami kembali.'
+    },
+    {
+        id: 'bo2',
+        category: 'scientific',
+        icon: '🌬️',
+        title: 'Physiological Sigh (Napas Reset)',
+        description: 'Ambil 2 napas cepat berurutan lewat hidung, lalu buang napas perlahan lewat mulut. Ulangi 5-10 kali.',
+        benefit: 'Mengaktifkan saraf parasimpatis dan menurunkan detak jantung secara instan.'
+    },
+    {
+        id: 'bo3',
+        category: 'scientific',
+        icon: '❄️',
+        title: 'Somatic Cold Exposure',
+        description: 'Basuh wajah atau mandi dengan air dingin secara perlahan tanpa terburu-buru.',
+        benefit: 'Memicu pelepasan noradrenalin dan dopamin alami secara bertahap tanpa lonjakan kecemasan.'
+    },
+    {
+        id: 'bo4',
+        category: 'islamic',
+        icon: '📿',
+        title: 'Dzikir Al-Munqidh (Pelepas Beban)',
+        description: 'Ucapkan kalimat "La hawla wa la quwwata illa billah" sebanyak 33 kali dengan perenungan makna mendalam.',
+        benefit: 'Membebaskan ego dari ilusi kontrol berlebihan dan meringankan beban ekspektasi diri.'
+    },
+    {
+        id: 'bo5',
+        category: 'islamic',
+        icon: '🕌',
+        title: 'Wudhu Cold Reset (Thaharah Lambat)',
+        description: 'Lakukan wudhu dengan air dingin secara sangat perlahan dan rasakan setiap tetesan air menggugurkan stres fisik.',
+        benefit: 'Menggabungkan hidrasi termal kulit dengan ritual pembersihan spiritual (memadamkan api jenuh).'
+    },
+    {
+        id: 'bo6',
+        category: 'islamic',
+        icon: '🧎',
+        title: 'Sajadah Time (Sujud Panjang)',
+        description: 'Lakukan sujud di luar shalat fardhu selama minimal 2 menit sambil menyerahkan kepasrahan total.',
+        benefit: 'Melancarkan sirkulasi darah ke otak (lobus frontal) secara fisik dan simbol penyerahan diri secara spiritual.'
+    }
+];
+
+function initBurnoutRecovery() {
+    if (!stoicState.burnoutProgress) {
+        stoicState.burnoutProgress = [];
+    }
+    renderBurnoutScore();
+    renderBurnoutChecklist();
+}
+
+function renderBurnoutScore() {
+    const progressText = document.getElementById('burnout-recovery-text');
+    const progressBar = document.getElementById('burnout-recovery-bar');
+    const badge = document.getElementById('burnout-index-badge');
+    const statusMsg = document.getElementById('burnout-status-message');
+    
+    if (!progressText || !progressBar) return;
+    
+    const totalTasks = burnoutTasks.length;
+    const completedCount = (stoicState.burnoutProgress || []).length;
+    const pct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+    
+    progressText.textContent = `${pct}%`;
+    progressBar.style.width = `${pct}%`;
+    
+    let color = '#ef4444'; // Red
+    let statusText = `${100 - pct}% Burnout`;
+    let message = 'Saraf Anda dalam kondisi kelelahan ekstrem (Burnout). Mulailah dengan tindakan reset terkecil.';
+    
+    if (pct >= 100) {
+        color = '#10b981'; // Emerald
+        statusText = 'Terpulihkan ✨';
+        message = 'Selamat! Sistem neuro-spiritual Anda telah sepenuhnya terkalibrasi ulang. Anda siap melangkah maju!';
+        if (badge) {
+            badge.style.background = 'rgba(16, 185, 129, 0.15)';
+            badge.style.color = '#34d399';
+            badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+        }
+    } else if (pct >= 50) {
+        color = '#f59e0b'; // Gold
+        message = 'Energi dan kestabilan mental hampir kembali penuh. Jiwa Anda terasa lebih ringan.';
+        if (badge) {
+            badge.style.background = 'rgba(245, 158, 11, 0.15)';
+            badge.style.color = '#fbbf24';
+            badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        }
+    } else if (pct > 0) {
+        color = '#f97316'; // Orange
+        message = 'Proses kalibrasi saraf berjalan. Pertahankan ketenangan batin Anda.';
+        if (badge) {
+            badge.style.background = 'rgba(249, 115, 22, 0.15)';
+            badge.style.color = '#ffedd5';
+            badge.style.borderColor = 'rgba(249, 115, 22, 0.3)';
+        }
+    } else {
+        if (badge) {
+            badge.style.background = 'rgba(239, 68, 68, 0.15)';
+            badge.style.color = '#f87171';
+            badge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        }
+    }
+    
+    progressBar.style.background = color;
+    progressText.style.color = color;
+    if (badge) badge.textContent = statusText;
+    if (statusMsg) statusMsg.textContent = message;
+}
+
+function renderBurnoutChecklist() {
+    const sciContainer = document.getElementById('scientific-reset-container');
+    const islContainer = document.getElementById('islamic-reset-container');
+    
+    if (!sciContainer || !islContainer) return;
+    
+    sciContainer.innerHTML = '';
+    islContainer.innerHTML = '';
+    
+    burnoutTasks.forEach(task => {
+        const isDone = (stoicState.burnoutProgress || []).includes(task.id);
+        const cardStyle = isDone
+            ? 'background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.25);'
+            : 'background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06);';
+            
+        const themeColor = task.category === 'scientific' ? '#38bdf8' : '#34d399';
+        const checkboxHtml = isDone
+            ? `<div style="font-size: 1.2rem; color: #10b981;">☑️</div>`
+            : `<div style="width: 20px; height: 20px; border: 2px solid ${themeColor}; border-radius: 6px; transition: all 0.2s;"></div>`;
+            
+        const cardHtml = `
+            <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-md); transition: all 0.3s ease; cursor: pointer; ${cardStyle}" onclick="toggleBurnoutTask('${task.id}')" class="burnout-task-card">
+                <div style="font-size: 1.5rem; margin-top: 2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));">${task.icon}</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h5 style="margin: 0; font-size: 0.85rem; font-weight: 600; color: ${isDone ? '#a7f3d0' : 'var(--text-primary)'}; ${isDone ? 'text-decoration: line-through; opacity: 0.75;' : ''}">${task.title}</h5>
+                        ${!isDone ? `<span style="font-size: 0.65rem; color: #fbbf24; background: rgba(251, 191, 36, 0.1); padding: 1px 5px; border-radius: 4px; font-weight: bold; margin-left: 8px; white-space: nowrap;">+20 XP</span>` : ''}
+                    </div>
+                    <p style="margin: 4px 0; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">${task.description}</p>
+                    <div style="font-size: 0.7rem; color: ${themeColor}; font-weight: 500; display: flex; align-items: center; gap: 4px; margin-top: 6px; opacity: 0.9;">
+                        <span>💡</span>
+                        <span>${task.benefit}</span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; min-width: 24px; height: 24px;">
+                    ${checkboxHtml}
+                </div>
+            </div>
+        `;
+        
+        if (task.category === 'scientific') {
+            sciContainer.insertAdjacentHTML('beforeend', cardHtml);
+        } else {
+            islContainer.insertAdjacentHTML('beforeend', cardHtml);
+        }
+    });
+}
+
+function toggleBurnoutTask(taskId) {
+    if (!stoicState.burnoutProgress) {
+        stoicState.burnoutProgress = [];
+    }
+    
+    const idx = stoicState.burnoutProgress.indexOf(taskId);
+    if (idx === -1) {
+        stoicState.burnoutProgress.push(taskId);
+        stoicState.xp += 20;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const stoicLog = JSON.parse(localStorage.getItem('jurnal_ai_stoic_log') || '[]');
+        stoicLog.push({ id: taskId, date: today, timestamp: Date.now() });
+        localStorage.setItem('jurnal_ai_stoic_log', JSON.stringify(stoicLog.slice(-100)));
+        
+        if ("vibrate" in navigator) navigator.vibrate([15, 30]);
+    } else {
+        stoicState.burnoutProgress.splice(idx, 1);
+        stoicState.xp -= 20;
+        if (stoicState.xp < 0) stoicState.xp = 0;
+    }
+    
+    saveStoicState();
+    
+    // Sync with RPG Stats widget
+    const exportTasks = stoicState.dailyMissions.map(id => ({
+        id: id,
+        isCompleted: stoicState.checklistProgress.includes(id)
+    }));
+    localStorage.setItem('jurnal_ai_stoic_tasks', JSON.stringify(exportTasks));
+    if (typeof refreshWidget === 'function') refreshWidget('rpg-stats');
+    
+    renderAuraHeader();
+    renderBurnoutScore();
+    renderBurnoutChecklist();
+}
+
+async function askBurnoutAIDiagnosis() {
+    const btn = document.getElementById('burnout-ai-btn');
+    const modal = document.getElementById('burnout-result-modal');
+    const modalBody = document.getElementById('burnout-modal-body');
+    
+    if (!btn || !modal || !modalBody) return;
+    
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : null;
+    if (!apiKey) {
+        alert('API Key / Provider AI belum dikonfigurasi di Pengaturan. Silakan atur terlebih dahulu untuk menggunakan fitur ini.');
+        return;
+    }
+    
+    const originalBtnText = btn.innerHTML;
+    btn.innerHTML = `<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Memproses Diagnosis...`;
+    btn.disabled = true;
+    
+    const completedTasks = burnoutTasks.filter(t => (stoicState.burnoutProgress || []).includes(t.id));
+    const incompleteTasks = burnoutTasks.filter(t => !(stoicState.burnoutProgress || []).includes(t.id));
+    
+    let prompt = `Anda adalah seorang Konselor/Terapis Neuro-Spiritual yang sangat bijaksana, hangat, dan ilmiah. Pengguna Anda sedang mengalami burnout parah, merasa tiba-tiba kehilangan gairah hidup, motivasi jatuh, dan stuck secara emosional.
+
+Pengguna telah mencoba mengambil tindakan berikut hari ini untuk memulihkan diri:
+${completedTasks.length > 0 
+    ? completedTasks.map(t => `- [SUDAH] ${t.title} (${t.benefit})`).join('\n')
+    : '- Belum ada tindakan reset yang dilakukan.'}
+
+Tindakan berikut ini masih belum dilakukan pengguna:
+${incompleteTasks.map(t => `- [BELUM] ${t.title} (${t.benefit})`).join('\n')}
+
+Tugas Anda:
+1. Berikan penjelasan secara singkat & ilmiah (neurobiologis) mengapa kehilangan gairah/motivasi mendadak bisa terjadi (down-regulation dopamin, overload kortisol, stress sirkuit amigdala).
+2. Hubungkan secara spiritual dalam kacamata Islam (konsep Futur / kejenuhan iman dan amal, pentingnya Tazkiyatun Nafs, dan nilai istirahat serta kepasrahan/Tawakkal sebagai bentuk ibadah).
+3. Berikan apresiasi hangat atas tindakan reset yang SUDAH mereka lakukan.
+4. Berikan saran penyemangat yang persuasif dan membimbing untuk mencoba tindakan reset yang BELUM mereka lakukan, secara bertahap dan tanpa paksaan.
+5. Format jawaban Anda dalam HTML yang rapi (gunakan tag seperti <p>, <strong>, <ul>, <li>, dan blockquote yang bergaya). Hindari tag markdown seperti **. Tulis dengan bahasa Indonesia yang santun, menenangkan, menyentuh hati, sekaligus berbobot secara keilmuan. Maksimal 3-4 paragraf yang terstruktur indah.`;
+
+    try {
+        const payload = {
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 4096 }
+        };
+        
+        let response = await unifiedGeminiCall(payload);
+        if (response) {
+            response = response.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            modalBody.innerHTML = response;
+            modal.classList.remove('hidden');
+        } else {
+            alert('Tidak menerima respon dari AI. Silakan coba lagi.');
+        }
+    } catch (e) {
+        console.error("Gagal mendapatkan diagnosis AI:", e);
+        alert('Terjadi kesalahan saat memproses diagnosis AI: ' + e.message);
+    } finally {
+        btn.innerHTML = originalBtnText;
+        btn.disabled = false;
+    }
+}
+
 // Attach to global scope for HTML calls
 window.initStoicMuslim = initStoicMuslim;
 window.toggleAuraTask = toggleAuraTask;
 window.addTawakkalEntry = addTawakkalEntry;
 window.deleteTawakkal = deleteTawakkal;
+window.initBurnoutRecovery = initBurnoutRecovery;
+window.toggleBurnoutTask = toggleBurnoutTask;
+window.askBurnoutAIDiagnosis = askBurnoutAIDiagnosis;

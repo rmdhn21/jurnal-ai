@@ -80,10 +80,15 @@ function toggleHSEFavorite(id) {
     localStorage.setItem(HSE_FAV_KEY, JSON.stringify(favorites));
     
     // Update all matching stars (original and cloned)
-    document.querySelectorAll(`[data-fav-id="${id}"] .fav-star`).forEach(s => {
-        if (index > -1) s.classList.remove('active');
-        else s.classList.add('active');
-    });
+    try {
+        const escapedId = CSS.escape(id);
+        document.querySelectorAll(`[data-fav-id="${escapedId}"] .fav-star`).forEach(s => {
+            if (index > -1) s.classList.remove('active');
+            else s.classList.add('active');
+        });
+    } catch (e) {
+        console.error('Error updating stars:', e);
+    }
 
     renderHSEFavorites();
 }
@@ -105,23 +110,28 @@ function renderHSEFavorites() {
     grid.innerHTML = '';
 
     favorites.forEach(id => {
-        // Find the original card
-        const original = document.querySelector(`#hse-center-screen .hse-grid .hse-card[data-fav-id="${id}"]`);
-        if (original) {
-            const clone = original.cloneNode(true);
-            
-            // Re-bind the click events since cloneNode(true) doesn't copy listeners
-            // but inline 'onclick' attributes are copied, so it "just works" for these cards.
-            // We just need to re-bind the star toggle.
-            const star = clone.querySelector('.fav-star');
-            if (star) {
-                star.onclick = (e) => {
-                    e.stopPropagation();
-                    toggleHSEFavorite(id);
-                };
-            }
+        try {
+            const escapedId = CSS.escape(id);
+            // Find the original card
+            const original = document.querySelector(`#hse-center-screen .hse-grid .hse-card[data-fav-id="${escapedId}"]`);
+            if (original) {
+                const clone = original.cloneNode(true);
+                
+                // Re-bind the click events since cloneNode(true) doesn't copy listeners
+                // but inline 'onclick' attributes are copied, so it "just works" for these cards.
+                // We just need to re-bind the star toggle.
+                const star = clone.querySelector('.fav-star');
+                if (star) {
+                    star.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleHSEFavorite(id);
+                    };
+                }
 
-            grid.appendChild(clone);
+                grid.appendChild(clone);
+            }
+        } catch (e) {
+            console.error('Error rendering favorite card:', e);
         }
     });
 }

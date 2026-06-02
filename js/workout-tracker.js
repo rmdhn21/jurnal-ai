@@ -97,10 +97,11 @@ async function loadWorkoutState() {
         workoutState = { ...workoutState, ...saved };
         workoutState.loadingAi = null;
 
-        // Reset daily XP tracker if it's a new day
+        // Reset daily progress & XP tracker if it's a new day
         const today = new Date().toISOString().split('T')[0];
         if (!workoutState.history[today]) {
             workoutState.earnedXpToday = [];
+            workoutState.progress = {};
         }
     }
 }

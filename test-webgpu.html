@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebGPU Diagnostics</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #121214; color: #e1e1e6; }
+        .card { background: #202024; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .success { color: #04d361; font-weight: bold; }
+        .error { color: #f75a68; font-weight: bold; }
+        pre { background: #121214; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        ul { line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <h1>WebGPU Diagnostics Test</h1>
+    
+    <div class="card">
+        <h2>System Info</h2>
+        <p><strong>User Agent:</strong> <span id="user-agent"></span></p>
+        <p><strong>Secure Context (HTTPS/Localhost):</strong> <span id="secure-context"></span></p>
+        <p><strong>navigator.gpu support:</strong> <span id="gpu-support"></span></p>
+    </div>
+
+    <div class="card">
+        <h2>WebGPU Adapter Status</h2>
+        <div id="adapter-status">Checking...</div>
+    </div>
+
+    <script>
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+        
+        const isSecure = window.isSecureContext;
+        const secureEl = document.getElementById('secure-context');
+        secureEl.textContent = isSecure ? "Ya (Aman)" : "Tidak (Tidak Aman - WebGPU wajib menggunakan HTTPS atau localhost)";
+        secureEl.className = isSecure ? "success" : "error";
+
+        const hasGpu = !!navigator.gpu;
+        const gpuEl = document.getElementById('gpu-support');
+        gpuEl.textContent = hasGpu ? "Didukung di browser" : "Tidak didukung / dinonaktifkan di browser";
+        gpuEl.className = hasGpu ? "success" : "error";
+
+        async function checkAdapter() {
+            const statusDiv = document.getElementById('adapter-status');
+            if (!hasGpu) {
+                statusDiv.innerHTML = '<p class="error">WebGPU API tidak ditemukan di navigator. Pastikan Anda menggunakan Chrome/Edge versi terbaru dan mengaktifkan Hardware Acceleration.</p>';
+                return;
+            }
+
+            try {
+                statusDiv.innerHTML = '<p>Meminta adapter GPU...</p>';
+                const adapter = await navigator.gpu.requestAdapter();
+                if (adapter) {
+                    let info = "";
+                    if (adapter.info) {
+                        info = `
+<strong>Device Name:</strong> ${adapter.info.device || 'N/A'}<br>
+<strong>Architecture:</strong> ${adapter.info.architecture || 'N/A'}<br>
+<strong>Vendor:</strong> ${adapter.info.vendor || 'N/A'}<br>
+<strong>Description:</strong> ${adapter.info.description || 'N/A'}<br>
+                        `;
+                    } else {
+                        info = "Adapter berhasil didapatkan, tetapi metadata info tidak tersedia.";
+                    }
+                    statusDiv.innerHTML = `
+                        <p class="success">🚀 Sukses! Adapter GPU terdeteksi.</p>
+                        <p>${info}</p>
+                        <p><strong>Features:</strong></p>
+                        <pre>${Array.from(adapter.features).join(', ') || 'None'}</pre>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <p class="error">❌ requestAdapter() mengembalikan null (No Available Adapters).</p>
+                        <p>Ini berarti Chrome mendeteksi API WebGPU, tetapi driver kartu grafis Anda menolak memberikan akses adapter.</p>
+                        <p><strong>Silakan lakukan langkah berikut untuk memperbaiki:</strong></p>
+                        <ul>
+                            <li>Buka <code>chrome://settings/system</code> dan pastikan <strong>"Use graphics acceleration when available"</strong> dalam keadaan <strong>AKTIF</strong>.</li>
+                            <li>Buka <code>chrome://flags</code> di address bar, cari flag <strong>"Ignore GPU blocklist"</strong> dan ubah menjadi <strong>Enabled</strong>.</li>
+                            <li>Cari juga flag <strong>"Unsafe WebGPU"</strong> dan ubah menjadi <strong>Enabled</strong>.</li>
+                            <li>Pastikan Anda mengakses halaman ini lewat <code>http://localhost</code>, bukan membuka file langsung (<code>file:///</code>).</li>
+                            <li>Perbarui driver GPU (Intel/NVIDIA/AMD) Anda ke versi terbaru melalui situs resmi produsen.</li>
+                        </ul>
+                    `;
+                }
+            } catch (err) {
+                statusDiv.innerHTML = `<p class="error">Error saat meminta adapter: ${err.message}</p>`;
+            }
+        }
+
+        checkAdapter();
+    </script>
+</body>
+</html>

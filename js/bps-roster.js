@@ -9,6 +9,29 @@ document.addEventListener('DOMContentLoaded', () => {
 function initBpsRoster() {
     loadBpsCheckboxes();
     
+    // Auto-select BPS tab based on today's shift from Shift Tracker
+    try {
+        const saved = localStorage.getItem('work_shift_data');
+        if (saved) {
+            const shiftSavedShifts = JSON.parse(saved);
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            const todayShift = shiftSavedShifts[todayStr];
+            
+            if (todayShift) {
+                if (todayShift.includes('Pagi') || todayShift === 'Kantor' || todayShift === 'Dinas Siang' || todayShift === 'Dinas') {
+                    bpsSwitchTab('shiftPagi');
+                } else if (todayShift.includes('Malam') || todayShift === 'Dinas Malam') {
+                    bpsSwitchTab('shiftMalam');
+                } else if (todayShift === 'Off' || todayShift === 'Cuti' || todayShift === 'Izin') {
+                    bpsSwitchTab('hariOff');
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Gagal mengintegrasikan shift dengan BPS Roster", e);
+    }
+    
     // Listeners for auto-save and toast logic
     document.querySelectorAll('.bps-checkbox').forEach(cb => {
         cb.addEventListener('change', () => {
@@ -95,13 +118,14 @@ function showBpsToast(message) {
 // LocalStorage Persistence
 function saveBpsCheckboxes() {
     const checkboxes = document.querySelectorAll('.bps-checkbox');
-    const state = {};
+    const state = { date: new Date().toISOString().split('T')[0] };
     checkboxes.forEach(cb => {
         if (cb.id) {
             state[cb.id] = cb.checked;
         }
     });
     localStorage.setItem(BPS_STORAGE_KEY, JSON.stringify(state));
+    if (typeof refreshWidget === 'function') refreshWidget('bps-roster');
 }
 
 function loadBpsCheckboxes() {
@@ -109,7 +133,16 @@ function loadBpsCheckboxes() {
         const saved = localStorage.getItem(BPS_STORAGE_KEY);
         if (saved) {
             const state = JSON.parse(saved);
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Auto-reset if it's a new day
+            if (state.date && state.date !== today) {
+                localStorage.removeItem(BPS_STORAGE_KEY);
+                return;
+            }
+            
             Object.keys(state).forEach(id => {
+                if (id === 'date') return;
                 const cb = document.getElementById(id);
                 if (cb) {
                     cb.checked = state[id];

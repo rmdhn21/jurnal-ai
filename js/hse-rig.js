@@ -1013,11 +1013,15 @@ async function generateInspectionPDF() {
     }
 }
 
-// Tambahkan inisialisasi ketika DOM content loaded
+// Tambahkan inisialisasi ketika DOM content loaded (jika database sudah siap)
 document.addEventListener('DOMContentLoaded', () => {
     // Akan dipanggil oleh navigasi jika user klik tab HSE Rig,
-    // atau inisialisasi di awal agar siap
-    initHseRig();
+    // atau jika database sudah siap
+    if (window.idbReady) {
+        initHseRig();
+    } else {
+        console.log("⏳ [HSE Rig] Database not ready at DOMContentLoaded. Skipping immediate initHseRig.");
+    }
 });
 
 
@@ -1196,7 +1200,7 @@ Jika ada PESAN TAMBAHAN KUSTOM, sisipkan di bagian Analisis Bahaya dengan format
             }],
             generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 2048
+                maxOutputTokens: 10240
             }
         };
 

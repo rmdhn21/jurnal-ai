@@ -97,7 +97,7 @@ ATURAN KONTEN:
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+            generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
         };
 
         const text = await unifiedGeminiCall(payload);

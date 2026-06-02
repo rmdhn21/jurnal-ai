@@ -1,19 +1,86 @@
 // ===== STORAGE MODULE =====
+// Intercept migration key query and fallback to localStorage if IndexedDB is not ready
+const originalGetItem = Storage.prototype.getItem;
+Storage.prototype.getItem = function(key) {
+    if (key === 'jurnal_ai_idb_migrated' && !window.idbReady) {
+        return 'false';
+    }
+    return originalGetItem.apply(this, arguments);
+};
+
 const MIGRATION_KEY = 'jurnal_ai_idb_migrated';
 
 async function migrateFromLocalStorageToIDB() {
-    if (localStorage.getItem(MIGRATION_KEY) === 'true') return;
+    let shouldMigrate = localStorage.getItem(MIGRATION_KEY) !== 'true';
+
+    // Recovery check: If migration was marked true, but IndexedDB key tables are empty
+    // while LocalStorage contains data, re-trigger the migration.
+    if (!shouldMigrate && window.idbReady) {
+        try {
+            const jCount = await db.journals.count();
+            const tCount = await db.transactions.count();
+            if (jCount === 0 && tCount === 0) {
+                const lsJournals = localStorage.getItem(STORAGE_KEYS.JOURNALS);
+                const lsTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+                const hasLsData = (lsJournals && JSON.parse(lsJournals).length > 0) || 
+                                  (lsTx && JSON.parse(lsTx).length > 0);
+                if (hasLsData) {
+                    console.warn('⚠️ [Storage Recovery] IndexedDB is empty but LocalStorage contains data. Re-running migration...');
+                    shouldMigrate = true;
+                    localStorage.removeItem(MIGRATION_KEY);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to run migration recovery check:', e);
+        }
+    }
 
     // Safety: If IDB is not supported or failed to open, don't attempt migration
-    // We check if the DB structure is accessible
+    let dbAccessible = false;
     try {
-        if (!db || !db.isOpen()) {
-            console.warn('⚠️ IndexedDB not ready, skipping migration.');
-            return;
+        if (db && db.isOpen()) {
+            dbAccessible = true;
         }
-    } catch(e) {
-        return;
+    } catch(e) {}
+
+    if (dbAccessible) {
+        // Run check for new/missing tables (runs even if MIGRATION_KEY is already true)
+        try {
+            const checkAndMigrateTable = async (lsKey, tableName) => {
+                if (!db[tableName]) {
+                    console.warn(`⚠️ Table ${tableName} is not defined in Dexie schema, skipping recovery migration.`);
+                    return;
+                }
+                const count = await db[tableName].count();
+                // For saved_generations, seedDefaultPdfDoc adds 1 item.
+                const limit = (tableName === 'saved_generations') ? 1 : 0;
+                if (count <= limit) {
+                    const raw = localStorage.getItem(lsKey);
+                    if (raw) {
+                        try {
+                            const data = JSON.parse(raw);
+                            const list = Array.isArray(data) ? data : (data ? [data] : []);
+                            if (list.length > 0) {
+                                console.log(`🔄 Migrating missing table ${tableName} to IndexedDB...`);
+                                await idbBulkSave(tableName, list);
+                                console.log(`✅ Migrated ${list.length} items to ${tableName}`);
+                            }
+                        } catch (parseErr) {
+                            console.error(`Failed to parse LS key ${lsKey} during migration:`, parseErr);
+                        }
+                    }
+                }
+            };
+
+            await checkAndMigrateTable(STORAGE_KEYS.SAVED_GENERATIONS, 'saved_generations');
+            await checkAndMigrateTable(STORAGE_KEYS.HSE_VOCAB_BANK, 'hse_vocab_bank');
+            await checkAndMigrateTable(STORAGE_KEYS.HSE_ROUTES, 'hse_routes');
+        } catch (e) {
+            console.error('Error during missing tables migration check:', e);
+        }
     }
+
+    if (!shouldMigrate) return;
 
     console.log('🔄 Starting data migration to IndexedDB...');
     const overlay = document.getElementById('migration-overlay');
@@ -30,7 +97,10 @@ async function migrateFromLocalStorageToIDB() {
         [STORAGE_KEYS.HABITS]: 'habits',
         [STORAGE_KEYS.GOALS]: 'goals',
         [STORAGE_KEYS.WALLETS]: 'wallets',
-        [STORAGE_KEYS.BUDGETS]: 'budgets'
+        [STORAGE_KEYS.BUDGETS]: 'budgets',
+        [STORAGE_KEYS.HSE_VOCAB_BANK]: 'hse_vocab_bank',
+        [STORAGE_KEYS.SAVED_GENERATIONS]: 'saved_generations',
+        [STORAGE_KEYS.HSE_ROUTES]: 'hse_routes'
     };
 
     const keys = Object.keys(tables);
@@ -263,6 +333,7 @@ async function toggleTask(id) {
     const task = await idbGet('tasks', id);
     if (task) {
         task.done = !task.done;
+        task.status = task.done ? 'done' : 'todo';
         task.updatedAt = new Date().toISOString();
         task.synced = 0;
         await idbSave('tasks', task);

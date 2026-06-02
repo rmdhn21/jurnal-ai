@@ -17,6 +17,19 @@ async function showMainApp() {
                 initDB(),
                 new Promise(resolve => setTimeout(() => resolve(false), 5000))
             ]);
+            console.log("🔍 [Database Init] dbReady (timeout check):", dbReady, "| window.idbReady:", window.idbReady);
+            
+            if (window.idbReady) {
+                try {
+                    const journalCount = await db.journals.count();
+                    const txCount = await db.transactions.count();
+                    console.log(`📊 [Database Diagnostic] Found ${journalCount} journals and ${txCount} transactions in IndexedDB.`);
+                } catch (dbErr) {
+                    console.warn("⚠️ [Database Diagnostic] Failed to count IndexedDB items:", dbErr);
+                }
+            } else {
+                console.warn("⚠️ [Database Diagnostic] IndexedDB is not ready. Falling back to LocalStorage.");
+            }
             if (dbReady && typeof migrateFromLocalStorageToIDB === 'function') {
                 await migrateFromLocalStorageToIDB();
                 if (typeof migrateDefaultRoutines === 'function') await migrateDefaultRoutines();
@@ -30,12 +43,7 @@ async function showMainApp() {
     initNavigation();
     initSettings();
     
-    // Critical: Dashboard must load
-    try {
-        if (typeof initDashboardWidgets === 'function') await initDashboardWidgets();
-    } catch (e) { console.error('Dashboard init failed:', e); }
-
-    // Other non-critical modules
+    // Modules must load their state first before Dashboard reads them
     const safelyInit = async (fnName, ...args) => {
         try {
             if (typeof window[fnName] === 'function') await window[fnName](...args);
@@ -63,8 +71,18 @@ async function showMainApp() {
     await safelyInit('initProCollage');
     await safelyInit('initHSEDailyReport');
     await safelyInit('initHSEFavorites');
+    await safelyInit('initHseRig');
     await safelyInit('initHSETrendChart');
     await safelyInit('initStoicMuslim');
+    await safelyInit('initStatsDist');
+    await safelyInit('initCortisolControl');
+    await safelyInit('initLooksmaxing');
+    await safelyInit('initWorkoutTracker');
+
+    // Critical: Dashboard must load after all modules have loaded their state
+    try {
+        if (typeof initDashboardWidgets === 'function') await initDashboardWidgets();
+    } catch (e) { console.error('Dashboard init failed:', e); }
 
     // Check if Onboarding is needed
     if (typeof initOnboarding === 'function') initOnboarding();

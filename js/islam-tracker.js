@@ -84,6 +84,7 @@ async function initIslamTrackerUI() {
         // Re-render chart and text live
         await renderIslamChart();
         updateIslamMotivation(newData);
+        if (typeof calculateAIForecast === 'function') calculateAIForecast();
     };
 
     // Attach listener to all checkboxes

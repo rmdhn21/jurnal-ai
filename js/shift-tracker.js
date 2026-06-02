@@ -3,7 +3,7 @@ const shiftsData = {
     // Array of available shift types
     types: [
         'Cuti', 'Pagi h-25', 'Pagi L-350', 'Izin', 
-        'Malam h-25', 'Malam L-350', 'Kantor', 'Dinas'
+        'Malam h-25', 'Malam L-350', 'Kantor', 'Dinas Siang', 'Dinas Malam', 'Dinas (Hari Off)', 'Off'
     ],
     // Map shift to CSS class suffix
     classMap: {
@@ -14,7 +14,10 @@ const shiftsData = {
         'Malam h-25': 'malam25',
         'Malam L-350': 'malam350',
         'Kantor': 'kantor',
-        'Dinas': 'dinas'
+        'Dinas Siang': 'dinassiang',
+        'Dinas Malam': 'dinasmalam',
+        'Dinas (Hari Off)': 'dinasoff',
+        'Off': 'off'
     },
     // Map shift to border colors for summary items
     colorMap: {
@@ -25,7 +28,10 @@ const shiftsData = {
         'Malam h-25': '#8b5cf6',
         'Malam L-350': '#5b21b6',
         'Kantor': '#10b981',
-        'Dinas': '#0ea5e9'
+        'Dinas Siang': '#0ea5e9',
+        'Dinas Malam': '#0284c7',
+        'Dinas (Hari Off)': '#0369a1',
+        'Off': '#64748b'
     }
 };
 
@@ -60,6 +66,7 @@ function loadShiftData() {
 // Save to LocalStorage
 function saveShiftData() {
     localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(shiftSavedShifts));
+    if (typeof calculateAIForecast === 'function') calculateAIForecast();
 }
 
 // Format Date as YYYY-MM-DD
@@ -142,6 +149,170 @@ function renderShiftCalendar() {
     }
     
     renderShiftSummary(monthStats);
+    calculateSalary(); // Panggil fungsi kalkulasi gaji setelah kalender di-render
+}
+
+// Salary Calculation Feature
+function calculateSalary() {
+    const breakdownEl = document.getElementById('salary-breakdown');
+    const netTotalEl = document.getElementById('salary-net-total');
+    const periodLabelEl = document.getElementById('salary-period-label');
+    const paydayLabelEl = document.getElementById('salary-payday-label');
+    
+    if (!breakdownEl || !netTotalEl) return;
+    
+    // Perhitungan dilakukan berdasarkan bulan kalender yang sedang DIBUKA (shiftCurrentDate),
+    // atau bisa juga selalu bulan INI. Karena gaji dibayarkan sesuai bulan saat ini berjalan,
+    // kita gunakan tanggal berjalan (real-time) sebagai acuan periode berjalan
+    const today = new Date();
+    
+    // Determine Cut-Off Period
+    // If today is <= 20, period is 21st of prev month to 20th of current month
+    // If today is > 20, period is 21st of current month to 20th of next month
+    let periodStart, periodEnd, payday;
+    if (today.getDate() <= 20) {
+        periodEnd = new Date(today.getFullYear(), today.getMonth(), 20);
+        periodStart = new Date(today.getFullYear(), today.getMonth() - 1, 21);
+        payday = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    } else {
+        periodEnd = new Date(today.getFullYear(), today.getMonth() + 1, 20);
+        periodStart = new Date(today.getFullYear(), today.getMonth(), 21);
+        payday = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+    }
+    
+    const formatter = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' });
+    const monthFormatter = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' });
+    
+    if (periodLabelEl) {
+        periodLabelEl.textContent = `Cut-off: ${formatter.format(periodStart)} - ${formatter.format(periodEnd)}`;
+    }
+    if (paydayLabelEl) {
+        paydayLabelEl.textContent = `Gajian: 1 ${monthFormatter.format(payday)}`;
+    }
+    
+    let workDaysCount = 0;
+    let fieldDaysCount = 0;
+    
+    // Iterate from periodStart to periodEnd
+    let current = new Date(periodStart);
+    while (current <= periodEnd) {
+        const dateString = formatShiftDateString(current.getFullYear(), current.getMonth(), current.getDate());
+        const shiftType = shiftSavedShifts[dateString];
+        
+        if (shiftType) {
+            if (['Pagi h-25', 'Pagi L-350', 'Malam h-25', 'Malam L-350', 'Kantor'].includes(shiftType)) {
+                workDaysCount++;
+            } else if (['Dinas Siang', 'Dinas Malam'].includes(shiftType)) {
+                workDaysCount++; // Dapat upah harian
+                fieldDaysCount++; // Dapat 1x dinas
+            } else if (shiftType === 'Dinas (Hari Off)') {
+                workDaysCount++; // Dapat upah harian
+                fieldDaysCount += 2; // Dapat 2x dinas karena hari off
+            }
+        }
+        current.setDate(current.getDate() + 1);
+    }
+    
+    // Constants
+    const baseSalary = 3660000;
+    const workDayRate = 140000;
+    const fieldDayRate = 260000;
+    const bpjsDeduction = 149758;
+    
+    // Calculates
+    const workDayTotal = workDaysCount * workDayRate;
+    const fieldDayTotal = fieldDaysCount * fieldDayRate;
+    const grossSalary = baseSalary + workDayTotal + fieldDayTotal;
+    
+    // Get PTKP Category
+    const ptkpSelect = document.getElementById('salary-ptkp-select');
+    const ptkpCategory = ptkpSelect ? ptkpSelect.value : 'A';
+    
+    // PPh 21 Calculation (TER PMK 168/2023)
+    let pph21Rate = 0;
+    const g = grossSalary;
+    
+    if (ptkpCategory === 'A') {
+        if (g <= 5400000) pph21Rate = 0;
+        else if (g <= 5650000) pph21Rate = 0.0025;
+        else if (g <= 5950000) pph21Rate = 0.005;
+        else if (g <= 6300000) pph21Rate = 0.0075;
+        else if (g <= 6700000) pph21Rate = 0.01;
+        else if (g <= 7180000) pph21Rate = 0.0125;
+        else if (g <= 7390000) pph21Rate = 0.015;
+        else if (g <= 7920000) pph21Rate = 0.0175;
+        else if (g <= 8320000) pph21Rate = 0.02;
+        else if (g <= 8700000) pph21Rate = 0.0225;
+        else if (g <= 9140000) pph21Rate = 0.025;
+        else if (g <= 9680000) pph21Rate = 0.03;
+        else if (g <= 10420000) pph21Rate = 0.04;
+        else if (g <= 10900000) pph21Rate = 0.05;
+        else if (g <= 11250000) pph21Rate = 0.06;
+        else if (g <= 12050000) pph21Rate = 0.07;
+        else if (g <= 12950000) pph21Rate = 0.08;
+        else if (g <= 14150000) pph21Rate = 0.09;
+        else if (g <= 15550000) pph21Rate = 0.10;
+        else pph21Rate = 0.11;
+    } else if (ptkpCategory === 'B') {
+        if (g <= 6200000) pph21Rate = 0;
+        else if (g <= 6500000) pph21Rate = 0.0025;
+        else if (g <= 6850000) pph21Rate = 0.005;
+        else if (g <= 7300000) pph21Rate = 0.0075;
+        else if (g <= 9200000) pph21Rate = 0.01;
+        else if (g <= 10750000) pph21Rate = 0.015;
+        else if (g <= 11250000) pph21Rate = 0.02;
+        else if (g <= 11600000) pph21Rate = 0.025;
+        else if (g <= 12600000) pph21Rate = 0.03;
+        else if (g <= 13600000) pph21Rate = 0.04;
+        else if (g <= 14050000) pph21Rate = 0.05;
+        else if (g <= 15350000) pph21Rate = 0.06;
+        else pph21Rate = 0.07;
+    } else if (ptkpCategory === 'C') {
+        if (g <= 6600000) pph21Rate = 0;
+        else if (g <= 6950000) pph21Rate = 0.0025;
+        else if (g <= 7350000) pph21Rate = 0.005;
+        else if (g <= 7800000) pph21Rate = 0.0075;
+        else if (g <= 8850000) pph21Rate = 0.01;
+        else if (g <= 9800000) pph21Rate = 0.0125;
+        else if (g <= 10950000) pph21Rate = 0.015;
+        else if (g <= 11200000) pph21Rate = 0.0175;
+        else if (g <= 12050000) pph21Rate = 0.02;
+        else if (g <= 12950000) pph21Rate = 0.03;
+        else if (g <= 14150000) pph21Rate = 0.04;
+        else if (g <= 15550000) pph21Rate = 0.05;
+        else pph21Rate = 0.06;
+    }
+    
+    const pph21 = grossSalary * pph21Rate;
+    
+    const netSalary = grossSalary - bpjsDeduction - pph21;
+    
+    const formatRp = (num) => 'Rp ' + Math.round(num).toLocaleString('id-ID');
+    
+    breakdownEl.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Gaji Pokok</span>
+            <span>${formatRp(baseSalary)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>H. Kerja (${workDaysCount}x)</span>
+            <span style="color: #10b981;">+${formatRp(workDayTotal)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Dinas (${fieldDaysCount}x)</span>
+            <span style="color: #10b981;">+${formatRp(fieldDayTotal)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1);">
+            <span>BPJS (Tetap)</span>
+            <span style="color: #ef4444;">-${formatRp(bpjsDeduction)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Est. PPh 21</span>
+            <span style="color: #ef4444;">-${formatRp(pph21)}</span>
+        </div>
+    `;
+    
+    netTotalEl.textContent = formatRp(netSalary);
 }
 
 // Render the summary cards at the bottom
@@ -262,6 +433,13 @@ function setupShiftEventListeners() {
         const newClearBtn = clearShiftBtn.cloneNode(true);
         clearShiftBtn.parentNode.replaceChild(newClearBtn, clearShiftBtn);
         newClearBtn.addEventListener('click', clearShiftEvent);
+    }
+    
+    const ptkpSelect = document.getElementById('salary-ptkp-select');
+    if (ptkpSelect) {
+        ptkpSelect.addEventListener('change', () => {
+            calculateSalary();
+        });
     }
 }
 

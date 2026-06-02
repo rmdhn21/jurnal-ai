@@ -1,5 +1,5 @@
 // Service Worker for Jurnal AI PWA
-const CACHE_NAME = 'jurnal-ai-v20';
+const CACHE_NAME = 'jurnal-ai-v37';
 const urlsToCache = [
     './',
     './index.html',
@@ -77,7 +77,26 @@ const urlsToCache = [
     './js/hse-analytics.js',
     './js/hse-emergency.js',
     // App Initialization
-    './js/app-init.js'
+    './js/app-init.js',
+    // Newly Added Modules for Offline Support
+    './js/bps-roster.js',
+    './js/cortisol-control.js',
+    './js/dzikir-pagi-petang.js',
+    './js/finance-ocr.js',
+    './js/fire-planner.js',
+    './js/hse-daily-report.js',
+    './js/hse-favorites.js',
+    './js/jmp-generator.js',
+    './js/jmp-template-b64.js',
+    './js/k3-migas-mastery.js',
+    './js/learn-tkd.js',
+    './js/looksmaxing.js',
+    './js/mind-stoic.js',
+    './js/moving-checklist.js',
+    './js/pro-collage.js',
+    './js/report-collage.js',
+    './js/rig-3d-viewer.js',
+    './js/shift-tracker.js'
 ];
 
 
