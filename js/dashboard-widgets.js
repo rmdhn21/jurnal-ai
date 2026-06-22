@@ -1461,24 +1461,28 @@ function calculateAIForecast() {
 
     // 4. Productivity (Time Tracker: Sleep, Workout, Study)
     let timeTracker = JSON.parse(localStorage.getItem('jurnal_ai_time_tracker_data') || '{}');
-    let todayTime = timeTracker[todayStr] || { sleep: 0, workout: 0, study: 0 };
+    let todayTime = (timeTracker.logs && timeTracker.logs[todayStr]) ? timeTracker.logs[todayStr] : { sleep: 0, workout: 0, study: 0 };
     
-    if (todayTime.sleep >= 360) { // >= 6 hours
+    let sleepMins = Math.floor((todayTime.sleep || 0) / 60000);
+    let workoutMins = Math.floor((todayTime.workout || 0) / 60000);
+    let studyMins = Math.floor((todayTime.study || 0) / 60000);
+
+    if (sleepMins >= 360) { // >= 6 hours
         probability += 10;
-        reasons.push('Tidur cukup &gt; 6 jam (+10%)');
-    } else if (todayTime.sleep > 0 && todayTime.sleep <= 300) { // <= 5 hours but logged
+        reasons.push('Tidur cukup > 6 jam (+10%)');
+    } else if (sleepMins > 0 && sleepMins <= 300) { // <= 5 hours but logged
         probability -= 10;
-        reasons.push('Kurang tidur &lt; 5 jam (-10%)');
+        reasons.push('Kurang tidur < 5 jam (-10%)');
     }
     
-    if (todayTime.workout >= 30) {
+    if (workoutMins >= 30) {
         probability += 10;
-        reasons.push('Olahraga &gt; 30 menit (+10%)');
+        reasons.push('Olahraga > 30 menit (+10%)');
     }
     
-    if (todayTime.study >= 30) {
+    if (studyMins >= 30) {
         probability += 10;
-        reasons.push('Belajar &gt; 30 menit (+10%)');
+        reasons.push('Belajar > 30 menit (+10%)');
     }
 
     // 5. Physical Health (Water)

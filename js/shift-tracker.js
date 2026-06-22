@@ -76,18 +76,19 @@ function formatShiftDateString(year, month, day) {
 
 // Render the calendar for the curent month
 function renderShiftCalendar() {
-    const calendarGrid = document.getElementById('shift-calendarGrid');
-    const currentMonthLabel = document.getElementById('shift-currentMonthLabel');
-    if(!calendarGrid || !currentMonthLabel) return;
-    
-    calendarGrid.innerHTML = '';
+    const calendarGrids = document.querySelectorAll('#shift-calendarGrid');
+    const currentMonthLabels = document.querySelectorAll('#shift-currentMonthLabel');
+    if(calendarGrids.length === 0 || currentMonthLabels.length === 0) return;
     
     const year = shiftCurrentDate.getFullYear();
     const month = shiftCurrentDate.getMonth(); // 0-indexed
     
     // Set Header Label
     const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-    currentMonthLabel.textContent = `${monthNames[month]} ${year}`;
+    
+    currentMonthLabels.forEach(label => {
+        label.textContent = `${monthNames[month]} ${year}`;
+    });
     
     // First day of month (0 = Sunday, 1 = Monday ...)
     const firstDay = new Date(year, month, 1).getDay();
@@ -97,55 +98,63 @@ function renderShiftCalendar() {
     const today = new Date();
     const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
     
-    // Add empty cells for days before the 1st
-    for (let i = 0; i < firstDay; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-day empty';
-        calendarGrid.appendChild(emptyCell);
-    }
-    
     // Track stats for the month
     const monthStats = {};
     shiftsData.types.forEach(type => monthStats[type] = 0);
     
-    // Add days
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayCell = document.createElement('div');
-        dayCell.className = 'calendar-day shift-calendar-day';
+    calendarGrids.forEach(calendarGrid => {
+        calendarGrid.innerHTML = '';
         
-        if (isCurrentMonth && day === today.getDate()) {
-            dayCell.classList.add('today');
+        // Add empty cells for days before the 1st
+        for (let i = 0; i < firstDay; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'calendar-day empty';
+            calendarGrid.appendChild(emptyCell);
         }
         
+        // Add days
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'calendar-day shift-calendar-day';
+            
+            if (isCurrentMonth && day === today.getDate()) {
+                dayCell.classList.add('today');
+            }
+            
+            const dateString = formatShiftDateString(year, month, day);
+            const shiftType = shiftSavedShifts[dateString];
+            
+            // Day number
+            const numSpan = document.createElement('span');
+            numSpan.className = 'day-number';
+            numSpan.textContent = day;
+            dayCell.appendChild(numSpan);
+            
+            // Set styling if a shift is assigned
+            if (shiftType && shiftsData.classMap[shiftType]) {
+                const classSuffix = shiftsData.classMap[shiftType];
+                dayCell.classList.add(`bg-shift-${classSuffix}`);
+                
+                const labelSpan = document.createElement('span');
+                labelSpan.className = `shift-label text-shift-${classSuffix}`;
+                labelSpan.textContent = shiftType;
+                dayCell.appendChild(labelSpan);
+            }
+            
+            // Add click event for the day
+            dayCell.addEventListener('click', () => openShiftModal(dateString, day, monthNames[month], year));
+            
+            calendarGrid.appendChild(dayCell);
+        }
+    });
+    
+    // Calculate stats globally (independent of number of grids)
+    for (let day = 1; day <= daysInMonth; day++) {
         const dateString = formatShiftDateString(year, month, day);
         const shiftType = shiftSavedShifts[dateString];
-        
-        // Day number
-        const numSpan = document.createElement('span');
-        numSpan.className = 'day-number';
-        numSpan.textContent = day;
-        dayCell.appendChild(numSpan);
-        
-        // Set styling if a shift is assigned
-        if (shiftType && shiftsData.classMap[shiftType]) {
-            const classSuffix = shiftsData.classMap[shiftType];
-            dayCell.classList.add(`bg-shift-${classSuffix}`);
-            
-            const labelSpan = document.createElement('span');
-            labelSpan.className = `shift-label text-shift-${classSuffix}`;
-            labelSpan.textContent = shiftType;
-            dayCell.appendChild(labelSpan);
-            
-            // Increment stat
-            if (monthStats[shiftType] !== undefined) {
-                monthStats[shiftType]++;
-            }
+        if (shiftType && monthStats[shiftType] !== undefined) {
+            monthStats[shiftType]++;
         }
-        
-        // Add click event for the day
-        dayCell.addEventListener('click', () => openShiftModal(dateString, day, monthNames[month], year));
-        
-        calendarGrid.appendChild(dayCell);
     }
     
     renderShiftSummary(monthStats);
@@ -154,12 +163,12 @@ function renderShiftCalendar() {
 
 // Salary Calculation Feature
 function calculateSalary() {
-    const breakdownEl = document.getElementById('salary-breakdown');
-    const netTotalEl = document.getElementById('salary-net-total');
-    const periodLabelEl = document.getElementById('salary-period-label');
-    const paydayLabelEl = document.getElementById('salary-payday-label');
+    const breakdownEls = document.querySelectorAll('#salary-breakdown');
+    const netTotalEls = document.querySelectorAll('#salary-net-total');
+    const periodLabelEls = document.querySelectorAll('#salary-period-label');
+    const paydayLabelEls = document.querySelectorAll('#salary-payday-label');
     
-    if (!breakdownEl || !netTotalEl) return;
+    if (breakdownEls.length === 0 || netTotalEls.length === 0) return;
     
     // Perhitungan dilakukan berdasarkan bulan kalender yang sedang DIBUKA (shiftCurrentDate),
     // atau bisa juga selalu bulan INI. Karena gaji dibayarkan sesuai bulan saat ini berjalan,
@@ -183,12 +192,12 @@ function calculateSalary() {
     const formatter = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' });
     const monthFormatter = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' });
     
-    if (periodLabelEl) {
-        periodLabelEl.textContent = `Cut-off: ${formatter.format(periodStart)} - ${formatter.format(periodEnd)}`;
-    }
-    if (paydayLabelEl) {
-        paydayLabelEl.textContent = `Gajian: 1 ${monthFormatter.format(payday)}`;
-    }
+    periodLabelEls.forEach(el => {
+        el.textContent = `Cut-off: ${formatter.format(periodStart)} - ${formatter.format(periodEnd)}`;
+    });
+    paydayLabelEls.forEach(el => {
+        el.textContent = `Gajian: 1 ${monthFormatter.format(payday)}`;
+    });
     
     let workDaysCount = 0;
     let fieldDaysCount = 0;
@@ -225,7 +234,7 @@ function calculateSalary() {
     const grossSalary = baseSalary + workDayTotal + fieldDayTotal;
     
     // Get PTKP Category
-    const ptkpSelect = document.getElementById('salary-ptkp-select');
+    const ptkpSelect = document.querySelector('#salary-ptkp-select');
     const ptkpCategory = ptkpSelect ? ptkpSelect.value : 'A';
     
     // PPh 21 Calculation (TER PMK 168/2023)
@@ -289,7 +298,7 @@ function calculateSalary() {
     
     const formatRp = (num) => 'Rp ' + Math.round(num).toLocaleString('id-ID');
     
-    breakdownEl.innerHTML = `
+    const breakdownHtml = `
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Gaji Pokok</span>
             <span>${formatRp(baseSalary)}</span>
@@ -312,58 +321,71 @@ function calculateSalary() {
         </div>
     `;
     
-    netTotalEl.textContent = formatRp(netSalary);
+    breakdownEls.forEach(el => el.innerHTML = breakdownHtml);
+    netTotalEls.forEach(el => el.textContent = formatRp(netSalary));
 }
 
 // Render the summary cards at the bottom
 function renderShiftSummary(stats) {
-    const summaryGrid = document.getElementById('shift-summaryGrid');
-    if(!summaryGrid) return;
-    summaryGrid.innerHTML = '';
-    let hasShifts = false;
+    const summaryGrids = document.querySelectorAll('#shift-summaryGrid, #shift-summaryContainer');
+    if(summaryGrids.length === 0) return;
     
-    shiftsData.types.forEach(type => {
-        const count = stats[type];
-        if (count > 0) {
-            hasShifts = true;
-            const item = document.createElement('div');
-            item.className = 'shift-summary-item';
-            item.style.borderLeftColor = shiftsData.colorMap[type];
-            
-            item.innerHTML = `
-                <span class="shift-summary-name">${type}</span>
-                <span class="shift-summary-count">${count}</span>
+    summaryGrids.forEach(summaryGrid => {
+        summaryGrid.innerHTML = '';
+        let hasShifts = false;
+        
+        shiftsData.types.forEach(type => {
+            const count = stats[type];
+            if (count > 0) {
+                hasShifts = true;
+                const item = document.createElement('div');
+                item.className = 'shift-summary-item';
+                item.style.borderLeftColor = shiftsData.colorMap[type];
+                
+                item.innerHTML = `
+                    <span class="shift-summary-name">${type}</span>
+                    <span class="shift-summary-count">${count}</span>
+                `;
+                summaryGrid.appendChild(item);
+            }
+        });
+
+        if (!hasShifts) {
+            summaryGrid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 1rem 0;">
+                    Belum ada shift terjadwal bulan ini.
+                </div>
             `;
-            summaryGrid.appendChild(item);
         }
     });
-
-    if (!hasShifts) {
-        summaryGrid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 1rem 0;">
-                Belum ada shift terjadwal bulan ini.
-            </div>
-        `;
-    }
 }
 
 // Open Shift Selection Modal
 function openShiftModal(dateString, day, monthName, year) {
-    const shiftModal = document.getElementById('shift-Modal');
-    const modalDateLabel = document.getElementById('shift-modalDateLabel');
-    if(!shiftModal) return;
+    const shiftModals = document.querySelectorAll('#shift-Modal');
+    const modalDateLabels = document.querySelectorAll('#shift-modalDateLabel');
+    if(shiftModals.length === 0) return;
     
     shiftSelectedDateString = dateString;
-    modalDateLabel.textContent = `${day} ${monthName} ${year}`;
-    shiftModal.classList.add('active');
+    modalDateLabels.forEach(label => {
+        label.textContent = `${day} ${monthName} ${year}`;
+    });
+    
+    shiftModals.forEach(modal => {
+        modal.classList.add('active');
+        modal.classList.remove('hidden');
+    });
 }
 
 // Close Modal
 function closeShiftModal() {
-    const shiftModal = document.getElementById('shift-Modal');
-    if(!shiftModal) return;
+    const shiftModals = document.querySelectorAll('#shift-Modal');
+    if(shiftModals.length === 0) return;
     
-    shiftModal.classList.remove('active');
+    shiftModals.forEach(modal => {
+        modal.classList.remove('active');
+        modal.classList.add('hidden');
+    });
     shiftSelectedDateString = null;
 }
 
@@ -374,6 +396,7 @@ function setShiftEvent(shiftType) {
         saveShiftData();
         renderShiftCalendar();
         closeShiftModal();
+        if (typeof updateDashboardReminders === 'function') updateDashboardReminders();
     }
 }
 
@@ -385,42 +408,53 @@ function clearShiftEvent() {
         renderShiftCalendar();
     }
     closeShiftModal();
+    if (typeof updateDashboardReminders === 'function') updateDashboardReminders();
 }
 
 // Event Listeners Setup
 function setupShiftEventListeners() {
-    const prevMonthBtn = document.getElementById('shift-prevMonth');
-    const nextMonthBtn = document.getElementById('shift-nextMonth');
-    const closeModalBtn = document.getElementById('shift-closeModal');
-    const shiftModal = document.getElementById('shift-Modal');
-    const clearShiftBtn = document.getElementById('shift-clearShiftBtn');
+    const prevMonthBtns = document.querySelectorAll('#shift-prevMonth');
+    const nextMonthBtns = document.querySelectorAll('#shift-nextMonth');
+    const closeModalBtns = document.querySelectorAll('#shift-closeModal');
+    const shiftModals = document.querySelectorAll('#shift-Modal');
+    const clearShiftBtns = document.querySelectorAll('#shift-clearShiftBtn');
     
-    if(prevMonthBtn) {
-        prevMonthBtn.addEventListener('click', () => {
+    prevMonthBtns.forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.addEventListener('click', () => {
             shiftCurrentDate.setMonth(shiftCurrentDate.getMonth() - 1);
             renderShiftCalendar();
         });
-    }
+    });
     
-    if(nextMonthBtn) {
-        nextMonthBtn.addEventListener('click', () => {
+    nextMonthBtns.forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.addEventListener('click', () => {
             shiftCurrentDate.setMonth(shiftCurrentDate.getMonth() + 1);
             renderShiftCalendar();
         });
-    }
+    });
     
-    if(closeModalBtn) closeModalBtn.addEventListener('click', closeShiftModal);
+    closeModalBtns.forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.addEventListener('click', closeShiftModal);
+    });
     
-    if(shiftModal) {
-        shiftModal.addEventListener('click', (e) => {
-            if (e.target === shiftModal) {
-                closeShiftModal();
-            }
-        });
-    }
+    shiftModals.forEach(modal => {
+        if (!modal.dataset.listenerAdded) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeShiftModal();
+                }
+            });
+            modal.dataset.listenerAdded = "true";
+        }
+    });
     
     document.querySelectorAll('.shift-btn').forEach(btn => {
-        // remove old listeners to prevent duplicates if called multiple times
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
         newBtn.addEventListener('click', (e) => {
@@ -429,18 +463,23 @@ function setupShiftEventListeners() {
         });
     });
     
-    if(clearShiftBtn) {
-        const newClearBtn = clearShiftBtn.cloneNode(true);
-        clearShiftBtn.parentNode.replaceChild(newClearBtn, clearShiftBtn);
-        newClearBtn.addEventListener('click', clearShiftEvent);
-    }
+    clearShiftBtns.forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.addEventListener('click', clearShiftEvent);
+    });
     
-    const ptkpSelect = document.getElementById('salary-ptkp-select');
-    if (ptkpSelect) {
-        ptkpSelect.addEventListener('change', () => {
-            calculateSalary();
-        });
-    }
+    const ptkpSelects = document.querySelectorAll('#salary-ptkp-select');
+    ptkpSelects.forEach(select => {
+        if (!select.dataset.listenerAdded) {
+            select.addEventListener('change', (e) => {
+                // Synchronize dropdown values across duplicate selectors
+                ptkpSelects.forEach(s => { s.value = e.target.value; });
+                calculateSalary();
+            });
+            select.dataset.listenerAdded = "true";
+        }
+    });
 }
 
 // Bind to DOMContentLoaded or execute immediately 

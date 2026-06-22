@@ -78,6 +78,8 @@ async function showMainApp() {
     await safelyInit('initCortisolControl');
     await safelyInit('initLooksmaxing');
     await safelyInit('initWorkoutTracker');
+    await safelyInit('initShiftTracker');
+    await safelyInit('initTimeTracker');
 
     // Critical: Dashboard must load after all modules have loaded their state
     try {

@@ -678,21 +678,47 @@ window.toggleDashboardReminderItem = async function(type, id) {
                 const parts = id.split('-');
                 if (parts.length === 3 && typeof toggleWorkoutTask === 'function') {
                     await toggleWorkoutTask(parts[1], parts[2]); // e.g. workout-gym1-g1_1
-                    // Don't return, let it refresh below
                 }
             } else if (type === 'bps' && id.startsWith('bps-')) {
                 const el = document.getElementById(id);
                 if (el) {
                     el.checked = true;
                     el.dispatchEvent(new Event('change'));
-                    // Don't return, let it refresh below
+                }
+            } else if (type === 'bps-assign') {
+                if (typeof openShiftModal === 'function') {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = now.getMonth();
+                    const day = now.getDate();
+                    const dateString = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                    
+                    openShiftModal(dateString, day, monthNames[month], year);
+                }
+                return; // Let modal handle completion
+            } else if (type === 'journal') {
+                const isiJurnal = prompt("📝 Apa yang ingin Anda tulis di jurnal hari ini?\n(Batal untuk membuka halaman Jurnal)");
+                if (isiJurnal !== null) {
+                    if (isiJurnal.trim() !== '') {
+                        if (typeof addJournalEntry === 'function') {
+                            addJournalEntry("Jurnal Singkat (Dashboard)", isiJurnal, "Harian", "Senang");
+                        }
+                    } else {
+                        // Empty string but not cancelled -> just mark it
+                        if (typeof addJournalEntry === 'function') {
+                            addJournalEntry("Jurnal Harian", "Telah diselesaikan dari Dashboard.", "Harian", "Biasa");
+                        }
+                    }
+                    if (typeof addXP === 'function') addXP(15, 'Tulis Jurnal');
+                } else {
+                    if (typeof navigateToSubscreen === 'function') navigateToSubscreen('journal');
+                    return;
                 }
             } else {
-
-            
                 // Fallback: Navigate to module for complex interactions
                 let screen = type;
-                if (type === 'bps' || type === 'bps-assign') screen = type === 'bps' ? 'bps-roster' : 'shift-tracker';
+                if (type === 'bps') screen = 'bps-roster';
                 if (type === 'workout') screen = 'workout-tracker';
                 if (type === 'journal') screen = 'journal';
                 
